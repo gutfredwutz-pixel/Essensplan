@@ -81,6 +81,11 @@ revoke all on function public.join_household(text) from public, anon;
 grant execute on function public.create_household() to authenticated;
 grant execute on function public.join_household(text) to authenticated;
 
+-- Zugriffsrechte für die App (neue Supabase-Projekte geben Tabellen nicht automatisch frei)
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on public.docs to authenticated;
+grant select on public.households, public.members to authenticated;
+
 -- Live-Updates
 alter table public.docs replica identity full;
 do $$ begin

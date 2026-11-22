@@ -117,12 +117,13 @@ function startData() {
   db = makeDb(sb, household.id);
   const timer = setTimeout(() => { if (!loaded.items || !loaded.plan || !loaded.recipes) setStatus('Keine Verbindung'); }, 10000);
   const done = () => { if (loaded.items && loaded.plan && loaded.recipes) { clearTimeout(timer); setStatus(''); } };
-  const sub = (name, set) => db.collection(name).onSnapshot(snap => { set(snap.docs.map(x => ({ id: x.id, ...x.data() }))); loaded[name] = true; done(); render(); }, e => { setStatus('Fehler beim Laden'); console.error(e); });
+  const sub = (name, set) => db.collection(name).onSnapshot(snap => { set(snap.docs.map(x => ({ id: x.id, ...x.data() }))); loaded[name] = true; done(); render(); }, e => { lastErr = (e && (e.message || e.code)) || ''; setStatus('Fehler beim Laden'); console.error(e); });
   sub('items', v => items = v); sub('plan', v => plan = v); sub('recipes', v => recipes = v);
   db.collection('known').onSnapshot(snap => { known = new Map(snap.docs.map(x => [x.id, x.data()])); });
   db.collection('people').onSnapshot(snap => { people = snap.docs.map(x => x.data()); render(); renderHead(); });
 }
-function setStatus(t) { $('#status').textContent = t; }
+let lastErr = '';
+function setStatus(t) { const el = $('#status'); el.textContent = t; el.onclick = lastErr ? () => toast(lastErr) : null; }
 
 /* Datenzugriff über Supabase, gleiche Form wie vorher */
 function makeDb(sb, hh) {
