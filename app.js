@@ -58,7 +58,7 @@ function catOf(name) {
 
 /* ============ Zustand ============ */
 let db = null, sample = null, dict = null, userCap = null, canWrite = true;
-let items = [], plan = [], recipes = [], known = new Map();
+let items = [], plan = [], recipes = [], known = new Map(), profiles = {}, diary = {};
 let tab = 'cal', view = 'week', anchor = dayOnly(new Date()), monthAnchor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 let loaded = { items: false, plan: false, recipes: false };
 try { const s = localStorage.getItem('ep_view'); if (s === 'month' || s === 'week') view = s; } catch (e) { }
@@ -120,6 +120,8 @@ function startData() {
   const sub = (name, set) => db.collection(name).onSnapshot(snap => { set(snap.docs.map(x => ({ id: x.id, ...x.data() }))); loaded[name] = true; done(); render(); }, e => { lastErr = (e && (e.message || e.code)) || ''; setStatus('Fehler beim Laden'); console.error(e); });
   sub('items', v => items = v); sub('plan', v => plan = v); sub('recipes', v => recipes = v);
   db.collection('known').onSnapshot(snap => { known = new Map(snap.docs.map(x => [x.id, x.data()])); });
+  db.collection('profiles').onSnapshot(snap => { profiles = Object.fromEntries(snap.docs.map(x => [x.id, x.data()])); });
+  db.collection('diary').onSnapshot(snap => { diary = Object.fromEntries(snap.docs.map(x => [x.id, x.data()])); });
   db.collection('people').onSnapshot(snap => { people = snap.docs.map(x => x.data()); render(); renderHead(); });
 }
 let lastErr = '';
@@ -1215,7 +1217,7 @@ function jar(name, pct, state, sub, onclick) {
 }
 function openReport(start) {
   const d = reportData(start);
-  if (!d.meals.length) return openSheet('Nährstoffe der Woche', [emptyArt('Noch keine Rezepte mit Mengen eingeplant'), grey('Sobald in dieser Woche Rezepte mit Mengen eingeplant sind, siehst du hier, was eure Gerichte an Nährstoffen liefern.')]);
+  if (!d.meals.length) return openSheet('Nährstoffe', [whoSeg('', start), emptyArt('Noch keine Rezepte mit Mengen eingeplant'), grey('Sobald in dieser Woche Rezepte mit Mengen eingeplant sind, siehst du hier, was eure Gerichte an Nährstoffen liefern.')]);
   const modeSeg = h('div', { class: 'seg wide' }, ...[['week', 'Woche'], ['day', 'Pro Tag'], ['meal', 'Pro Gericht']].map(([k, t]) => h('button', { class: repMode === k ? 'on' : '', onclick: () => { repMode = k; openReport(start); $('#sheet').scrollTop = 0; } }, t)));
   const explain = { week: `Alles, was ihr in dieser Woche eingeplant habt, pro Person, verglichen mit dem Bedarf für 7 Tage.`, day: `Durchschnitt pro Tag mit eingeplantem Gericht (${d.nDays} ${d.nDays === 1 ? 'Tag' : 'Tage'}), verglichen mit dem Tagesbedarf.`, meal: `Durchschnitt pro Gericht. Als Ziel gilt ein Drittel des Tagesbedarfs, weil ein Hauptgericht etwa eine von drei Mahlzeiten ist.` }[repMode];
   const rows = Object.entries(REF).map(([i, [ref, name, unit]]) => { const sc = scaleFor(repMode, d, ref); return { i: +i, name, unit, ref, val: sc.val[i], need: sc.need, pct: sc.val[i] / sc.need * 100 }; });
@@ -1227,8 +1229,8 @@ function openReport(start) {
   const vitD = rows.find(r => r.i === 9); if (vitD && vitD.state === 'low') ok.push({ ...vitD, state: 'sun' });
   const lim = Object.entries(LIMITS).map(([i, [ref, name, unit]]) => { const sc = scaleFor(repMode, d, ref); return { i: +i, name, unit, ref, val: sc.val[i], need: sc.need, pct: sc.val[i] / sc.need * 100, state: 'high', limit: true }; }).filter(x => x.pct > 100);
   const kcal = scaleFor(repMode, d, 1).val[0];
-  const content = [
-    h('div', { class: 'rephero' },
+  const content = [whoSeg('', start),
+    h('div', { class: 'rephero', style: 'margin-top:18px' },
       countUp(h('div', { class: 'rhnum' }), kcal, fmtInt),
       h('div', { class: 'rhlbl', text: repMode === 'week' ? 'kcal pro Person in dieser Woche' : repMode === 'day' ? 'kcal pro Person und Tag' : 'kcal pro Person und Gericht' }),
       h('div', { class: 'rhmeta', text: `${d.meals.length} ${d.meals.length === 1 ? 'Gericht' : 'Gerichte'} an ${d.nDays} ${d.nDays === 1 ? 'Tag' : 'Tagen'} eingeplant` })),
@@ -1236,28 +1238,28 @@ function openReport(start) {
     h('div', { class: 'greytxt', style: 'text-align:center;margin:10px 4px 4px', text: explain })];
   const sec = (title, list) => { if (list.length) content.push(h('div', { class: 'jarsec' }, h('h3', { text: title }), grid(list))); };
   sec('Eher wenig', low); sec('Ganz ordentlich', ok); sec('Gut abgedeckt', good); sec('Eher viel', lim);
-  content.push(grey('Tippe auf einen Nährstoff, um zu sehen, wofür er wichtig ist und woher er bei euch kommt. Richtwerte der DGE für Erwachsene, gerundet. Frühstück und Snacks zählen nur, wenn ihr sie eintragt.'));
+  content.push(grey('Das ist ein Durchschnittsmensch, der jedes Gericht einmal isst. Wie es bei euch persönlich aussieht, siehst du oben unter eurem Namen. Richtwerte der DGE für Erwachsene, gerundet. Frühstück und Snacks zählen nur, wenn ihr sie eintragt.'));
   if (d.unknown.size) content.push(grey('Ohne Werte oder Menge: ' + [...d.unknown].join(', ')));
   openSheet('Nährstoffe', content);
 }
-function openNutrient(r, d, start) {
-  const scaleDiv = repMode === 'week' ? 1 : repMode === 'day' ? Math.max(1, d.nDays) : Math.max(1, d.meals.length);
+function openNutrient(r, d, start, opt) {
+  const scaleDiv = opt ? opt.div : repMode === 'week' ? 1 : repMode === 'day' ? Math.max(1, d.nDays) : Math.max(1, d.meals.length);
   const srcs = Object.entries(d.src[r.i] || {}).filter(([, v]) => v / scaleDiv >= r.need * 0.005).sort((a, b) => b[1] - a[1]);
   const maxSrc = srcs.length ? srcs[0][1] : 1;
   const tiny = Object.keys(d.src[r.i] || {}).length - srcs.length;
   const st = r.limit ? 'high' : r.state;
   const sug = suggestFoods(r.i), have = items.filter(it => !it.checked).filter(it => { const v = window.NUTRI && window.NUTRI[canon(it.name)]; return v && v[r.i] / r.ref > 0.15; }).map(it => it.name).slice(0, 5);
-  const needTxt = repMode === 'week' ? 'Bedarf für 7 Tage' : repMode === 'day' ? 'Bedarf pro Tag' : 'Ziel pro Gericht';
+  const needTxt = opt ? opt.needTxt : repMode === 'week' ? 'Bedarf für 7 Tage' : repMode === 'day' ? 'Bedarf pro Tag' : 'Ziel pro Gericht';
   const content = [
     h('div', { class: 'nuthero ' + (r.limit ? 'high' : r.state) },
       h('div', { class: 'nhglow' }), h('div', { class: 'nhjar' }, fill(Math.max(4, Math.min(100, r.pct)), true), countUp(h('span', { class: 'nhpct' }), r.pct, x => fmtInt(x) + ' %')),
       h('div', { class: 'nhtxt' },
-        h('div', null, h('b', { text: fmtN(r.val[r.i] ?? r.val, r.unit) }), ` ${repMode === 'week' ? 'diese Woche' : repMode === 'day' ? 'pro Tag' : 'pro Gericht'}`),
+        h('div', null, h('b', { text: fmtN(r.val[r.i] ?? r.val, r.unit) }), ` ${opt ? opt.perLabel : repMode === 'week' ? 'diese Woche' : repMode === 'day' ? 'pro Tag' : 'pro Gericht'}`),
         h('div', { class: 'muted', text: `${r.limit ? 'Obergrenze' : needTxt}: ${fmtN(r.need, r.unit)}` }),
         h('div', { class: 'muted', text: `Tagesbedarf: ${fmtN(r.ref, r.unit)} / Woche: ${fmtN(r.ref * 7, r.unit)}` }))),
     h('div', { class: 'infocard why' }, h('h3', { text: r.limit ? 'Warum darauf achten?' : 'Wofür wichtig?' }), h('p', { text: INFO[r.i] || '' })),
   ];
-  if (srcs.length) content.push(h('div', { class: 'infocard' }, h('h3', { text: 'Woher es bei euch kommt' }),
+  if (srcs.length) content.push(h('div', { class: 'infocard' }, h('h3', { text: opt ? 'Woher es bei dir kommt' : 'Woher es bei euch kommt' }),
     h('div', { class: 'srclist' }, srcs.map(([name, v], k) => h('div', { class: 'src' }, h('span', { class: 'sname', text: name }), h('span', { class: 'sbar' }, h('i', { style: `width:${Math.max(3, Math.round(v / maxSrc * 100))}%;animation-delay:${120 + k * 70}ms` })), h('span', { class: 'sval', text: fmtN(v / scaleDiv, r.unit) }))))));
   else content.push(h('div', { class: 'infocard' }, h('h3', { text: 'Woher es bei euch kommt' }), grey('Aus euren eingeplanten Gerichten kommt davon praktisch nichts.')));
   if (srcs.length && tiny > 0) content[content.length - 1].append(h('div', { class: 'muted', style: 'margin-top:8px;font-size:13px', text: `Dazu Spuren aus ${tiny} ${tiny === 1 ? 'weiterer Zutat' : 'weiteren Zutaten'}` }));
@@ -1265,8 +1267,9 @@ function openNutrient(r, d, start) {
   if (!r.limit && have.length) content.push(h('div', { class: 'infocard' }, h('h3', { text: 'Schon auf eurer Liste' }), h('div', { class: 'tagbox' }, have.map(x => h('span', { class: 'pill t', text: x })))));
   if (r.i === 9) content.push(grey('Vitamin D bildet der Körper vor allem über Sonnenlicht, über das Essen kommt nur ein kleiner Teil.'));
   if (r.i === 22) content.push(grey('Jodsalz ist hier nicht mitgerechnet, darüber kommt im Alltag ein großer Teil.'));
-  content.push(h('div', { class: 'actions' }, h('button', { class: 'btn grad', onclick: () => openReport(start) }, 'Zurück zur Übersicht')));
+  content.push(h('div', { class: 'actions' }, h('button', { class: 'btn grad', onclick: () => opt ? opt.back() : openReport(start) }, 'Zurück zur Übersicht')));
   openSheet(r.name, [h('div', { class: 'nutpage ' + st }, ...content.filter(Boolean))]);
+  if (opt) $('#sheet .xclose').onclick = () => { closeSheet(); };
 }
 function suggestFoods(i) {
   const cand = [];
