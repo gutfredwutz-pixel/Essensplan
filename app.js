@@ -363,7 +363,7 @@ function autoTags(r) {
   if (n.ok && !n.unknown.length && n.tot[0] > 0 && (n.tot[1] * 4) / n.tot[0] >= 0.25) tags.push('Proteinreich');
   return tags;
 }
-const USER_TAGS = ['Italienisch', 'Asiatisch', 'Mexikanisch', 'Schnell', 'Suppe', 'Salat', 'Ofen', 'Süß', 'Frühstück', 'Meal Prep'];
+const USER_TAGS = ['Italienisch', 'Asiatisch', 'Schnell'];
 function lastCooked(r) { const today = ymd(new Date()); let last = ''; for (const p of plan) if (p.recipeId === r.id && p.date <= today && p.date > last) last = p.date; return last; }
 function grey(text) { return h('div', { class: 'greytxt', text }); }
 
@@ -598,7 +598,7 @@ function drawListBody() {
   if (sorted.length) frag.push(flat);
   if (done.length) {
     frag.push(h('div', { class: 'donebox' },
-      h('div', { class: 'row', style: 'justify-content:space-between' }, h('div', { class: 'cat', text: `Im Wagen (${done.length})` }),
+      h('div', { class: 'donehead' }, h('div', { class: 'cat', text: `Im Wagen (${done.length})` }),
         confirmBtn('Leeren', 'Sicher?', () => done.forEach(i => queue('items/' + i.id, () => db.collection('items').doc(i.id).delete())), 'btn g sm')),
       ...done.sort((a, b) => (b.checkedAt || 0) - (a.checkedAt || 0)).map(itemRow)));
   }
@@ -610,50 +610,66 @@ function emptyArt(text) {
 function itemRow(i) {
   const toggle = () => queue('items/' + i.id, () => db.collection('items').doc(i.id).update({ checked: !i.checked, checkedAt: Date.now() }));
   const del = () => queue('items/' + i.id, () => db.collection('items').doc(i.id).delete());
-  const subs = (i.notes || []).map((n, idx) => h('div', { class: 'note-line' },
-    h('span', null, 'für ', h('b', { text: n.dish || 'Gericht' }), n.amount ? ': ' + n.amount : ''),
-    h('button', { class: 'nx', 'aria-label': 'Hinweis entfernen', onclick: e => { e.stopPropagation(); const notes = (i.notes || []).filter((_, j) => j !== idx); queue('items/' + i.id, () => db.collection('items').doc(i.id).update({ notes, fromDish: notes.length ? i.fromDish : false })); } }, ic('xmark'))));
-  const row = h('div', { class: 'item' + (i.checked ? ' done' : '') },
-    h('button', { class: 'cb', 'aria-label': i.checked ? 'Zurück auf die Liste' : 'Abhaken', onclick: e => { e.stopPropagation(); toggle(); } }, ic('check')),
+  // Abgehakt: nur noch der Name, mittig
+  if (i.checked) return h('button', { class: 'doneline', onclick: toggle }, i.name);
+  const subs = (i.notes || []).map((n, idx) => h('div', { class: 'note-line', title: 'Antippen zum Entfernen', onclick: e => {
+    e.stopPropagation();
+    const notes = (i.notes || []).filter((_, j) => j !== idx);
+    queue('items/' + i.id, () => db.collection('items').doc(i.id).update({ notes, fromDish: notes.length ? i.fromDish : false }));
+    toast('Hinweis entfernt');
+  } }, h('span', null, 'für ', h('b', { text: n.dish || 'Gericht' }), n.amount ? ': ' + n.amount : '')));
+  const row = h('div', { class: 'item' },
+    h('button', { class: 'cb', 'aria-label': 'Abhaken', onclick: e => { e.stopPropagation(); toggle(); } }, ic('check')),
     h('div', { class: 'body' }, h('div', null, dot(i.by), h('span', { class: 'nm', text: i.name }), i.qty ? h('span', { class: 'qty', text: '  ' + i.qty }) : null), subs.length ? h('div', { class: 'sub' }, subs) : null));
   const acts = h('div', { class: 'swacts' },
     h('button', { class: 'sw amt', onclick: () => { closeSwipe(); editQty(i); } }, 'Menge'),
     h('button', { class: 'sw del', onclick: () => { closeSwipe(); del(); } }, 'Löschen'));
-  const [cbg, cfg] = catStyle(CATS.includes(i.category) ? i.category : 'Sonstiges');
+  const [, cfg] = catStyle(CATS.includes(i.category) ? i.category : 'Sonstiges');
   row.style.setProperty('--cfg', cfg);
   const wrap = h('div', { class: 'swipe' }, acts, row);
   makeSwipe(wrap, row, toggle, del);
   return wrap;
 }
-function closeSwipe() { if (openSwipe) { openSwipe.style.transform = ''; openSwipe.classList.remove('open'); const w = openSwipe.parentNode; if (w) setTimeout(() => w.classList.remove('swiping'), 200); openSwipe = null; } }
+function closeSwipe() { if (openSwipe) { const w = openSwipe; openSwipe = null; w._set(0, true); } }
 function makeSwipe(wrap, row, onTap, onDelete) {
-  let sx = 0, sy = 0, dx = 0, base = 0, drag = false, down = false, t0 = 0;
-  const OPEN = -176;
-  row.style.touchAction = 'pan-y';
-  const pos = x => { row.style.transform = x ? `translateX(${x}px)` : ''; wrap.classList.toggle('swiping', x < 0); };
-  row.addEventListener('pointerdown', e => { if (e.target.closest('.cb,.nx')) return; down = true; drag = false; sx = e.clientX; sy = e.clientY; t0 = Date.now(); base = row.classList.contains('open') ? OPEN : 0; row.style.transition = 'none'; });
-  row.addEventListener('pointermove', e => {
-    if (!down) return; const mx = e.clientX - sx, my = e.clientY - sy;
-    if (!drag) { if (Math.abs(mx) > 6 && Math.abs(mx) > Math.abs(my) * 1.2) { drag = true; try { row.setPointerCapture(e.pointerId); } catch (x) { } if (openSwipe && openSwipe !== row) closeSwipe(); } else if (Math.abs(my) > 10) { down = false; row.style.transition = ''; return; } else return; }
-    let raw = Math.min(0, base + mx);
-    // bis zum Menü leicht, danach mit Widerstand
-    if (raw < OPEN) raw = OPEN + (raw - OPEN) * 0.45;
-    dx = raw; pos(dx);
-    wrap.classList.toggle('far', dx < -wrap.offsetWidth * 0.62);
-  });
-  const end = () => {
-    if (!down) return; down = false; row.style.transition = '';
-    if (!drag) { if (row.classList.contains('open')) closeSwipe(); else { closeSwipe(); onTap(); } return; }
-    const w = wrap.offsetWidth, fast = (Date.now() - t0) < 250 && dx < -40;
-    if (dx < -w * 0.62) { pos(-w); wrap.classList.add('gone'); setTimeout(onDelete, 200); }
-    else if (dx < -36 || (fast && base === 0)) { pos(OPEN); row.classList.add('open'); openSwipe = row; }
-    else { pos(0); row.classList.remove('open'); if (openSwipe === row) openSwipe = null; }
-    wrap.classList.remove('far');
+  const OPEN = 176;
+  let sx = 0, sy = 0, dx = 0, base = 0, mode = 0, t0 = 0; // mode: 0 offen, 1 waagerecht, -1 senkrecht
+  const set = (x, anim) => {
+    dx = Math.max(0, x);
+    row.style.transition = anim ? 'margin-right .22s ease' : 'none';
+    row.style.marginRight = dx ? dx + 'px' : '';
+    wrap.classList.toggle('swiping', dx > 0);
+    wrap.classList.toggle('far', dx > wrap.offsetWidth * 0.6);
   };
-  row.addEventListener('pointerup', end);
-  row.addEventListener('pointercancel', () => { down = false; row.style.transition = ''; if (!row.classList.contains('open')) pos(0); });
+  wrap._set = set;
+  const start = (x, y, target) => { if (target.closest('.cb,.note-line')) return false; sx = x; sy = y; t0 = Date.now(); mode = 0; base = dx; return true; };
+  const move = (x, y, ev) => {
+    const mx = sx - x, my = y - sy;
+    if (mode === 0) { if (Math.abs(mx) > 5 && Math.abs(mx) > Math.abs(my)) { mode = 1; if (openSwipe && openSwipe !== wrap) closeSwipe(); } else if (Math.abs(my) > 8) mode = -1; }
+    if (mode !== 1) return;
+    if (ev && ev.cancelable) ev.preventDefault();
+    let v = base + mx; if (v > OPEN) v = OPEN + (v - OPEN) * 0.5;
+    set(v, false);
+  };
+  const end = () => {
+    if (mode === -1) return;
+    if (mode === 0) { if (dx > 0) { closeSwipe(); set(0, true); } else onTap(); return; }
+    const w = wrap.offsetWidth, flick = Date.now() - t0 < 300;
+    if (dx > w * 0.6) { set(w, true); wrap.classList.add('gone'); setTimeout(onDelete, 220); }
+    else if (dx > 30 || (flick && dx > 12)) { set(OPEN, true); openSwipe = wrap; }
+    else { set(0, true); if (openSwipe === wrap) openSwipe = null; }
+  };
+  row.addEventListener('touchstart', e => { const t = e.touches[0]; if (!start(t.clientX, t.clientY, e.target)) mode = -1; }, { passive: true });
+  row.addEventListener('touchmove', e => { const t = e.touches[0]; move(t.clientX, t.clientY, e); }, { passive: false });
+  row.addEventListener('touchend', e => { if (e.target.closest('.cb,.note-line')) return; e.preventDefault(); end(); });
+  // Maus/Trackpad am Mac
+  let mdown = false;
+  row.addEventListener('mousedown', e => { mdown = start(e.clientX, e.clientY, e.target); });
+  window.addEventListener('mousemove', e => { if (mdown) move(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', () => { if (mdown) { mdown = false; end(); } });
 }
-document.addEventListener('pointerdown', e => { if (openSwipe && !e.target.closest('.swipe')) closeSwipe(); });
+document.addEventListener('touchstart', e => { if (openSwipe && !openSwipe.contains(e.target)) closeSwipe(); }, { passive: true });
+document.addEventListener('mousedown', e => { if (openSwipe && !openSwipe.contains(e.target)) closeSwipe(); });
 function editQty(i) {
   const q = h('input', { class: 'inp', value: i.qty || '', placeholder: 'z. B. 2 oder 500 g', enterkeyhint: 'done' });
   const save = () => { closeSheet(); queue('items/' + i.id, () => db.collection('items').doc(i.id).update({ qty: q.value.trim(), fromDish: false })); };
@@ -681,20 +697,20 @@ function renderRec() {
     const q = norm(inp.value); recQuery = inp.value;
     // Kacheln
     const allTags = new Set(); recipes.forEach(r => tagsOf(r).forEach(t => allTags.add(t)));
-    const tileNames = ['Favoriten', 'Lange nicht gekocht', 'Proteinreich', 'Fleischgerichte', 'Fisch', 'Vegetarisch', 'Vegan', 'Pasta', 'Italienisch', 'Asiatisch', ...USER_TAGS.filter(t => !['Italienisch', 'Asiatisch'].includes(t))];
-    [...allTags].filter(t => !tileNames.includes(t)).sort().forEach(t => tileNames.push(t));
+    const tileNames = ['Favoriten', 'Proteinreich', 'Vegetarisch', 'Fleischgerichte', 'Italienisch', 'Asiatisch', 'Schnell', 'Lange nicht gekocht'];
     const lim21 = ymd(addDays(new Date(), -21)), today0 = ymd(new Date());
     const countOf = t => t === 'Favoriten' ? recipes.filter(r => r.fav).length : t === 'Lange nicht gekocht' ? recipes.filter(r => (lastCooked(r) || '0') <= lim21 && !plan.some(p => p.recipeId === r.id && p.date > today0)).length : recipes.filter(r => tagsOf(r).includes(t)).length;
-    tiles.replaceChildren(...tileNames.map((t, i) => h('button', { type: 'button', class: 'tile' + (recFilter === t ? ' on' : ''), style: `background:${TILE_STYLE[t] || ['linear-gradient(135deg,#5B8CFF,#A9C1FF)', 'linear-gradient(135deg,#C95683,#F3A6C3)', 'linear-gradient(135deg,#24869C,#8FD3E0)'][i % 3]}`, onclick: () => { recFilter = recFilter === t ? '' : t; draw(); window.scrollTo({ top: 0, behavior: 'smooth' }); } }, h('span', { text: t }), h('span', { class: 'tcount', text: String(countOf(t)) }))));
-    head.replaceChildren(...(recFilter ? [h('b', { text: recFilter }), h('button', { class: 'btn s sm', onclick: () => { recFilter = ''; draw(); } }, 'Alle Rezepte')] : []));
-    head.classList.toggle('hidden', !recFilter);
+    tiles.replaceChildren(...tileNames.map((t, i) => h('button', { type: 'button', class: 'tile v' + i + (recFilter === t ? ' on' : ''), style: `background:${TILE_STYLE[t] || ['linear-gradient(135deg,#5B8CFF,#A9C1FF)', 'linear-gradient(135deg,#C95683,#F3A6C3)', 'linear-gradient(135deg,#24869C,#8FD3E0)'][i % 3]}`, onclick: () => { recFilter = recFilter === t ? '' : t; draw(); window.scrollTo({ top: 0, behavior: 'smooth' }); } }, h('span', { text: t }), h('span', { class: 'tcount', text: String(countOf(t)) }))));
+    head.replaceChildren(...(recFilter ? [h('b', { text: recFilter }), h('button', { class: 'btn s sm', onclick: () => { recFilter = ''; draw(); } }, 'Alle Rezepte')] : [h('b', { text: 'Alle Rezepte' }), h('span', { class: 'muted', text: 'oft gekocht zuerst' })]));
+    head.classList.toggle('hidden', !recipes.length);
     tiles.classList.toggle('hidden', !tileNames.length);
     let list = recipes.filter(r => !q || norm(r.title).includes(q) || (r.ingredients || []).some(g => norm(g.name).includes(q)));
     const today = ymd(new Date());
     if (recFilter === 'Favoriten') list = list.filter(r => r.fav);
     else if (recFilter === 'Lange nicht gekocht') { const lim = ymd(addDays(new Date(), -21)); list = list.filter(r => (lastCooked(r) || '0') <= lim && !plan.some(p => p.recipeId === r.id && p.date > today)).sort((a, b) => (lastCooked(a) || '0').localeCompare(lastCooked(b) || '0')); }
     else if (recFilter) list = list.filter(r => tagsOf(r).includes(recFilter));
-    if (recFilter !== 'Lange nicht gekocht') list.sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || a.title.localeCompare(b.title, 'de'));
+    const freq = r => plan.filter(p => p.recipeId === r.id).length;
+    if (recFilter !== 'Lange nicht gekocht') list.sort((a, b) => freq(b) - freq(a) || (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || a.title.localeCompare(b.title, 'de'));
     listEl.replaceChildren(...list.map((r, i) => recCard(r, i)));
     if (!list.length) listEl.append(recFilter ? emptyArt('Noch keine Rezepte in dieser Kategorie') : recipes.length ? grey('Nichts gefunden') : emptyArt('Noch keine Rezepte'));
   };
