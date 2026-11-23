@@ -35,16 +35,17 @@ input,textarea,select{font-size:16px}
 .blobs{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
 .blobs i{position:absolute;display:block}
 .blobs .b3,.blobs .b4{display:none}
-.blobs i{width:74vw;max-width:440px;aspect-ratio:1.1;transition:all .4s ease}
+.blobs{--bw:min(74vw,440px);--bh:calc(var(--bw) / 1.1)}
+.blobs i{width:var(--bw);height:var(--bh);transition:left .6s cubic-bezier(.3,.9,.3,1.08),top .6s cubic-bezier(.3,.9,.3,1.08),border-radius .6s ease,background-color .5s ease,opacity .5s ease}
 /* Essenswoche: oben rechts und unten links, jeweils vom Rand angeschnitten */
-.blobs .b1{right:-34vw;top:16%;background:var(--rosa);opacity:.55;border-radius:58% 42% 61% 39% / 47% 58% 42% 53%}
-.blobs .b2{left:-36vw;bottom:calc(var(--bot) + 6%);background:var(--blue-l);opacity:.8;border-radius:43% 57% 38% 62% / 56% 41% 59% 44%}
+.blobs .b1{left:calc(100% - var(--bw) * .54);top:16%;background:var(--rosa);opacity:.55;border-radius:58% 42% 61% 39% / 47% 58% 42% 53%}
+.blobs .b2{left:calc(var(--bw) * -.49);top:calc(100% - var(--bot) - 6% - var(--bh));background:var(--blue-l);opacity:.8;border-radius:43% 57% 38% 62% / 56% 41% 59% 44%}
 /* Einkaufsliste: gespiegelt */
-body[data-tab=list] .blobs .b1{right:auto;left:-36vw;top:24%;background:var(--blue-l);opacity:.8}
-body[data-tab=list] .blobs .b2{left:auto;right:-34vw;bottom:calc(var(--bot) + 4%);background:var(--rosa);opacity:.55}
+body[data-tab=list] .blobs .b1{left:calc(var(--bw) * -.49);top:24%;background:var(--blue-l);opacity:.8;border-radius:41% 59% 47% 53% / 60% 44% 56% 40%}
+body[data-tab=list] .blobs .b2{left:calc(100% - var(--bw) * .54);top:calc(100% - var(--bot) - 4% - var(--bh));background:var(--rosa);opacity:.55;border-radius:62% 38% 55% 45% / 42% 57% 43% 58%}
 /* Rezepte: beide unterhalb der Kategorien */
-body[data-tab=rec] .blobs .b1{top:auto;right:auto;left:-38vw;bottom:calc(var(--bot) + 30%);background:var(--blue-l);opacity:.8}
-body[data-tab=rec] .blobs .b2{left:auto;right:-36vw;bottom:calc(var(--bot) - 4%);background:var(--rosa);opacity:.55}
+body[data-tab=rec] .blobs .b1{left:calc(var(--bw) * -.51);top:calc(100% - var(--bot) - 30% - var(--bh));background:var(--blue-l);opacity:.8;border-radius:52% 48% 40% 60% / 45% 60% 40% 55%}
+body[data-tab=rec] .blobs .b2{left:calc(100% - var(--bw) * .51);top:calc(100% - var(--bot) + 4% - var(--bh));background:var(--rosa);opacity:.55;border-radius:47% 53% 63% 37% / 55% 45% 55% 45%}
 
 header{position:sticky;top:0;z-index:5;padding:calc(var(--top) + 14px) 18px 12px;background:linear-gradient(var(--bg) 78%,var(--bg0))}
 .hrow{display:flex;align-items:center;gap:12px}
@@ -446,25 +447,25 @@ button:active,.chip:active,.tile:active,.schip:active,.day:active,.mday:active{t
 .jfill{position:absolute;left:0;right:0;bottom:0;height:var(--lvl);background:linear-gradient(180deg,var(--j1),var(--j2));opacity:.62;animation:fillup .9s cubic-bezier(.2,.8,.2,1) backwards;transition:none}
 .jfill::before{display:none}
 @keyframes fillup{from{height:0}}
-.wave{position:absolute;left:0;top:-9px;width:200%;height:10px;color:var(--j1);animation:wave 3.2s linear infinite}
-.wave.b{top:-6px;opacity:.55;animation-duration:5s;animation-direction:reverse}
+.wave{position:absolute;left:0;top:-9px;width:200%;height:10px;color:var(--j1)}
+.wave.b{top:-6px;opacity:.55;transform:translateX(-12%)}
 .wave svg{display:block;width:100%;height:100%}.wave path{fill:currentColor}
 @keyframes wave{to{transform:translateX(-50%)}}
-.bub{position:absolute;bottom:4px;width:var(--s);height:var(--s);border-radius:50%;background:rgba(255,255,255,.75);animation:bub 3.4s ease-in infinite;opacity:0}
+.bubl{display:none;position:absolute;bottom:4px;width:var(--s);height:var(--s);border-radius:50%;background:rgba(255,255,255,.75);animation:bub 3.4s ease-in infinite;opacity:0}
 @keyframes bub{0%{transform:translateY(0);opacity:0}15%{opacity:.9}100%{transform:translateY(-70px);opacity:0}}
 .jar{box-shadow:0 8px 22px -6px color-mix(in srgb,var(--jg) 38%,transparent),inset 0 0 0 1.5px color-mix(in srgb,var(--jg) 18%,transparent);animation:pop .45s cubic-bezier(.2,.9,.3,1.25) backwards}
 @keyframes pop{from{transform:scale(.82);opacity:0}}
 .jar .jpct{font-size:19px}
 .rephero{padding:8px 0 4px}
-.rephero::before{width:250px;height:140px;background:linear-gradient(120deg,#8FB0FF,#C9A8FF 50%,#FFB3D0);opacity:.55;filter:blur(2px);animation:morph 9s ease-in-out infinite alternate}
+.rephero::before{width:250px;height:140px;background:linear-gradient(120deg,#8FB0FF,#C9A8FF 50%,#FFB3D0);opacity:.55;filter:blur(2px);}
 @keyframes morph{0%{border-radius:58% 42% 61% 39% / 47% 58% 42% 53%;transform:translateX(-50%) rotate(0)}50%{border-radius:40% 60% 45% 55% / 60% 40% 60% 40%;transform:translateX(-50%) rotate(8deg) scale(1.05)}100%{border-radius:62% 38% 52% 48% / 42% 55% 45% 58%;transform:translateX(-50%) rotate(-6deg)}}
 .rhnum{font-size:54px;background:linear-gradient(120deg,#2F5BFF,#8A4DFF 55%,#F0609B);-webkit-background-clip:text;background-clip:text;color:transparent}
 .seg button.on{background:linear-gradient(135deg,#5B7FFF,#8A5BFF);box-shadow:0 6px 16px -6px rgba(91,127,255,.8)}
 .nutpage{position:relative}
 .nuthero{position:relative;padding:6px 0 10px}
-.nhglow{position:absolute;left:-30px;top:-30px;width:190px;height:190px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--jg) 45%,transparent),transparent 68%);filter:blur(10px);animation:breathe 4s ease-in-out infinite alternate;pointer-events:none}
+.nhglow{position:absolute;left:-30px;top:-30px;width:190px;height:190px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--jg) 45%,transparent),transparent 68%);filter:blur(10px);pointer-events:none}
 @keyframes breathe{to{transform:scale(1.12);opacity:.7}}
-.nhjar{width:116px;height:134px;box-shadow:0 14px 30px -10px color-mix(in srgb,var(--jg) 60%,transparent),inset 0 0 0 2px color-mix(in srgb,var(--jg) 22%,transparent);animation:morphj 7s ease-in-out infinite alternate}
+.nhjar{width:116px;height:134px;box-shadow:0 14px 30px -10px color-mix(in srgb,var(--jg) 60%,transparent),inset 0 0 0 2px color-mix(in srgb,var(--jg) 22%,transparent)}
 @keyframes morphj{0%{border-radius:46% 54% 42% 58% / 38% 40% 60% 62%}100%{border-radius:56% 44% 52% 48% / 44% 52% 48% 56%}}
 .nhjar .jfill{opacity:.85}
 .nhpct{font-size:28px;text-shadow:0 1px 0 rgba(255,255,255,.6)}
@@ -478,7 +479,7 @@ button:active,.chip:active,.tile:active,.schip:active,.day:active,.mday:active{t
 @keyframes grow{from{transform:scaleX(0)}}
 .nutpage .pill{opacity:1;background:linear-gradient(135deg,#E4ECFF,#EFE4FF);color:#4A4FD8}
 .nutpage .pill.t{background:linear-gradient(135deg,#FFE2EE,#FFEFE2);color:#C2407A}
-.btn.grad{background:linear-gradient(135deg,#4C74FF,#8A5BFF 60%,#E66AB0);color:#fff;box-shadow:0 10px 24px -10px rgba(110,90,255,.9);background-size:150% 150%;animation:shine 6s ease-in-out infinite alternate}
+.btn.grad{background:linear-gradient(135deg,#4C74FF,#8A5BFF 60%,#E66AB0);color:#fff;box-shadow:0 10px 24px -10px rgba(110,90,255,.9);background-size:150% 150%}
 @keyframes shine{to{background-position:100% 100%}}
 html.dark .nutpage .pill{background:linear-gradient(135deg,#26305A,#33285A);color:#C9CFFF}
 html.dark .nutpage .pill.t{background:linear-gradient(135deg,#4A2438,#4A3324);color:#FFC2DA}
@@ -519,7 +520,7 @@ html.dark .rhnum{background:linear-gradient(120deg,#8FB0FF,#C4A0FF 55%,#FF9CC6);
 .btn.big{padding:16px 20px;font-size:17px}
 .btn.big .fa{width:18px;height:18px;fill:#fff}
 .pcta{text-align:center;padding:20px 8px 6px;position:relative}
-.pctaart{width:120px;height:110px;margin:0 auto 14px;border-radius:58% 42% 61% 39% / 47% 58% 42% 53%;background:linear-gradient(135deg,#8FB0FF,#C9A8FF 55%,#FFB3D0);animation:morph 8s ease-in-out infinite alternate;box-shadow:0 18px 40px -16px rgba(120,100,255,.7)}
+.pctaart{width:120px;height:110px;margin:0 auto 14px;border-radius:58% 42% 61% 39% / 47% 58% 42% 53%;background:linear-gradient(135deg,#8FB0FF,#C9A8FF 55%,#FFB3D0);box-shadow:0 18px 40px -16px rgba(120,100,255,.7)}
 .pcta h3{margin:0 0 8px;font-size:20px}.pcta p{color:var(--ink2);line-height:1.5;margin:0 0 16px}
 .fsec{background:var(--card);border-radius:30px 24px 28px 22px / 24px 30px 22px 28px;padding:14px 14px 16px;margin-bottom:12px;box-shadow:0 6px 20px -12px var(--shadow)}
 .fsec h3{margin:0 0 10px 4px;font-size:16px}
@@ -548,7 +549,7 @@ html.dark .pill.addp{background:linear-gradient(135deg,#26305A,#33285A);color:#C
 .dplan{margin-bottom:12px}.dplan:last-child{margin-bottom:0}
 .dpt{font-weight:700;margin:0 4px 8px}
 .micwrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin:4px 0 14px}
-.micbtn{position:relative;width:84px;height:84px;border:0;border-radius:46% 54% 50% 50% / 52% 46% 54% 48%;background:linear-gradient(135deg,#4C74FF,#8A5BFF 60%,#E66AB0);box-shadow:0 14px 30px -12px rgba(110,90,255,.9);cursor:pointer;display:flex;align-items:center;justify-content:center;animation:morphj 6s ease-in-out infinite alternate}
+.micbtn{position:relative;width:84px;height:84px;border:0;border-radius:46% 54% 50% 50% / 52% 46% 54% 48%;background:linear-gradient(135deg,#4C74FF,#8A5BFF 60%,#E66AB0);box-shadow:0 14px 30px -12px rgba(110,90,255,.9);cursor:pointer;display:flex;align-items:center;justify-content:center}
 .micbtn .fa{width:30px;height:30px;fill:#fff}
 .micbtn.rec{background:linear-gradient(135deg,#F0609B,#FF8A5B)}
 .micbtn.rec::before,.micbtn.rec::after{content:'';position:absolute;inset:-6px;border-radius:inherit;border:3px solid #F0609B;animation:ring 1.4s ease-out infinite;opacity:0}

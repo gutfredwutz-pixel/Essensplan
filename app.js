@@ -1223,7 +1223,7 @@ const WAVE = '<svg viewBox="0 0 120 12" preserveAspectRatio="none"><path d="M0 6
 function fill(lvl, bubbles) {
   const f = h('span', { class: 'jfill', style: `--lvl:${lvl}%` });
   const w1 = h('span', { class: 'wave' }); w1.innerHTML = WAVE; const w2 = h('span', { class: 'wave b' }); w2.innerHTML = WAVE; f.append(w1, w2);
-  if (bubbles && lvl > 12) for (let k = 0; k < 5; k++) f.append(h('i', { class: 'bub', style: `left:${12 + k * 17}%;animation-delay:${k * 0.7}s;--s:${4 + (k % 3) * 2}px` }));
+  if (bubbles && lvl > 12) for (let k = 0; k < 5; k++) f.append(h('i', { class: 'bubl', style: `left:${12 + k * 17}%;animation-delay:${k * 0.7}s;--s:${4 + (k % 3) * 2}px` }));
   return f;
 }
 function countUp(el, to, fmt) {
