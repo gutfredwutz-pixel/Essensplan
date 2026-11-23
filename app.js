@@ -676,12 +676,11 @@ function renderRec() {
     const q = norm(inp.value); recQuery = inp.value;
     // Kacheln
     const allTags = new Set(); recipes.forEach(r => tagsOf(r).forEach(t => allTags.add(t)));
-    const tileNames = [];
-    if (recipes.some(r => r.fav)) tileNames.push('Favoriten');
-    if (recipes.length >= 3) tileNames.push('Lange nicht gekocht');
-    ['Proteinreich', 'Fleischgerichte', 'Fisch', 'Vegetarisch', 'Vegan', 'Pasta', 'Italienisch', 'Asiatisch'].forEach(t => allTags.has(t) && tileNames.push(t));
+    const tileNames = ['Favoriten', 'Lange nicht gekocht', 'Proteinreich', 'Fleischgerichte', 'Fisch', 'Vegetarisch', 'Vegan', 'Pasta', 'Italienisch', 'Asiatisch', ...USER_TAGS.filter(t => !['Italienisch', 'Asiatisch'].includes(t))];
     [...allTags].filter(t => !tileNames.includes(t)).sort().forEach(t => tileNames.push(t));
-    tiles.replaceChildren(...tileNames.map((t, i) => h('button', { type: 'button', class: 'tile' + (recFilter === t ? ' on' : ''), style: `background:${TILE_STYLE[t] || ['linear-gradient(135deg,#5B8CFF,#A9C1FF)', 'linear-gradient(135deg,#C95683,#F3A6C3)', 'linear-gradient(135deg,#24869C,#8FD3E0)'][i % 3]}`, onclick: () => { recFilter = recFilter === t ? '' : t; draw(); window.scrollTo({ top: 0, behavior: 'smooth' }); } }, h('span', { text: t }))));
+    const lim21 = ymd(addDays(new Date(), -21)), today0 = ymd(new Date());
+    const countOf = t => t === 'Favoriten' ? recipes.filter(r => r.fav).length : t === 'Lange nicht gekocht' ? recipes.filter(r => (lastCooked(r) || '0') <= lim21 && !plan.some(p => p.recipeId === r.id && p.date > today0)).length : recipes.filter(r => tagsOf(r).includes(t)).length;
+    tiles.replaceChildren(...tileNames.map((t, i) => h('button', { type: 'button', class: 'tile' + (recFilter === t ? ' on' : ''), style: `background:${TILE_STYLE[t] || ['linear-gradient(135deg,#5B8CFF,#A9C1FF)', 'linear-gradient(135deg,#C95683,#F3A6C3)', 'linear-gradient(135deg,#24869C,#8FD3E0)'][i % 3]}`, onclick: () => { recFilter = recFilter === t ? '' : t; draw(); window.scrollTo({ top: 0, behavior: 'smooth' }); } }, h('span', { text: t }), h('span', { class: 'tcount', text: String(countOf(t)) }))));
     head.replaceChildren(...(recFilter ? [h('b', { text: recFilter }), h('button', { class: 'btn s sm', onclick: () => { recFilter = ''; draw(); } }, 'Alle Rezepte')] : []));
     head.classList.toggle('hidden', !recFilter);
     tiles.classList.toggle('hidden', !tileNames.length);
@@ -692,7 +691,7 @@ function renderRec() {
     else if (recFilter) list = list.filter(r => tagsOf(r).includes(recFilter));
     if (recFilter !== 'Lange nicht gekocht') list.sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || a.title.localeCompare(b.title, 'de'));
     listEl.replaceChildren(...list.map((r, i) => recCard(r, i)));
-    if (!list.length) listEl.append(recipes.length ? grey('Nichts gefunden') : emptyArt('Noch keine Rezepte'));
+    if (!list.length) listEl.append(recFilter ? emptyArt('Noch keine Rezepte in dieser Kategorie') : recipes.length ? grey('Nichts gefunden') : emptyArt('Noch keine Rezepte'));
   };
   inp.addEventListener('input', draw);
   wrap.append(h('div', { class: 'addbar' }, inp, h('button', { class: 'ib p big', 'aria-label': 'Neues Rezept', onclick: () => openRecipe({ title: '', ingredients: [], steps: [], servings: '2' }) }, ic('plus'))), tiles, head, listEl);
