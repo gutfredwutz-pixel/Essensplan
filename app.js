@@ -850,7 +850,7 @@ function renderRec() {
     const lim21 = ymd(addDays(new Date(), -21)), today0 = ymd(new Date());
     const countOf = t => t === 'Favoriten' ? recipes.filter(r => r.fav).length : t === 'Lange nicht gekocht' ? recipes.filter(r => (lastCooked(r) || '0') <= lim21 && !plan.some(p => p.recipeId === r.id && p.date > today0)).length : recipes.filter(r => tagsOf(r).includes(t)).length;
     tiles.replaceChildren(...tileNames.map((t, i) => h('button', { type: 'button', class: 'tile v' + i + (recFilter === t ? ' on' : ''), style: `background:${TILE_STYLE[t] || ['linear-gradient(135deg,#5B8CFF,#A9C1FF)', 'linear-gradient(135deg,#C95683,#F3A6C3)', 'linear-gradient(135deg,#24869C,#8FD3E0)'][i % 3]}`, onclick: () => { recFilter = recFilter === t ? '' : t; draw(); window.scrollTo({ top: 0, behavior: 'smooth' }); } }, h('span', { text: t }), h('span', { class: 'tcount', text: String(countOf(t)) }))));
-    head.replaceChildren(...(recFilter ? [h('b', { text: recFilter }), h('button', { class: 'btn s sm', onclick: () => { recFilter = ''; draw(); } }, 'Alle Rezepte')] : [h('b', { text: 'Alle Rezepte' }), h('span', { class: 'muted', text: 'oft gekocht zuerst' })]));
+    head.replaceChildren(...(recFilter ? [h('b', { text: recFilter }), h('button', { class: 'btn s sm', onclick: () => { recFilter = ''; draw(); } }, 'Alle Rezepte')] : [h('b', { text: 'Alle Rezepte' })]));
     head.classList.toggle('hidden', !recipes.length);
     tiles.classList.toggle('hidden', !tileNames.length);
     let list = recipes.filter(r => !q || norm(r.title).includes(q) || (r.ingredients || []).some(g => norm(g.name).includes(q)));
