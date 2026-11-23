@@ -149,7 +149,12 @@ function openProfileEdit(name, back) {
   const draw = () => {
     const nd = needsOf(pf);
     const segOf = (key, opts) => h('div', { class: 'seg wide' + (opts.some(o => o[1].length > 12) ? ' sm' : '') }, ...opts.map(([v, t]) => h('button', { class: (pf[key] === v || (key === 'rate' && pf.rate == null && v === (pf.goal === 'zu' ? 0.25 : 0.5))) ? 'on' : '', onclick: () => { pf[key] = v; draw(); } }, t)));
-    const num = (key, lbl, unit, ph, opt) => { const i = h('input', { class: 'podin', type: 'number', inputmode: 'decimal', value: pf[key] ?? '', placeholder: ph }); const pod = h('label', { class: 'pod' + (pf[key] ? '' : opt ? ' opt' : ' empty') }, i, h('span', { text: lbl + (unit ? ' in ' + unit : '') })); i.addEventListener('input', () => { pf[key] = i.value; pod.classList.toggle('empty', !i.value && !opt); pod.classList.toggle('opt', !i.value && !!opt); res.replaceChildren(...resKids()); }); return pod; };
+    const num = (key, lbl, unit, ph, opt) => {
+      const i = h('input', { class: 'fin', type: 'number', inputmode: 'decimal', value: pf[key] ?? '', placeholder: ph });
+      const row = h('label', { class: 'frow' + (pf[key] ? '' : opt ? ' opt' : ' empty') }, h('span', { class: 'fl', text: lbl }), h('span', { class: 'fv' }, i, h('span', { class: 'fu', text: unit || '' })));
+      i.addEventListener('input', () => { pf[key] = i.value; row.classList.toggle('empty', !i.value && !opt); row.classList.toggle('opt', !i.value && !!opt); res.replaceChildren(...resKids()); });
+      return row;
+    };
     const resKids = () => {
       const n = needsOf(pf); const ln = (a, b) => h('div', { class: 'resl' }, h('span', { text: a }), h('b', { text: b }));
       return [h('div', { class: 'reskcal', text: fmtInt(n.kcal) + ' kcal' }), h('div', { class: 'muted', style: 'margin-bottom:10px', text: 'am Tag' }),
@@ -180,9 +185,8 @@ function openProfileEdit(name, back) {
     openSheet('Angaben von ' + name, [
       h('div', { class: 'muted', style: 'margin:-4px 4px 14px', text: 'Daraus schätzt die App deinen Bedarf. In der App siehst du nur deine eigene Auswertung.' }),
       h('div', { class: 'fsec' }, h('h3', { text: 'Körper' }), segOf('sex', [['w', 'Weiblich'], ['m', 'Männlich']]),
-        h('div', { class: 'pods' }, num('age', 'Alter', '', '?'), num('height', 'Größe', 'cm', '?'), num('weight', 'Gewicht', 'kg', '?')),
-        h('div', { class: 'pods two' }, num('bodyFat', 'Körperfett', '%', 'optional', true), num('steps', 'Schritte pro Tag', '', 'optional', true)),
-        h('div', { class: 'muted', style: 'margin:10px 4px 0;font-size:12.5px', text: 'Körperfett geschätzt reicht. Damit rechnet die App über die Muskelmasse, das ist genauer. Schritte am besten als Durchschnitt aus der Health-App.' })),
+        h('div', { class: 'frows' }, num('age', 'Alter', 'Jahre', '–'), num('height', 'Größe', 'cm', '–'), num('weight', 'Gewicht', 'kg', '–'), num('bodyFat', 'Körperfett, geschätzt', '%', 'optional', true), num('steps', 'Schritte pro Tag', '', 'optional', true)),
+        h('div', { class: 'muted', style: 'margin:10px 4px 0;font-size:12.5px', text: 'Mit Körperfett rechnet die App über die Muskelmasse, das ist genauer. Schritte am besten als Durchschnitt aus der Health-App.' })),
       h('div', { class: 'fsec' }, h('h3', { text: 'Arbeit und Alltag' }), pals),
       h('div', { class: 'fsec' }, h('h3', { text: 'Sport' }), sport, segOf('sportI', [[1, 'Locker'], [2, 'Mittel'], [3, 'Intensiv']]), h('div', { style: 'height:8px' }), segOf('train', [['kraft', 'Kraft'], ['mix', 'Gemischt'], ['ausdauer', 'Ausdauer']])),
       h('div', { class: 'fsec' }, h('h3', { text: 'Ziel' }), segOf('goal', [['halten', 'Halten'], ['ab', 'Abnehmen'], ['zu', 'Zunehmen']]),

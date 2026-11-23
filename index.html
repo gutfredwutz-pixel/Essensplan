@@ -656,6 +656,19 @@ html.dark .pill,html.dark .pill.t{color:#B9C6FF}
 .pcta h3{font-size:18px;margin:0 0 8px}
 .pcta p{font-size:15px;margin:0 auto 18px;max-width:300px}
 .pcta .btn{width:100%}
+
+/* Angaben als Zeilen statt runder Felder */
+.frows{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.frow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-radius:999px;background:color-mix(in srgb,#5B7FFF 8%,var(--card));box-shadow:inset 0 0 0 1.5px color-mix(in srgb,#5B7FFF 16%,transparent);cursor:text;transition:background .2s,box-shadow .2s}
+.fl{font-size:15px;font-weight:600;color:var(--ink)}
+.fv{display:flex;align-items:baseline;gap:6px}
+.fin{width:76px;border:0;background:none;text-align:right;font:inherit;font-size:20px;font-weight:800;color:var(--ink);outline:none;padding:0;-moz-appearance:textfield}
+.fin::-webkit-outer-spin-button,.fin::-webkit-inner-spin-button{-webkit-appearance:none}
+.fu{font-size:14px;color:var(--ink3);font-weight:600;min-width:36px}
+.frow.empty{background:linear-gradient(135deg,color-mix(in srgb,#5B7FFF 14%,var(--card)),color-mix(in srgb,#B06BFF 14%,var(--card)));box-shadow:inset 0 0 0 2px color-mix(in srgb,#7B5CFF 55%,transparent),0 8px 18px -12px rgba(110,90,255,.7)}
+.frow.empty .fl{color:#4F45D0}.frow.empty .fin::placeholder{color:#7B5CFF}
+.frow.opt .fin::placeholder{color:#8B7BE8;font-size:14px;font-weight:600}
+html.dark .frow.empty .fl{color:#C4B5FF}
 .hidden{display:none!important}
 </style>
 </head>
