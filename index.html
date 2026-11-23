@@ -526,8 +526,8 @@ html.dark .rhnum{background:linear-gradient(120deg,#8FB0FF,#C4A0FF 55%,#FF9CC6);
 .fsec{background:var(--card);border-radius:30px 24px 28px 22px / 24px 30px 22px 28px;padding:14px 14px 16px;margin-bottom:12px;box-shadow:0 6px 20px -12px var(--shadow)}
 .fsec h3{margin:0 0 10px 4px;font-size:16px}
 .pods{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
-.pod{display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--bg);border-radius:44% 56% 48% 52% / 40% 44% 56% 60%;padding:16px 6px 14px}
-.pod span{font-size:12px;color:var(--ink3);font-weight:600;text-align:center}
+.pod{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-width:0;overflow:hidden;background:var(--bg);border-radius:44% 56% 48% 52% / 40% 44% 56% 60%;padding:16px 6px 14px}
+.pod span{font-size:12px;color:var(--ink3);font-weight:600;text-align:center;line-height:1.25;max-width:100%;overflow-wrap:anywhere;padding:0 8px}
 .podin{width:100%;border:0;background:none;text-align:center;font:inherit;font-size:26px;font-weight:800;color:var(--ink);outline:none;-moz-appearance:textfield}
 .podin::-webkit-outer-spin-button,.podin::-webkit-inner-spin-button{-webkit-appearance:none}
 .podin.sm{width:90px;font-size:20px;background:var(--bg);border-radius:999px;padding:6px 10px}
@@ -584,8 +584,14 @@ html.dark .pill.addp{background:linear-gradient(135deg,#26305A,#33285A);color:#C
 .pod.empty{background:linear-gradient(135deg,color-mix(in srgb,#5B7FFF 14%,var(--card)),color-mix(in srgb,#B06BFF 14%,var(--card)));box-shadow:inset 0 0 0 2px color-mix(in srgb,#7B5CFF 55%,transparent),0 8px 18px -10px rgba(110,90,255,.7)}
 .pod.empty .podin::placeholder{color:#7B5CFF;opacity:.8}
 .pod.empty span{color:#5B4FD8}
-.pod.opt{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,#7B5CFF 25%,transparent)}
+.pod.opt{background:color-mix(in srgb,#7B5CFF 7%,var(--card));box-shadow:inset 0 0 0 1.5px color-mix(in srgb,#7B5CFF 30%,transparent)}
+.pod.opt span{color:#6A5BD8}.pod.opt .podin::placeholder{color:#8B7BE8;opacity:.75}
+.pods.two .pod{padding:16px 14px 14px}
 html.dark .pod.empty span,html.dark .pod.empty .podin::placeholder{color:#C4B5FF}
+.pod{background:color-mix(in srgb,#5B7FFF 9%,var(--card));box-shadow:inset 0 0 0 1.5px color-mix(in srgb,#5B7FFF 18%,transparent)}
+.pod span{color:#4A63C9}
+.palopt:not(.on),.supp{background:color-mix(in srgb,#5B7FFF 7%,var(--card))}
+html.dark .pod span{color:#A9BBFF}
 .varrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 4px 8px}
 .varl{font-size:12.5px;color:var(--ink3);font-weight:600;margin-right:2px}
 .varb{border:0;border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;background:color-mix(in srgb,#7B5CFF 10%,var(--card));color:var(--ink2);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,#7B5CFF 25%,transparent)}

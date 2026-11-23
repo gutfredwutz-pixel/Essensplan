@@ -87,7 +87,7 @@ const covState = p => p >= 85 ? 'good' : p >= 60 ? 'ok' : 'low';
 function whoSeg(cur, start) {
   return h('div', { class: 'seg wide whoseg' },
     h('button', { class: cur === '' ? 'on' : '', onclick: () => openReport(start) }, 'Wochenplan'),
-    ...personNames().map(n => h('button', { class: cur === n ? 'on' : '', onclick: () => openPersonReport(n, start) }, h('span', { class: 'pdot', style: `background:${colorOf(n)}` }), n)));
+    ...[me() || personNames()[0]].map(n => h('button', { class: cur === n ? 'on' : '', onclick: () => openPersonReport(n, start) }, h('span', { class: 'pdot', style: `background:${colorOf(n)}` }), n)));
 }
 
 /* ---- Persönliche Auswertung ---- */
@@ -176,11 +176,11 @@ function openProfileEdit(name, back) {
     } }, 'Speichern');
     const sh = $('#sheet'); const sc = sh.scrollTop;
     openSheet('Angaben von ' + name, [
-      h('div', { class: 'muted', style: 'margin:-4px 4px 14px', text: 'Daraus schätzt die App deinen Bedarf. Ihr seht im Haushalt beide, was hier steht.' }),
+      h('div', { class: 'muted', style: 'margin:-4px 4px 14px', text: 'Daraus schätzt die App deinen Bedarf. In der App siehst du nur deine eigene Auswertung.' }),
       h('div', { class: 'fsec' }, h('h3', { text: 'Körper' }), segOf('sex', [['w', 'Weiblich'], ['m', 'Männlich']]),
         h('div', { class: 'pods' }, num('age', 'Alter', '', '?'), num('height', 'Größe', 'cm', '?'), num('weight', 'Gewicht', 'kg', '?')),
-        h('div', { class: 'pods two' }, num('bodyFat', 'Körperfett geschätzt', '%', 'optional', true), num('steps', 'Schritte am Tag', '', 'optional', true)),
-        h('div', { class: 'muted', style: 'margin:10px 4px 0;font-size:12.5px', text: 'Mit Körperfett rechnet die App über die Muskelmasse, das ist genauer. Schritte am besten aus der Health-App, Durchschnitt der letzten Wochen.' })),
+        h('div', { class: 'pods two' }, num('bodyFat', 'Körperfett', '%', 'optional', true), num('steps', 'Schritte pro Tag', '', 'optional', true)),
+        h('div', { class: 'muted', style: 'margin:10px 4px 0;font-size:12.5px', text: 'Körperfett geschätzt reicht. Damit rechnet die App über die Muskelmasse, das ist genauer. Schritte am besten als Durchschnitt aus der Health-App.' })),
       h('div', { class: 'fsec' }, h('h3', { text: 'Arbeit und Alltag' }), pals),
       h('div', { class: 'fsec' }, h('h3', { text: 'Sport' }), sport, segOf('sportI', [[1, 'Locker'], [2, 'Mittel'], [3, 'Intensiv']]), h('div', { style: 'height:8px' }), segOf('train', [['kraft', 'Kraft'], ['mix', 'Gemischt'], ['ausdauer', 'Ausdauer']])),
       h('div', { class: 'fsec' }, h('h3', { text: 'Ziel' }), segOf('goal', [['halten', 'Halten'], ['ab', 'Abnehmen'], ['zu', 'Zunehmen']]),
