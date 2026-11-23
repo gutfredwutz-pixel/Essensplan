@@ -87,7 +87,7 @@ const covState = p => p >= 85 ? 'good' : p >= 60 ? 'ok' : 'low';
 function whoSeg(cur, start) {
   return h('div', { class: 'seg wide whoseg' },
     h('button', { class: cur === '' ? 'on' : '', onclick: () => openReport(start) }, 'Wochenplan'),
-    ...[me() || personNames()[0]].map(n => h('button', { class: cur === n ? 'on' : '', onclick: () => openPersonReport(n, start) }, h('span', { class: 'pdot', style: `background:${colorOf(n)}` }), n)));
+    ...[me() || personNames()[0]].map(n => h('button', { class: cur === n ? 'on' : '', onclick: () => openPersonReport(n, start) }, n)));
 }
 
 /* ---- Persönliche Auswertung ---- */
@@ -148,7 +148,7 @@ function openProfileEdit(name, back) {
   pf.supps = pf.supps || []; pf.train = pf.train || 'mix'; pf.diet = pf.diet || 'alles'; pf.smoker = pf.smoker || 'nein'; if (pf.special == null) pf.special = '';
   const draw = () => {
     const nd = needsOf(pf);
-    const segOf = (key, opts) => h('div', { class: 'seg wide' + (opts.length > 2 && opts.some(o => o[1].length > 9) ? ' sm' : '') }, ...opts.map(([v, t]) => h('button', { class: (pf[key] === v || (key === 'rate' && pf.rate == null && v === (pf.goal === 'zu' ? 0.25 : 0.5))) ? 'on' : '', onclick: () => { pf[key] = v; draw(); } }, t)));
+    const segOf = (key, opts) => h('div', { class: 'seg wide' + (opts.some(o => o[1].length > 12) ? ' sm' : '') }, ...opts.map(([v, t]) => h('button', { class: (pf[key] === v || (key === 'rate' && pf.rate == null && v === (pf.goal === 'zu' ? 0.25 : 0.5))) ? 'on' : '', onclick: () => { pf[key] = v; draw(); } }, t)));
     const num = (key, lbl, unit, ph, opt) => { const i = h('input', { class: 'podin', type: 'number', inputmode: 'decimal', value: pf[key] ?? '', placeholder: ph }); const pod = h('label', { class: 'pod' + (pf[key] ? '' : opt ? ' opt' : ' empty') }, i, h('span', { text: lbl + (unit ? ' in ' + unit : '') })); i.addEventListener('input', () => { pf[key] = i.value; pod.classList.toggle('empty', !i.value && !opt); pod.classList.toggle('opt', !i.value && !!opt); res.replaceChildren(...resKids()); }); return pod; };
     const resKids = () => {
       const n = needsOf(pf); const ln = (a, b) => h('div', { class: 'resl' }, h('span', { text: a }), h('b', { text: b }));
@@ -314,11 +314,11 @@ function openDiary(name, ds, back) {
   };
   const drawPlans = () => {
     const ps = planOn(ds);
-    planBox.replaceChildren(h('h3', { text: 'Aus dem Wochenplan' }), ...(ps.length ? ps.map(p => h('div', { class: 'dplan' }, h('div', { class: 'dpt', text: p.title + (recipeOf(p) ? '' : ' (ohne Rezept, zählt nicht mit)') }),
-      h('div', { class: 'seg wide sm' }, ...[[0, 'Nichts'], [0.25, '¼'], [0.5, '½'], [0.75, '¾'], [1, 'Ganz'], [1.5, '1½']].map(([v, t]) => h('button', { class: Math.abs((e.plans[p.id] ?? 1) - v) < 0.01 ? 'on' : '', onclick: () => { e.plans[p.id] = v; drawPlans(); drawSum(); } }, t))))) : [h('div', { class: 'muted', style: 'margin:0 4px', text: 'Für diesen Tag ist nichts geplant.' })]));
+    planBox.replaceChildren(h('h3', { text: 'Aus dem Wochenplan' }), ...(ps.length ? ps.map(p => h('div', { class: 'dplan' }, h('div', { class: 'dpt', text: p.title + (recipeOf(p) ? '' : ' (ohne Rezept, zählt nicht mit)') }), h('div', { class: 'muted', style: 'margin:-4px 4px 8px;font-size:12.5px', text: 'Wie viele Portionen hast du davon gegessen?' }),
+      h('div', { class: 'seg wide sm' }, ...[[0, '0'], [0.25, '¼'], [0.5, '½'], [0.75, '¾'], [1, '1'], [1.5, '1½']].map(([v, t]) => h('button', { class: Math.abs((e.plans[p.id] ?? 1) - v) < 0.01 ? 'on' : '', onclick: () => { e.plans[p.id] = v; drawPlans(); drawSum(); } }, t))))) : [h('div', { class: 'muted', style: 'margin:0 4px', text: 'Für diesen Tag ist nichts geplant.' })]));
   };
   const drawList = () => {
-    listBox.replaceChildren(...(e.foods.length ? [h('h3', { text: 'Erkannt' })] : []), ...e.foods.map((f, k) => {
+    listBox.className = e.foods.length ? 'fsec' : 'hidden'; listBox.replaceChildren(...(e.foods.length ? [h('h3', { text: 'Erkannt' })] : []), ...e.foods.map((f, k) => {
       const a = h('input', { class: 'damt', value: f.amt || '', placeholder: 'Menge' });
       const kc = h('span', { class: 'dkc', text: f.v && f.gr ? fmtInt(f.v[0] * f.gr / 100) + ' kcal' : '' });
       const grT = h('span', { class: 'dgr', text: f.gr ? `${fmtInt(f.gr)} g` : '' });
@@ -369,7 +369,7 @@ function openDiary(name, ds, back) {
     h('div', { class: 'pnav' }, h('button', { class: 'ib', 'aria-label': 'Tag davor', onclick: () => go(-1) }, ic('chevron-left')), h('div', null, h('span', { class: 'pdot', style: `background:${colorOf(name)}` }), ` ${name} / ${dlabel}`), h('button', { class: 'ib', 'aria-label': 'Tag danach', onclick: () => go(1) }, ic('chevron-right'))),
     h('div', { class: 'fsec' }, planBox),
     h('div', { class: 'fsec dictate' }, h('h3', { text: 'Was gab es sonst?' }), h('div', { class: 'micwrap' }, mic, micLbl), txt, prog, h('div', { class: 'row', style: 'justify-content:flex-end;margin-top:8px' }, h('button', { class: 'btn s', onclick: evalText }, 'Auswerten'))),
-    h('div', { class: 'fsec' }, listBox),
+    listBox,
     sumBox,
     old ? h('div', { class: 'muted', style: 'margin:6px 4px', text: 'Bisher diktiert: ' + (old.text || 'nichts') }) : null,
     h('div', { class: 'actions' }, save)]);

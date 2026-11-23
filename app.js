@@ -39,12 +39,13 @@ function longDate(ds) { const d = parseYmd(ds); return `${WDL[d.getDay()]}, ${d.
 
 /* ============ Kopfbilder ============ */
 const ART = {
+  set: `<svg viewBox="0 0 64 64"><defs><linearGradient id="gs" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3E6BFF"/><stop offset="1" stop-color="#FF8DBA"/></linearGradient></defs><path d="M32 2C50 2 62 15 62 33 61 50 49 62 31 62 13 61 2 49 2 31 3 14 15 2 32 2Z" fill="url(#gs)"/><circle cx="24" cy="24" r="6" fill="#fff"/><rect x="34" y="21" width="16" height="6" rx="3" fill="#fff" opacity=".8"/><circle cx="40" cy="40" r="6" fill="#fff"/><rect x="14" y="37" width="16" height="6" rx="3" fill="#fff" opacity=".8"/></svg>`,
   nutri: `<svg viewBox="0 0 64 64"><defs><linearGradient id="gn" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3E6BFF"/><stop offset="1" stop-color="#FF8DBA"/></linearGradient></defs><path d="M31 2C49 1 63 15 62 33 61 50 48 63 30 62 13 61 1 48 2 30 3 14 15 3 31 2Z" fill="url(#gn)"/><rect x="25" y="13" width="14" height="6" rx="2.5" fill="#fff"/><path d="M24 21h16c0 3 9 8 9 19 0 9-7 14-17 14S15 49 15 40c0-11 9-16 9-19z" fill="#fff"/><path d="M17.5 39c5-3 10-3 14 0s9 3 14 0c0 8-6 12-13.5 12S17.5 47 17.5 39z" fill="#9FE3C4"/></svg>`,
   cal: `<svg viewBox="0 0 64 64"><defs><linearGradient id="ga" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F6BFF"/><stop offset="1" stop-color="#FF5FA2"/></linearGradient></defs><path d="M32 2C50 1 63 14 62 32 61 50 50 63 31 62 13 61 1 49 2 31 3 14 15 3 32 2Z" fill="url(#ga)"/><path d="M40 10l-8 24M47 13l-11 22" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><g fill="none" stroke-linecap="round" stroke-width="3"><path d="M19 36c1-7 6-10 10-7s-1 7-3 5 3-7 9-6 8 6 6 9" stroke="#FFD66B"/><path d="M26 36c3-5 9-6 13-3s3 4 6 3" stroke="#FFC23D"/></g><circle cx="27" cy="30" r="2.4" fill="#E8473E"/><circle cx="38" cy="31" r="2" fill="#E8473E"/><path d="M13 36h38c0 9-8 16-19 16S13 45 13 36z" fill="#fff"/><path d="M18 40c1 5 6 8 12 9" stroke="#FFD1E3" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>`,
   list: `<svg viewBox="0 0 64 64"><defs><linearGradient id="gb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5B8CFF"/><stop offset="1" stop-color="#FF8DBA"/></linearGradient></defs><path d="M30 2C48 0 63 13 62 31 62 49 49 63 31 62 14 62 1 50 2 32 2 15 13 4 30 2Z" fill="url(#gb)"/><path d="M28 21c-1-5 2-9 6-10" stroke="#3FA34D" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M33 13c4-3 8-2 9 0-3 3-7 3-9 0z" fill="#5DBB63"/><path d="M22 26c-2-6 1-11 5-12l3 12z" fill="#FF9F43"/><path d="M38 26c0-5 3-9 7-9 3 2 3 6 1 9z" fill="#E8473E"/><path d="M15 26h34l-3 22c-1 3-3 5-6 5H24c-3 0-5-2-6-5z" fill="#fff"/><path d="M23 33v12M32 33v12M41 33v12" stroke="#DDE6FF" stroke-width="2.6" stroke-linecap="round"/></svg>`,
   rec: `<svg viewBox="0 0 64 64"><defs><linearGradient id="gc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F6BFF"/><stop offset="1" stop-color="#FF8DBA"/></linearGradient></defs><path d="M33 2C51 3 63 15 62 33 61 51 48 63 30 62 12 61 1 48 2 30 3 13 16 1 33 2Z" fill="url(#gc)"/><path d="M12 20c7-3 14-3 20 2v26c-6-5-13-5-20-2z" fill="#fff"/><path d="M52 20c-7-3-14-3-20 2v26c6-5 13-5 20-2z" fill="#F4F7FF"/><path d="M17 27c3-1 7-1 10 1M17 33c3-1 7-1 10 1M17 39c3-1 7-1 10 1" stroke="#C9D6FF" stroke-width="2" stroke-linecap="round"/><path d="M37 27c3-1 7-1 10 1M37 33c3-1 7-1 10 1" stroke="#FFC2DA" stroke-width="2" stroke-linecap="round"/><circle cx="44" cy="41" r="4" fill="#FFC23D"/></svg>`
 };
-const TITLES = { list: 'Einkaufsliste', cal: 'Essenswoche', rec: 'Rezepte', nutri: 'Nährstoffe' };
+const TITLES = { list: 'Einkaufsliste', cal: 'Essenswoche', rec: 'Rezepte', nutri: 'Nährstoffe', set: 'Einstellungen' };
 window.FA = window.FA || {};
 window.FA['jar'] = [512, 512, 'M176 32h160c13 0 24 11 24 24v24c0 9-5 17-13 21 66 28 109 88 109 159 0 107-74 220-200 220S56 367 56 260c0-71 43-131 109-159-8-4-13-12-13-21V56c0-13 11-24 24-24zm-48 248c0 78 52 168 128 168s128-90 128-168c0-6 0-12-1-18-33 18-75 18-110 2-38-17-80-16-144 2z'];
 
@@ -62,7 +63,7 @@ function catOf(name) {
 /* ============ Zustand ============ */
 let db = null, sample = null, dict = null, userCap = null, canWrite = true;
 let items = [], plan = [], recipes = [], known = new Map(), profiles = {}, diary = {};
-let tab = 'cal', view = 'week', anchor = dayOnly(new Date()), monthAnchor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let tab = 'cal', view = 'week', anchor = (() => { const t = dayOnly(new Date()); try { return localStorage.getItem('ep_weekstart') === 'mo' ? new Date(t.getFullYear(), t.getMonth(), t.getDate() - ((t.getDay() + 6) % 7)) : t; } catch (e) { return t; } })(), monthAnchor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 let loaded = { items: false, plan: false, recipes: false };
 try { const s = localStorage.getItem('ep_view'); if (s === 'month' || s === 'week') view = s; } catch (e) { }
 
@@ -123,6 +124,7 @@ function startData() {
   const sub = (name, set) => db.collection(name).onSnapshot(snap => { set(snap.docs.map(x => ({ id: x.id, ...x.data() }))); loaded[name] = true; done(); render(); }, e => { lastErr = (e && (e.message || e.code)) || ''; setStatus('Fehler beim Laden'); console.error(e); });
   sub('items', v => items = v); sub('plan', v => plan = v); sub('recipes', v => recipes = v);
   db.collection('known').onSnapshot(snap => { known = new Map(snap.docs.map(x => [x.id, x.data()])); });
+  db.collection('settings').onSnapshot(snap => { const d = snap.docs.find(x => x.id === 'household'); hhSet = d ? d.data() : {}; if (tab === 'set') render(); });
   db.collection('profiles').onSnapshot(snap => { profiles = Object.fromEntries(snap.docs.map(x => [x.id, x.data()])); });
   db.collection('diary').onSnapshot(snap => { diary = Object.fromEntries(snap.docs.map(x => [x.id, x.data()])); });
   db.collection('people').onSnapshot(snap => { people = snap.docs.map(x => x.data()); render(); renderHead(); });
@@ -225,18 +227,42 @@ function showWho() {
   fullSheet([h('div', { class: 'welcome' }, h('h2', { text: 'Wer bist du?' }), list, other)]);
   $('#ov').dataset.locked = '1';
 }
-function applyTheme() { document.documentElement.classList.toggle('dark', LS.get('ep_theme') === 'dark'); const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = LS.get('ep_theme') === 'dark' ? '#12151D' : '#F5F7FC'; }
+function isDark() { const t = LS.get('ep_theme'); return t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches); }
+function applyTheme() { const d = isDark(); document.documentElement.classList.toggle('dark', d); const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = d ? '#12151D' : '#F5F7FC'; }
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme); } catch (e) { }
+function weekAnchor() { const t = dayOnly(new Date()); return LS.get('ep_weekstart') === 'mo' ? addDays(t, -((t.getDay() + 6) % 7)) : t; }
 applyTheme();
-function openSettings() {
-  const theme = LS.get('ep_theme') === 'dark' ? 'dark' : 'light';
-  const setTheme = t => { LS.set('ep_theme', t); applyTheme(); openSettings(); };
-  openSheet('Einstellungen', [
-    h('div', { class: 'setcard a' },
-      h('div', { class: 'settitle', text: 'Anzeigemodus' }),
-      h('div', { class: 'seg wide' },
-        h('button', { class: theme === 'light' ? 'on' : '', onclick: () => setTheme('light') }, 'Hell'),
-        h('button', { class: theme === 'dark' ? 'on' : '', onclick: () => setTheme('dark') }, 'Dunkel'))),
-    h('div', { class: 'setfoot' }, h('div', { class: 'greytxt', text: 'Nährwerte: Bundeslebensmittelschlüssel (BLS) 4.0, Max Rubner-Institut. Markenprodukte: Open Food Facts.' }))]);
+function openSettings() { goTab('set', TAB_ORDER.indexOf('set') - TAB_ORDER.indexOf(tab)); }
+function renderSettings() {
+  const seg = (key, opts, def, after) => { const cur = LS.get(key) || def; return h('div', { class: 'seg wide' }, ...opts.map(([v, t]) => h('button', { class: cur === v ? 'on' : '', onclick: () => { LS.set(key, v); after && after(v); render(); } }, t))); };
+  const card = (cls, title, ...kids) => h('div', { class: 'setcard ' + cls }, h('div', { class: 'settitle', text: title }), ...kids);
+  const note = t => h('div', { class: 'muted setnote', text: t });
+  const who = me() || personNames()[0];
+  // Nie auf die Liste
+  const never = hhSet.never || [];
+  const saveNever = list => db && db.collection('settings').doc('household').set({ ...hhSet, never: list }).catch(showErr);
+  const nin = h('input', { class: 'inp', placeholder: 'z. B. Zucker', autocomplete: 'off', enterkeyhint: 'done' });
+  const addNever = () => { const v = cap(nin.value.trim()); if (!v || never.some(x => norm(x) === norm(v))) { nin.value = ''; return; } hhSet = { ...hhSet, never: [...never, v] }; saveNever(hhSet.never); render(); };
+  nin.addEventListener('keydown', e => { if (e.key === 'Enter') addNever(); });
+  // Spracherkennung
+  const asrBtn = h('button', { class: 'btn s', style: 'width:100%' }, LS.get('ep_asr') ? 'Ist auf diesem Handy geladen' : 'Jetzt laden (einmalig ca. 80 MB)');
+  const asrProg = h('div', { class: 'muted setnote hidden' });
+  asrBtn.addEventListener('click', async () => {
+    asrBtn.disabled = true; asrProg.classList.remove('hidden');
+    try { await getAsr((m, fr) => { asrProg.textContent = fr != null ? `Lädt … ${Math.round(fr * 100)} %` : m; }); LS.set('ep_asr', '1'); asrProg.textContent = 'Fertig, Diktieren geht jetzt auch ohne Internet.'; asrBtn.textContent = 'Ist auf diesem Handy geladen'; }
+    catch (e) { asrProg.textContent = 'Laden hat nicht geklappt, bitte später im WLAN nochmal versuchen.'; asrBtn.disabled = false; }
+  });
+  return h('div', { class: 'setpage' },
+    card('a', 'Anzeigemodus', seg('ep_theme', [['light', 'Hell'], ['dark', 'Dunkel'], ['auto', 'Wie iPhone']], 'light', applyTheme)),
+    card('b', 'Meine Angaben', note(profiles[who] ? 'Körper, Alltag, Sport, Ziel und Supplemente' : 'Noch nichts eingetragen'),
+      h('button', { class: 'btn grad', style: 'width:100%', onclick: () => openProfileEdit(who, () => { closeSheet(); render(); }) }, profiles[who] ? 'Bearbeiten' : 'Angaben machen')),
+    card('a', 'Woche beginnt', seg('ep_weekstart', [['today', 'Mit heute'], ['mo', 'Am Montag']], 'today', () => { anchor = weekAnchor(); }), note('Gilt für die Essenswoche und die Nährstoffe.')),
+    card('b', 'Gewürze aus Rezepten', seg('ep_spices', [['ask', 'Nachfragen'], ['all', 'Immer'], ['none', 'Nie']], 'ask'), note('Ob Gewürze beim Einplanen eines Rezepts auf die Einkaufsliste kommen.')),
+    card('a', 'Nie auf die Liste', note('Salz, Pfeffer, Öl und Wasser kommen nie aus Rezepten auf die Liste. Hier könnt ihr weitere Sachen ergänzen, die ihr immer daheim habt.'),
+      never.length ? h('div', { class: 'tagbox', style: 'justify-content:center;margin-bottom:10px' }, ...never.map(x => h('button', { class: 'pill addp', onclick: () => { hhSet = { ...hhSet, never: never.filter(y => y !== x) }; saveNever(hhSet.never); render(); } }, x + '  ×'))) : null,
+      h('div', { class: 'row', style: 'gap:8px' }, nin, h('button', { class: 'ib p', 'aria-label': 'Hinzufügen', onclick: addNever }, ic('plus')))),
+    card('b', 'Spracherkennung', note('Fürs Diktieren und für Videos. Am besten einmal im WLAN laden, danach geht es auch offline.'), asrBtn, asrProg),
+    h('div', { class: 'setfoot' }, h('div', { class: 'greytxt', text: 'Nährwerte: Bundeslebensmittelschlüssel (BLS) 4.0, Max Rubner-Institut. Markenprodukte: Open Food Facts. Alle Werte sind Schätzungen und ersetzen keine Ernährungsberatung.' })));
 }
 function openProfile() {
   if (!household) return;
@@ -273,7 +299,8 @@ function catStyle(c) { return CAT_STYLE[c] || CAT_STYLE['Sonstiges']; }
 
 /* ============ Salz, Pfeffer, Öl und Gewürze ============ */
 const NEVER = new Set(['salz', 'meersalz', 'pfeffer', 'schwarzer pfeffer', 'salz und pfeffer', 'salz pfeffer', 'olivenol', 'natives olivenol', 'rapsol', 'sonnenblumenol', 'bratol', 'ol', 'speiseol', 'pflanzenol', 'wasser', 'leitungswasser']);
-function isNever(name) { const k = norm(name); return NEVER.has(k) || NEVER.has(canon(name)); }
+let hhSet = {};
+function isNever(name) { const k = norm(name); return NEVER.has(k) || NEVER.has(canon(name)) || (hhSet.never || []).some(x => norm(x) === k || canon(x) === canon(name)); }
 function isSpice(name) { return !isNever(name) && catOf(canonName(name)) === 'Gewürze & Öle'; }
 
 /* ============ Mengen und Nährwerte ============ */
@@ -394,7 +421,7 @@ function renderTabs() {
   const t = $('#tabs'); t.replaceChildren();
   const go = id => () => goTab(id, TAB_ORDER.indexOf(id) - TAB_ORDER.indexOf(tab));
   t.append(
-    h('button', { class: 'side set', 'aria-label': 'Einstellungen', onclick: () => openSettings() }, ic('gear')),
+    h('button', { class: 'side set' + (tab === 'set' ? ' on' : ''), 'aria-label': 'Einstellungen', onclick: go('set') }, ic('gear')),
     h('button', { class: 'side' + (tab === 'list' ? ' on' : ''), 'aria-label': 'Einkaufsliste', onclick: go('list') }, ic('cart-shopping')),
     h('button', { class: 'mid' + (tab === 'cal' ? ' on' : ''), 'aria-label': 'Essenswoche', onclick: go('cal') }, h('span', { class: 'bub' }, ic('calendar-days'))),
     h('button', { class: 'side' + (tab === 'rec' ? ' on' : ''), 'aria-label': 'Rezepte', onclick: go('rec') }, ic('book-open')),
@@ -402,7 +429,7 @@ function renderTabs() {
   renderHead();
 }
 let listUI = null, recUI = null;
-const TAB_ORDER = ['list', 'cal', 'rec', 'nutri'];
+const TAB_ORDER = ['set', 'list', 'cal', 'rec', 'nutri'];
 function goTab(id, dir, fromX) {
   if (id === tab) return;
   const m = $('#main'); const W = window.innerWidth; const x0 = fromX || 0;
@@ -450,6 +477,7 @@ function render() {
   if (tab === 'list' && listUI && m.contains(listUI.wrap)) { drawListBody(); return; }
   if (tab === 'rec' && recUI && m.contains(recUI.wrap)) { recUI.draw(); return; }
   if (tab === 'nutri') { (nutriFn || nutriHome)(); window.scrollTo(0, scroll); return; }
+  if (tab === 'set') { m.replaceChildren(renderSettings()); window.scrollTo(0, scroll); return; }
   m.replaceChildren(tab === 'cal' ? renderCal() : tab === 'list' ? renderList() : renderRec());
   window.scrollTo(0, scroll);
 }
@@ -470,13 +498,13 @@ function renderCal() {
     h('button', { class: 'ib', 'aria-label': 'Zurück', onclick: () => shift(-1) }, ic('chevron-left')),
     h('div', { class: 'ttl', text: title }),
     h('button', { class: 'ib', 'aria-label': 'Weiter', onclick: () => shift(1) }, ic('chevron-right'))));
-  const isToday = isWeek ? ymd(anchor) === ymd(new Date()) : (monthAnchor.getMonth() === new Date().getMonth() && monthAnchor.getFullYear() === new Date().getFullYear());
+  const isToday = isWeek ? ymd(anchor) === ymd(weekAnchor()) : (monthAnchor.getMonth() === new Date().getMonth() && monthAnchor.getFullYear() === new Date().getFullYear());
   wrap.append(h('div', { class: 'row', style: 'justify-content:space-between;margin-bottom:14px;gap:8px' },
-    h('div', { class: 'seg' },
+    h('div', { class: 'seg wide' },
       h('button', { class: isWeek ? 'on' : '', onclick: () => setView('week') }, 'Woche'),
       h('button', { class: !isWeek ? 'on' : '', onclick: () => setView('month') }, 'Monat')),
     h('div', { class: 'row', style: 'gap:6px' },
-      isToday ? null : h('button', { class: 'btn s sm', onclick: () => { anchor = dayOnly(new Date()); monthAnchor = new Date(new Date().getFullYear(), new Date().getMonth(), 1); render(); } }, 'Heute'),
+      isToday ? null : h('button', { class: 'btn s todayb', onclick: () => { anchor = weekAnchor(); monthAnchor = new Date(new Date().getFullYear(), new Date().getMonth(), 1); render(); } }, 'Heute'),
       null)));
   const body = isWeek ? renderWeek() : renderMonth();
   addGestures(body, shift);
@@ -913,7 +941,11 @@ async function addPlan(p) {
 async function listForPlans(entries) {
   const spices = [];
   for (const { planId, r } of entries) for (const g of (r.ingredients || [])) if (g.name && isSpice(g.name)) spices.push({ planId, r, g });
+  const spMode = LS.get('ep_spices') || 'ask';
+  if (spMode !== 'ask') spices.splice(0, spices.length, ...(spMode === 'all' ? spices : []));
+  const preChosen = spMode === 'all' ? new Set(spices.map(s => s.planId + '|' + norm(s.g.name))) : null;
   const run = async (chosen) => {
+    if (preChosen) chosen = preChosen;
     toast('Gleiche mit Einkaufsliste ab …');
     for (const { planId, r } of entries) {
       const ings = (r.ingredients || []).filter(g => g.name && !isNever(g.name) && (!isSpice(g.name) || chosen.has(planId + '|' + norm(g.name))));
@@ -953,7 +985,7 @@ function openPlan(p) {
   const save = h('button', { class: 'btn p', onclick: async () => { const upd = {}; if (date.value && date.value !== p.date) upd.date = date.value; if (meal.value !== (p.meal || '')) upd.meal = meal.value; closeSheet(); if (Object.keys(upd).length) { await queue('plan/' + p.id, () => db.collection('plan').doc(p.id).update(upd)); if (upd.date) anchor = parseYmd(upd.date); render(); } } }, 'Speichern');
   content.push(h('div', { class: 'actions' },
     r && (r.steps || []).length ? h('button', { class: 'btn r', onclick: () => cookMode(r) }, 'Kochen') : null,
-    r ? h('button', { class: 'btn s', onclick: () => openRecipe(r) }, 'Rezept bearbeiten') : h('button', { class: 'btn r', onclick: () => openRecipe({ title: p.title, ingredients: [], steps: [], servings: '2' }, { linkPlan: p }) }, 'Rezept anlegen'),
+    r ? h('button', { class: 'btn s', onclick: () => openRecipe(r) }, 'Bearbeiten') : h('button', { class: 'btn r', onclick: () => openRecipe({ title: p.title, ingredients: [], steps: [], servings: '2' }, { linkPlan: p }) }, 'Rezept anlegen'),
     save));
   if (r && !p.listed && (r.ingredients || []).length) content.push(h('div', { class: 'actions', style: 'margin-top:8px' }, h('button', { class: 'btn s', onclick: async () => { closeSheet(); await listForPlans([{ planId: p.id, r }]); } }, 'Zutaten auf die Einkaufsliste')));
   content.push(h('div', { class: 'actions', style: 'margin-top:8px' }, confirmBtn('Aus der Woche entfernen', 'Wirklich entfernen?', async () => { closeSheet(); await removePlan(p); })));
@@ -1312,8 +1344,8 @@ function openNutrient(r, d, start, opt) {
       h('div', { class: 'nhglow' }), h('div', { class: 'nhjar' }, fill(Math.max(4, Math.min(100, r.pct)), true), h('span', { class: 'nhc' }, h('span', { class: 'nhpct', text: fmtInt(r.pct) + ' %' }), h('span', { class: 'jcov', text: 'gedeckt' }))),
       h('div', { class: 'nhtxt' },
         h('div', null, h('b', { text: fmtN(r.val[r.i] ?? r.val, r.unit) }), ` ${opt ? opt.perLabel : repMode === 'week' ? 'diese Woche' : repMode === 'day' ? 'pro Tag' : 'pro Gericht'}`),
-        h('div', { class: 'muted', text: `${r.limit ? 'Obergrenze' : needTxt}: ${fmtN(r.need, r.unit)}` }),
-        h('div', { class: 'muted', text: `${r.limit ? 'Höchstens' : 'Bedarf'} pro Tag: ${fmtN(r.ref, r.unit)} / pro Woche: ${fmtN(r.ref * 7, r.unit)}` }))),
+        
+        h('div', { class: 'muted', text: `${r.limit ? 'Höchstens' : 'Bedarf'}: ${fmtN(r.ref, r.unit)} pro Tag / ${fmtN(r.ref * 7, r.unit)} pro Woche` }))),
     h('div', { class: 'infocard why' }, h('h3', { text: r.limit ? 'Warum darauf achten?' : 'Wofür wichtig?' }), h('p', { text: INFO[r.i] || '' })),
   ];
   if (srcs.length) content.push(h('div', { class: 'infocard' }, h('h3', { text: opt ? 'Woher es bei dir kommt' : 'Woher es bei euch kommt' }),

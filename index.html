@@ -597,6 +597,12 @@ html.dark .pod span{color:#A9BBFF}
 .varb{border:0;border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;background:color-mix(in srgb,#7B5CFF 10%,var(--card));color:var(--ink2);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,#7B5CFF 25%,transparent)}
 .varb.on{background:var(--grad);color:#fff;box-shadow:0 6px 14px -8px rgba(91,100,255,.9)}
 
+body[data-tab=set] .blobs .b1{left:calc(100% - var(--bw) * .52);top:8%;background:var(--blue-l);opacity:.8;border-radius:50% 50% 38% 62% / 60% 45% 55% 40%}
+body[data-tab=set] .blobs .b2{left:calc(var(--bw) * -.5);top:calc(100% - var(--bot) - 8% - var(--bh));background:var(--rosa);opacity:.55;border-radius:58% 42% 50% 50% / 45% 55% 45% 55%}
+.setpage{display:flex;flex-direction:column;gap:0;padding-top:6px}
+.setnote{text-align:center;margin:-2px 8px 12px;font-size:13px;line-height:1.45}
+.setcard .setnote:last-child{margin:10px 8px 0}
+.tabs .side.set.on{color:var(--blue);opacity:1}
 /* Runde 11: 5er-Leiste, Nährstoffe als Seite */
 .tabs{bottom:calc(var(--bot) * .45 + 8px);gap:2px;padding:6px 8px}
 .tabs button{min-width:56px;padding:12px 10px}
@@ -612,6 +618,34 @@ html.dark .pod span{color:#A9BBFF}
 body[data-tab=nutri] .blobs .b1{left:calc(100% - var(--bw) * .5);top:calc(100% - var(--bot) - 2% - var(--bh));background:var(--blue-l);opacity:.8;border-radius:55% 45% 42% 58% / 48% 58% 42% 52%}
 body[data-tab=nutri] .blobs .b2{left:calc(var(--bw) * -.52);top:30%;background:var(--rosa);opacity:.55;border-radius:44% 56% 60% 40% / 52% 40% 60% 48%}
 .blobs i{transition:left .45s cubic-bezier(.22,.8,.24,1),top .45s cubic-bezier(.22,.8,.24,1),border-radius .45s ease,background-color .45s ease,opacity .45s ease}
+
+/* Runde 12: Symmetrie */
+.tabs{display:grid;grid-template-columns:repeat(5,58px);justify-content:space-between;align-items:end;gap:6px;padding:6px 12px;width:auto}
+.tabs button{min-width:0;width:58px;height:52px;padding:0;justify-content:center}
+.tabs .mid{margin-top:0;height:52px;position:relative;overflow:visible}
+.tabs .mid .bub{position:absolute;left:50%;bottom:-2px;transform:translateX(-50%);box-sizing:border-box;width:66px;height:66px}
+.tabs .mid:active{transform:none}.tabs .mid:active .bub{transform:translateX(-50%) scale(.9)}
+.tabs .mid .bub{transition:transform .14s cubic-bezier(.3,.7,.4,1.4)}
+.seg button{flex:1 1 0;min-width:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg:not(.wide) button{flex:0 0 auto}
+.seg button.on{box-shadow:0 4px 10px -6px rgba(91,100,255,.9)}
+.seg.wide{padding:4px;gap:4px}
+
+/* Runde 13: Prüfung aller Seiten */
+.tabs{grid-template-columns:repeat(5,64px);padding:8px 14px;gap:4px;bottom:calc(var(--bot) * .4 + 8px)}
+.tabs button{width:64px;height:58px}
+.tabs button .fa{width:25px;height:25px}
+.tabs .mid .bub{width:74px;height:74px;bottom:-4px}
+.tabs .mid .bub .fa{width:28px;height:28px}
+main{padding-bottom:calc(var(--bot) + 160px)}
+.todayb{flex:none;padding:10px 18px}
+.calbar+.row{margin-bottom:16px!important}
+.calbar+.row .seg.wide{flex:1}
+.actions .btn{flex:1 1 0;min-width:0}
+.pill,.pill.t{opacity:1;background:color-mix(in srgb,#5B7FFF 12%,var(--card));color:#3E55C8}
+html.dark .pill,html.dark .pill.t{color:#B9C6FF}
+.pod span{white-space:nowrap;font-size:11.5px;padding:0 4px}
+.seg.wide.sm button{font-size:13px}
 .hidden{display:none!important}
 </style>
 </head>
