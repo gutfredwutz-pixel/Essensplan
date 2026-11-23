@@ -339,11 +339,21 @@ function autoTags(r) {
     const animal = cats.some(x => (x.c === 'Milch & Eier' && !PLANT_MILK.test(x.n)) || /honig|butter|ei$|eier|parmesan|kase|sahne|joghurt|quark/.test(x.n) && !PLANT_MILK.test(x.n));
     if (!animal) tags.push('Vegan');
   }
+  const keys = ings.map(g => canon(g.name) + ' ' + norm(g.name));
+  const has = re => keys.some(k => re.test(k));
+  const FISH = /lachs|thunfisch|garnele|kabeljau|seelachs|forelle|zander|dorade|wolfsbarsch|hering|makrele|sardine|sardelle|tintenfisch|calamari|muschel|fischstabchen|scholle|seehecht|rotbarsch|matjes|surimi/;
+  const meatCat = cats.some((x, i) => x.c === 'Fleisch & Fisch' && !FISH.test(keys[i]));
+  if (meatCat || has(/speck|schinken|bacon|salami|chorizo|wurst|hackfleisch|rinderhack|gemischtes hack/) && !has(/vegan|veggie|vegetar/)) tags.push('Fleischgerichte');
+  if (has(FISH)) tags.push('Fisch');
+  const PASTA = /nudel|spaghetti|penne|fusilli|farfalle|tagliatelle|pappardelle|fettuccine|rigatoni|linguine|maccheroni|orecchiette|conchiglie|orzo|lasagne|cannelloni|tortellini|ravioli/;
+  if (has(PASTA)) tags.push('Pasta');
+  if (has(PASTA) && !has(/sojasauce|reisnudel|glasnudel|mie|udon|soba|ramen/) || has(/parmesan|mozzarella|burrata|pesto|ricotta|mascarpone|pancetta|guanciale|risottoreis|polenta|pecorino|grana padano/)) tags.push('Italienisch');
+  if (has(/sojasauce|currypaste|kokosmilch|reisnudel|glasnudel|mie nudel|udon|soba|ramen|pak choi|sesamol|fischsauce|hoisin|austernsauce|teriyaki|sriracha|jasminreis|sushireis|edamame|zitronengras|reispapier/)) tags.push('Asiatisch');
   const n = recipeNutrition(r);
   if (n.ok && !n.unknown.length && n.tot[0] > 0 && (n.tot[1] * 4) / n.tot[0] >= 0.25) tags.push('Proteinreich');
   return tags;
 }
-const USER_TAGS = ['Schnell', 'Pasta', 'Suppe', 'Salat', 'Asiatisch', 'Ofen', 'Süß', 'Frühstück', 'Meal Prep'];
+const USER_TAGS = ['Italienisch', 'Asiatisch', 'Mexikanisch', 'Schnell', 'Suppe', 'Salat', 'Ofen', 'Süß', 'Frühstück', 'Meal Prep'];
 function lastCooked(r) { const today = ymd(new Date()); let last = ''; for (const p of plan) if (p.recipeId === r.id && p.date <= today && p.date > last) last = p.date; return last; }
 function grey(text) { return h('div', { class: 'greytxt', text }); }
 
@@ -351,6 +361,7 @@ function grey(text) { return h('div', { class: 'greytxt', text }); }
 function renderHead() {
   const a = $('#art'); a.replaceChildren(svgEl(ART[tab])); $('#title').textContent = TITLES[tab];
   const w = $('#who'); const m = me(); w.classList.toggle('hidden', !household); w.style.background = colorOf(m); w.textContent = (m || '?')[0];
+  const gr = $('#gear'); if (gr && !gr.firstChild) gr.append(ic('gear')); if (gr) gr.classList.toggle('hidden', !household);
   document.body.dataset.tab = tab;
 }
 function renderTabs() {
@@ -495,32 +506,29 @@ function recipeSuggestions(q) {
 }
 let suggBox = null;
 function attachSuggest(input, onPick, opts = {}) {
-  if (!suggBox) { suggBox = h('div', { class: 'sugg' }); document.body.append(suggBox); }
+  const box = h('div', { class: 'schips hidden' });
   const source = opts.source || (raw => foodSuggestions((opts.parse ? opts.parse(raw) : { name: raw }).name));
-  let hl = -1, cur = [];
-  const hide = () => { suggBox.style.display = 'none'; suggBox._owner = null; };
+  let hl = -1, cur = [], blurT;
+  const hide = () => { box.classList.add('hidden'); box.replaceChildren(); };
   const show = () => {
-    cur = source(input.value);
+    cur = source(input.value).slice(0, opts.max || 6);
     if (!cur.length || document.activeElement !== input) return hide();
-    suggBox.replaceChildren(...cur.map((s, i) => h('button', { class: i === hl ? 'hl' : '', type: 'button', onmousedown: e => e.preventDefault(), onclick: () => pick(s) }, h('span', { text: s.name }))));
-    const r = input.getBoundingClientRect();
-    suggBox.style.left = (r.left + window.scrollX) + 'px'; suggBox.style.top = (r.bottom + window.scrollY + 6) + 'px'; suggBox.style.width = Math.max(r.width, 220) + 'px';
-    suggBox.style.display = 'block'; suggBox._owner = input;
+    box.replaceChildren(...cur.map((s, i) => h('button', { class: 'schip' + (i === hl ? ' hl' : ''), type: 'button', onmousedown: e => e.preventDefault(), onpointerdown: () => clearTimeout(blurT), onclick: () => pick(s) }, s.name)));
+    box.classList.remove('hidden');
   };
   const pick = s => { onPick(s); hl = -1; hide(); };
   input.addEventListener('input', () => { hl = -1; show(); });
-  input.addEventListener('focus', show);
-  input.addEventListener('blur', () => setTimeout(() => { if (suggBox._owner === input) hide(); }, 150));
+  input.addEventListener('focus', () => { clearTimeout(blurT); show(); });
+  input.addEventListener('blur', () => { blurT = setTimeout(hide, 350); });
   input.addEventListener('keydown', e => {
-    if (suggBox.style.display !== 'block') return;
-    if (e.key === 'ArrowDown') { hl = Math.min(hl + 1, cur.length - 1); show(); e.preventDefault(); }
+    if (box.classList.contains('hidden')) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight' && e.altKey) { hl = Math.min(hl + 1, cur.length - 1); show(); e.preventDefault(); }
     else if (e.key === 'ArrowUp') { hl = Math.max(hl - 1, -1); show(); e.preventDefault(); }
     else if (e.key === 'Enter' && hl >= 0) { e.preventDefault(); e.stopImmediatePropagation(); pick(cur[hl]); }
     else if (e.key === 'Escape') hide();
   });
-  return { hide, refresh: show };
+  return { box, hide, refresh: show };
 }
-window.addEventListener('scroll', () => { if (suggBox && suggBox._owner && !$('#ov').classList.contains('on')) suggBox.style.display = 'none'; }, { passive: true });
 
 /* ============ Einkaufsliste ============ */
 const QTY_RE = /^\s*((?:\d+(?:[.,]\d+)?|ein(?:e|en)?|zwei|drei|vier|fünf|½|1\/2)\s*(?:g|kg|ml|l|stk\.?|stück|pck\.?|packung(?:en)?|pkg|dose(?:n)?|bund|becher|glas|gläser|flasche(?:n)?|el|tl|prise|scheibe(?:n)?|netz)?)\s+(.+)$/i;
@@ -559,10 +567,10 @@ function renderList() {
     inp.value = ''; inp.focus();
   };
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
-  attachSuggest(inp, s => { const p = parseEntry(inp.value); addItem((p.qty ? p.qty + ' ' : '') + s.name, s.cat); inp.value = ''; inp.focus(); }, { parse: parseEntry });
+  const sg = attachSuggest(inp, s => { const p = parseEntry(inp.value); addItem((p.qty ? p.qty + ' ' : '') + s.name, s.cat); inp.value = ''; inp.focus(); }, { parse: parseEntry });
   const plus = h('button', { class: 'ib p big', 'aria-label': 'Hinzufügen', onmousedown: e => e.preventDefault(), onclick: submit }, ic('plus'));
   const body = h('div');
-  wrap.append(h('div', { class: 'addbar' }, inp, plus), body);
+  wrap.append(h('div', { class: 'addbar' }, inp, plus), sg.box, body);
   listUI = { wrap, inp, body };
   drawListBody();
   return wrap;
@@ -573,14 +581,13 @@ function drawListBody() {
   if (!canWrite) frag.push(h('div', { class: 'note', text: 'Nur Leserechte' }));
   const open = items.filter(i => !i.checked), done = items.filter(i => i.checked);
   if (db && loaded.items && !open.length) frag.push(emptyArt(done.length ? 'Alles im Wagen' : 'Noch nichts auf der Liste'));
-  for (const c of CATS) {
-    const list = open.filter(i => (CATS.includes(i.category) ? i.category : 'Sonstiges') === c).sort((a, b) => a.name.localeCompare(b.name, 'de'));
-    if (!list.length) continue;
-    const [bg, fg] = catStyle(c);
-    frag.push(h('div', { class: 'group', style: `--cbg:${bg};--cfg:${fg}` }, h('div', { class: 'cat', text: c }), ...list.map(itemRow)));
-  }
+  const sorted = open.slice().sort((a, b) => CATS.indexOf(CATS.includes(a.category) ? a.category : 'Sonstiges') - CATS.indexOf(CATS.includes(b.category) ? b.category : 'Sonstiges') || a.name.localeCompare(b.name, 'de'));
+  let last = null;
+  const flat = h('div', { class: 'flatlist' });
+  for (const it of sorted) { const c = CATS.includes(it.category) ? it.category : 'Sonstiges'; const row = itemRow(it); if (last && c !== last) row.classList.add('gap'); last = c; flat.append(row); }
+  if (sorted.length) frag.push(flat);
   if (done.length) {
-    frag.push(h('div', { class: 'group done' },
+    frag.push(h('div', { class: 'donebox' },
       h('div', { class: 'row', style: 'justify-content:space-between' }, h('div', { class: 'cat', text: `Im Wagen (${done.length})` }),
         confirmBtn('Leeren', 'Sicher?', () => done.forEach(i => queue('items/' + i.id, () => db.collection('items').doc(i.id).delete())), 'btn g sm')),
       ...done.sort((a, b) => (b.checkedAt || 0) - (a.checkedAt || 0)).map(itemRow)));
@@ -602,6 +609,8 @@ function itemRow(i) {
   const acts = h('div', { class: 'swacts' },
     h('button', { class: 'sw amt', onclick: () => { closeSwipe(); editQty(i); } }, 'Menge'),
     h('button', { class: 'sw del', onclick: () => { closeSwipe(); del(); } }, 'Löschen'));
+  const [cbg, cfg] = catStyle(CATS.includes(i.category) ? i.category : 'Sonstiges');
+  row.style.setProperty('--cfg', cfg);
   const wrap = h('div', { class: 'swipe' }, acts, row);
   makeSwipe(wrap, row, toggle, del);
   return wrap;
@@ -645,13 +654,14 @@ function confirmBtn(label, confirmLabel, fn, cls) {
 
 /* ============ Rezepte ============ */
 let recQuery = '', recFilter = '';
-const TILE_STYLE = { 'Favoriten': 'linear-gradient(135deg,#FF7FB0,#FFB3CF)', 'Lange nicht gekocht': 'linear-gradient(135deg,#7B8CFF,#B3BEFF)', 'Vegetarisch': 'linear-gradient(135deg,#3FA864,#9AD9A8)', 'Vegan': 'linear-gradient(135deg,#8C5E3C,#D3B08F)', 'Proteinreich': 'linear-gradient(135deg,#E8892E,#FFC48A)' };
+const TILE_STYLE = { 'Favoriten': 'linear-gradient(135deg,#F0609C,#FFA9CB)', 'Lange nicht gekocht': 'linear-gradient(135deg,#6E7CF0,#A9B4FF)', 'Proteinreich': 'linear-gradient(135deg,#E07B1F,#FFBE7D)', 'Fleischgerichte': 'linear-gradient(135deg,#C84646,#F09A8E)', 'Fisch': 'linear-gradient(135deg,#24869C,#8FD3E0)', 'Vegetarisch': 'linear-gradient(135deg,#2F8A4A,#93D3A3)', 'Vegan': 'linear-gradient(135deg,#8C5E3C,#D3B08F)', 'Pasta': 'linear-gradient(135deg,#C99A12,#F6D774)', 'Italienisch': 'linear-gradient(135deg,#3B9B5A,#E06A5E)', 'Asiatisch': 'linear-gradient(135deg,#D0453F,#F4B04F)' };
 function tagsOf(r) { return [...new Set([...autoTags(r), ...(r.tags || [])])]; }
 function renderRec() {
   const wrap = h('div');
   const inp = h('input', { class: 'field', placeholder: 'Rezept oder Zutat suchen', value: recQuery, autocomplete: 'off' });
   const tiles = h('div', { class: 'tiles' });
   const listEl = h('div', { class: 'reclist' });
+  const head = h('div', { class: 'rechead hidden' });
   const draw = () => {
     const q = norm(inp.value); recQuery = inp.value;
     // Kacheln
@@ -659,9 +669,11 @@ function renderRec() {
     const tileNames = [];
     if (recipes.some(r => r.fav)) tileNames.push('Favoriten');
     if (recipes.length >= 3) tileNames.push('Lange nicht gekocht');
-    ['Vegetarisch', 'Vegan', 'Proteinreich'].forEach(t => allTags.has(t) && tileNames.push(t));
+    ['Proteinreich', 'Fleischgerichte', 'Fisch', 'Vegetarisch', 'Vegan', 'Pasta', 'Italienisch', 'Asiatisch'].forEach(t => allTags.has(t) && tileNames.push(t));
     [...allTags].filter(t => !tileNames.includes(t)).sort().forEach(t => tileNames.push(t));
-    tiles.replaceChildren(...tileNames.map((t, i) => h('button', { class: 'tile' + (recFilter === t ? ' on' : ''), style: `background:${TILE_STYLE[t] || ['linear-gradient(135deg,#5B8CFF,#A9C1FF)', 'linear-gradient(135deg,#C95683,#F3A6C3)', 'linear-gradient(135deg,#24869C,#8FD3E0)'][i % 3]}`, onclick: () => { recFilter = recFilter === t ? '' : t; draw(); } }, h('span', { text: t }))));
+    tiles.replaceChildren(...tileNames.map((t, i) => h('button', { type: 'button', class: 'tile' + (recFilter === t ? ' on' : ''), style: `background:${TILE_STYLE[t] || ['linear-gradient(135deg,#5B8CFF,#A9C1FF)', 'linear-gradient(135deg,#C95683,#F3A6C3)', 'linear-gradient(135deg,#24869C,#8FD3E0)'][i % 3]}`, onclick: () => { recFilter = recFilter === t ? '' : t; draw(); window.scrollTo({ top: 0, behavior: 'smooth' }); } }, h('span', { text: t }))));
+    head.replaceChildren(...(recFilter ? [h('b', { text: recFilter }), h('button', { class: 'btn s sm', onclick: () => { recFilter = ''; draw(); } }, 'Alle Rezepte')] : []));
+    head.classList.toggle('hidden', !recFilter);
     tiles.classList.toggle('hidden', !tileNames.length);
     let list = recipes.filter(r => !q || norm(r.title).includes(q) || (r.ingredients || []).some(g => norm(g.name).includes(q)));
     const today = ymd(new Date());
@@ -673,7 +685,7 @@ function renderRec() {
     if (!list.length) listEl.append(recipes.length ? grey('Nichts gefunden') : emptyArt('Noch keine Rezepte'));
   };
   inp.addEventListener('input', draw);
-  wrap.append(h('div', { class: 'addbar' }, inp, h('button', { class: 'ib p big', 'aria-label': 'Neues Rezept', onclick: () => openRecipe({ title: '', ingredients: [], steps: [], servings: '2' }) }, ic('plus'))), tiles, listEl);
+  wrap.append(h('div', { class: 'addbar' }, inp, h('button', { class: 'ib p big', 'aria-label': 'Neues Rezept', onclick: () => openRecipe({ title: '', ingredients: [], steps: [], servings: '2' }) }, ic('plus'))), tiles, head, listEl);
   recUI = { wrap, draw };
   draw();
   return wrap;
@@ -744,9 +756,8 @@ function openSheet(title, content) {
   const s = $('#sheet'); s.replaceChildren(h('div', { class: 'shead' }, h('h2', { text: title }), h('button', { class: 'ib', 'aria-label': 'Schließen', onclick: closeSheet }, ic('xmark'))), ...content.filter(Boolean));
   $('#ov').classList.add('on'); s.scrollTop = 0; document.body.style.overflow = 'hidden';
 }
-function closeSheet() { $('#ov').classList.remove('on'); document.body.style.overflow = ''; if (suggBox) suggBox.style.display = 'none'; }
+function closeSheet() { $('#ov').classList.remove('on'); document.body.style.overflow = ''; }
 $('#ov').addEventListener('click', e => { if (e.target.id === 'ov' && !$('#ov').dataset.locked) closeSheet(); });
-$('#sheet').addEventListener('scroll', () => { if (suggBox) suggBox.style.display = 'none'; }, { passive: true });
 
 /* ============ Tag öffnen ============ */
 function openDay(ds, focus) {
@@ -763,9 +774,9 @@ function openDay(ds, focus) {
     await addPlan({ date: ds, meal: meal.value, title: r ? r.title : title, recipeId: r ? r.id : null });
   };
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); add(inp.value); } });
-  attachSuggest(inp, s => add(s.name, s.recipe), { source: recipeSuggestions });
+  const sg = attachSuggest(inp, s => add(s.name, s.recipe), { source: recipeSuggestions });
   openSheet(longDate(ds), [planned,
-    h('label', { class: 'lbl', text: 'Hinzufügen' }), inp,
+    h('label', { class: 'lbl', text: 'Hinzufügen' }), inp, sg.box,
     h('div', { class: 'row', style: 'margin-top:8px' }, h('div', { style: 'flex:1' }, meal), h('button', { class: 'btn p', onclick: () => add(inp.value) }, 'Eintragen')),
     h('div', { class: 'actions' }, h('button', { class: 'btn r', onclick: () => openRecipe({ title: cap(inp.value), ingredients: [], steps: [], servings: '2' }, { planDate: ds, meal: meal.value }) }, 'Neues Rezept erstellen'))]);
   if (focus) setTimeout(() => inp.focus(), 250);
@@ -868,12 +879,12 @@ function openRecipe(rec, ctx = {}) {
       if (!g.amount && g.name) missing++;
       n.addEventListener('input', () => { g.name = n.value; delete g.product; });
       a.addEventListener('input', () => { g.amount = a.value; a.classList.toggle('need', !a.value && !!g.name); });
-      attachSuggest(n, s => { g.name = s.name; n.value = s.name; delete g.product; drawIng(); });
+      const sg = attachSuggest(n, s => { g.name = s.name; n.value = s.name; delete g.product; drawIng(); }, { max: 5 });
       const prod = g.product ? h('div', { class: 'prodline' }, h('span', { text: (g.product.brand ? g.product.brand + ' ' : '') + g.product.name }), h('button', { class: 'nx', 'aria-label': 'Produkt entfernen', onclick: () => { delete g.product; drawIng(); } }, ic('xmark'))) : null;
       return h('div', { class: 'ingwrap' },
         h('div', { class: 'ing' }, n, a,
           h('button', { class: 'ib sm ghost', 'aria-label': 'Nährwerte zuordnen', title: 'Nährwerte zuordnen', onclick: () => pickProduct(g, drawIng) }, ic('magnifying-glass-plus')),
-          h('button', { class: 'ib sm ghost', 'aria-label': 'Entfernen', onclick: () => { st.ingredients.splice(idx, 1); drawIng(); } }, ic('xmark'))), prod);
+          h('button', { class: 'ib sm ghost', 'aria-label': 'Entfernen', onclick: () => { st.ingredients.splice(idx, 1); drawIng(); } }, ic('xmark'))), sg.box, prod);
     }), h('button', { class: 'btn s', style: 'margin-top:4px', onclick: () => { st.ingredients.push({ name: '', amount: '' }); drawIng(); const l = ingBox.querySelectorAll('.ing .n'); l[l.length - 1] && l[l.length - 1].focus(); } }, 'Zutat hinzufügen'));
     fillBtn.classList.toggle('hidden', !st.ingredients.some(g => g.name && !g.amount && suggestAmt(g.name)));
     needNote.classList.toggle('hidden', !missing);

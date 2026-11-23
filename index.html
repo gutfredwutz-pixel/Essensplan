@@ -39,7 +39,7 @@ input,textarea,select{font-size:16px}
 .blobs .b4{width:30vw;max-width:160px;aspect-ratio:1;left:10vw;bottom:calc(var(--bot) + 120px);background:var(--blue-l);opacity:.8;border-radius:39% 61% 44% 56% / 58% 42% 58% 42%}
 body[data-tab=list] .blobs .b1{background:var(--blue-l)} body[data-tab=list] .blobs .b2{background:var(--rosa)}
 
-header{position:sticky;top:0;z-index:5;padding:calc(var(--top) + 14px) 18px 12px}
+header{position:sticky;top:0;z-index:5;padding:calc(var(--top) + 14px) 18px 12px;background:linear-gradient(var(--bg) 78%,var(--bg0))}
 .hrow{display:flex;align-items:center;gap:12px}
 #art{width:48px;height:48px;flex:none}
 #art svg{width:100%;height:100%;display:block}
@@ -276,6 +276,49 @@ html.dark .chip .m{background:var(--card2)}
 .rsub{font-size:13px;color:var(--ink3);margin-top:2px}
 .rsug{font-size:14px;margin-top:6px}
 .rsug span{color:var(--rosa-d);font-weight:700}
+
+/* Vorschläge als Chips */
+.schips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 2px 2px}
+.schip{border:0;background:var(--card);color:var(--ink);border-radius:999px;padding:8px 14px;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 1px 4px var(--shadow)}
+.schip.hl,.schip:active{background:var(--blue);color:#fff}
+.ingwrap .schips{margin:6px 0 2px}
+/* Einkaufsliste ohne Kategorie-Kästen */
+.flatlist{margin-top:14px}
+.flatlist .swipe.gap{margin-top:14px}
+.item{background:color-mix(in srgb, var(--cfg, #8891A5) 13%, var(--card))}
+.item .cb{border-color:color-mix(in srgb, var(--cfg, #8891A5) 45%, var(--card))}
+.donebox{margin-top:22px}
+.donebox .item{background:var(--card);opacity:.75}
+/* Rezept-Kategorien als Raster */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 0;padding:0;overflow:visible;position:relative;z-index:1}
+.tile{width:auto;height:64px;border-radius:18px;font-size:15px;padding:10px 14px;touch-action:manipulation}
+.tile span{position:relative;z-index:1;pointer-events:none}
+.tile::after{pointer-events:none}
+.rechead{display:flex;align-items:center;justify-content:space-between;margin:16px 4px 0;font-size:18px}
+.gearb{font-size:17px}
+
+/* Mehr Luft */
+main{padding:6px 18px calc(var(--bot) + 150px)}
+header{padding:calc(var(--top) + 16px) 20px 14px}
+.calbar{margin:4px 0 16px}
+.week{gap:14px}
+.day{padding:12px 14px 12px 12px;gap:14px}
+.dishes{gap:8px}
+.chip{padding:10px 16px}
+.month{gap:8px}
+.mc{min-height:84px}
+.swipe{margin-bottom:10px}
+.item{padding:12px 14px 12px 12px;gap:12px}
+.flatlist{margin-top:18px}
+.flatlist .swipe.gap{margin-top:20px}
+.note-line{margin-top:2px}
+.reclist{gap:12px;margin-top:18px}
+.tiles{gap:12px;margin-top:18px}
+.rcard{padding:12px 14px 12px 12px}
+.lbl{margin:20px 6px 8px}
+.actions{margin-top:22px;gap:10px}
+.ing{gap:8px}
+.ingwrap{margin-bottom:10px}
 .hidden{display:none!important}
 </style>
 </head>
@@ -286,7 +329,8 @@ html.dark .chip .m{background:var(--card2)}
     <div id="art"></div>
     <h1 id="title">Essenswoche</h1>
     <span class="status" id="status"></span>
-    <button class="av big hidden" id="who" aria-label="Haushalt" onclick="openProfile()"></button>
+    <button class="ib gearb" id="gear" aria-label="Einstellungen" onclick="openProfile()"></button>
+    <button class="av big hidden" id="who" aria-label="Einstellungen" onclick="openProfile()"></button>
   </div>
 </header>
 <main id="main"></main>
