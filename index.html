@@ -422,6 +422,68 @@ body{background:transparent}
 .src{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:center;font-size:14px}
 .sbar{height:8px;border-radius:999px;background:var(--blue-ll);overflow:hidden}.sbar i{display:block;height:100%;background:var(--blue);border-radius:999px}
 .sval{color:var(--ink2);font-variant-numeric:tabular-nums}
+
+/* Runde 7: Effekte, Sheet-Griff, Feedback */
+html{-webkit-tap-highlight-color:transparent}
+#main{touch-action:pan-y;transition:none;will-change:auto}
+button,.chip,.tile,.schip,.pill,.day,.mday{transition:transform .14s cubic-bezier(.3,.7,.4,1.4),filter .14s}
+button:active,.chip:active,.tile:active,.schip:active,.day:active,.mday:active{transform:scale(.94);filter:brightness(.96)}
+.tabs button:active{transform:scale(.88)}
+.grab{width:42px;height:5px;border-radius:999px;background:var(--ink3);opacity:.35;margin:-8px auto 12px}
+.xclose{display:none!important}
+.shead{min-height:30px}
+.sheet{will-change:transform}
+@keyframes rise{from{transform:translate3d(0,100%,0)}to{transform:none}}
+.sheet.rise{animation:rise .38s cubic-bezier(.2,.9,.25,1)}
+@keyframes ovin{from{background:rgba(20,26,40,0)}}
+.ov.on{animation:ovin .3s ease}
+/* Farben je Zustand */
+.jar.low,.nutpage.low{--j1:#FFB8D2;--j2:#F0609B;--jg:#F0609B}
+.jar.ok,.nutpage.ok{--j1:#B4CBFF;--j2:#5B7FFF;--jg:#5B7FFF}
+.jar.good,.nutpage.good{--j1:#A6F0CF;--j2:#1FAE73;--jg:#1FAE73}
+.jar.high,.nutpage.high{--j1:#FFD6A8;--j2:#F08A2C;--jg:#F08A2C}
+.jar.sun,.nutpage.sun{--j1:#FFEFA3;--j2:#F5B52E;--jg:#F5B52E}
+.jfill{position:absolute;left:0;right:0;bottom:0;height:var(--lvl);background:linear-gradient(180deg,var(--j1),var(--j2));opacity:.62;animation:fillup .9s cubic-bezier(.2,.8,.2,1) backwards;transition:none}
+.jfill::before{display:none}
+@keyframes fillup{from{height:0}}
+.wave{position:absolute;left:0;top:-9px;width:200%;height:10px;color:var(--j1);animation:wave 3.2s linear infinite}
+.wave.b{top:-6px;opacity:.55;animation-duration:5s;animation-direction:reverse}
+.wave svg{display:block;width:100%;height:100%}.wave path{fill:currentColor}
+@keyframes wave{to{transform:translateX(-50%)}}
+.bub{position:absolute;bottom:4px;width:var(--s);height:var(--s);border-radius:50%;background:rgba(255,255,255,.75);animation:bub 3.4s ease-in infinite;opacity:0}
+@keyframes bub{0%{transform:translateY(0);opacity:0}15%{opacity:.9}100%{transform:translateY(-70px);opacity:0}}
+.jar{box-shadow:0 8px 22px -6px color-mix(in srgb,var(--jg) 38%,transparent),inset 0 0 0 1.5px color-mix(in srgb,var(--jg) 18%,transparent);animation:pop .45s cubic-bezier(.2,.9,.3,1.25) backwards}
+@keyframes pop{from{transform:scale(.82);opacity:0}}
+.jar .jpct{font-size:19px}
+.rephero{padding:8px 0 4px}
+.rephero::before{width:250px;height:140px;background:linear-gradient(120deg,#8FB0FF,#C9A8FF 50%,#FFB3D0);opacity:.55;filter:blur(2px);animation:morph 9s ease-in-out infinite alternate}
+@keyframes morph{0%{border-radius:58% 42% 61% 39% / 47% 58% 42% 53%;transform:translateX(-50%) rotate(0)}50%{border-radius:40% 60% 45% 55% / 60% 40% 60% 40%;transform:translateX(-50%) rotate(8deg) scale(1.05)}100%{border-radius:62% 38% 52% 48% / 42% 55% 45% 58%;transform:translateX(-50%) rotate(-6deg)}}
+.rhnum{font-size:54px;background:linear-gradient(120deg,#2F5BFF,#8A4DFF 55%,#F0609B);-webkit-background-clip:text;background-clip:text;color:transparent}
+.seg button.on{background:linear-gradient(135deg,#5B7FFF,#8A5BFF);box-shadow:0 6px 16px -6px rgba(91,127,255,.8)}
+.nutpage{position:relative}
+.nuthero{position:relative;padding:6px 0 10px}
+.nhglow{position:absolute;left:-30px;top:-30px;width:190px;height:190px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--jg) 45%,transparent),transparent 68%);filter:blur(10px);animation:breathe 4s ease-in-out infinite alternate;pointer-events:none}
+@keyframes breathe{to{transform:scale(1.12);opacity:.7}}
+.nhjar{width:116px;height:134px;box-shadow:0 14px 30px -10px color-mix(in srgb,var(--jg) 60%,transparent),inset 0 0 0 2px color-mix(in srgb,var(--jg) 22%,transparent);animation:morphj 7s ease-in-out infinite alternate}
+@keyframes morphj{0%{border-radius:46% 54% 42% 58% / 38% 40% 60% 62%}100%{border-radius:56% 44% 52% 48% / 44% 52% 48% 56%}}
+.nhjar .jfill{opacity:.85}
+.nhpct{font-size:28px;text-shadow:0 1px 0 rgba(255,255,255,.6)}
+.nhtxt b{font-size:22px;font-weight:800;color:var(--j2)}
+.infocard{box-shadow:0 6px 20px -10px var(--shadow);animation:up .45s cubic-bezier(.2,.8,.2,1) backwards}
+.nutpage .infocard:nth-of-type(2){animation-delay:.06s}.nutpage .infocard:nth-of-type(3){animation-delay:.12s}.nutpage .infocard:nth-of-type(4){animation-delay:.18s}
+@keyframes up{from{transform:translateY(14px);opacity:0}}
+.infocard.why{background:linear-gradient(140deg,color-mix(in srgb,var(--j1) 55%,var(--card)),var(--card) 70%)}
+.sbar{height:10px;background:color-mix(in srgb,var(--j1) 35%,var(--blue-ll))}
+.sbar i{background:linear-gradient(90deg,var(--j1),var(--j2));animation:grow .7s cubic-bezier(.2,.8,.2,1) backwards;transform-origin:left}
+@keyframes grow{from{transform:scaleX(0)}}
+.nutpage .pill{opacity:1;background:linear-gradient(135deg,#E4ECFF,#EFE4FF);color:#4A4FD8}
+.nutpage .pill.t{background:linear-gradient(135deg,#FFE2EE,#FFEFE2);color:#C2407A}
+.btn.grad{background:linear-gradient(135deg,#4C74FF,#8A5BFF 60%,#E66AB0);color:#fff;box-shadow:0 10px 24px -10px rgba(110,90,255,.9);background-size:150% 150%;animation:shine 6s ease-in-out infinite alternate}
+@keyframes shine{to{background-position:100% 100%}}
+html.dark .nutpage .pill{background:linear-gradient(135deg,#26305A,#33285A);color:#C9CFFF}
+html.dark .nutpage .pill.t{background:linear-gradient(135deg,#4A2438,#4A3324);color:#FFC2DA}
+html.dark .rhnum{background:linear-gradient(120deg,#8FB0FF,#C4A0FF 55%,#FF9CC6);-webkit-background-clip:text;background-clip:text}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important}}
 .hidden{display:none!important}
 </style>
 </head>

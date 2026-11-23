@@ -388,29 +388,41 @@ function renderTabs() {
 }
 let listUI = null, recUI = null;
 const TAB_ORDER = ['list', 'cal', 'rec'];
-function goTab(id, dir) {
+function goTab(id, dir, fromSwipe) {
   if (id === tab) return;
-  tab = id; listUI = null; recUI = null; renderTabs(); render(); window.scrollTo(0, 0);
-  const m = $('#main'); m.classList.remove('slide-l', 'slide-r'); void m.offsetWidth; m.classList.add(dir > 0 ? 'slide-l' : 'slide-r');
+  const m = $('#main'); const W = window.innerWidth;
+  const swap = () => {
+    tab = id; listUI = null; recUI = null; renderTabs(); render(); window.scrollTo(0, 0);
+    m.style.transition = 'none'; m.style.transform = `translate3d(${dir > 0 ? W * 0.3 : -W * 0.3}px,0,0)`; m.style.opacity = '0';
+    void m.offsetWidth;
+    m.style.transition = 'transform .32s cubic-bezier(.2,.8,.25,1), opacity .22s ease'; m.style.transform = 'translate3d(0,0,0)'; m.style.opacity = '1';
+    setTimeout(() => { m.style.transition = ''; m.style.transform = ''; m.style.opacity = ''; }, 340);
+  };
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { tab = id; listUI = null; recUI = null; renderTabs(); render(); window.scrollTo(0, 0); return; }
+  m.style.transition = 'transform .16s ease-in, opacity .16s ease-in'; m.style.transform = `translate3d(${dir > 0 ? -W * 0.35 : W * 0.35}px,0,0)`; m.style.opacity = '0';
+  setTimeout(swap, 150);
 }
 (() => {
-  let sx = 0, sy = 0, mode = 0, t0 = 0; const m = () => $('#main');
+  let sx = 0, sy = 0, mode = 0, t0 = 0, dx = 0, raf = 0; const m = () => $('#main');
   document.addEventListener('touchstart', e => {
     mode = 0; if ($('#ov').classList.contains('on') || document.querySelector('.cook') || e.touches.length > 1) { mode = -1; return; }
     const t = e.target; if (t.closest('.swipe,input,textarea,select,[data-no-tab-swipe],.tabs,.month')) { mode = -1; return; }
-    sx = e.touches[0].clientX; sy = e.touches[0].clientY; t0 = Date.now();
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY; t0 = Date.now(); dx = 0;
   }, { passive: true });
   document.addEventListener('touchmove', e => {
-    if (mode === -1) return; const dx = e.touches[0].clientX - sx, dy = e.touches[0].clientY - sy;
-    if (mode === 0) { if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.6) mode = 1; else if (Math.abs(dy) > 10) { mode = -1; return; } else return; }
+    if (mode === -1) return; dx = e.touches[0].clientX - sx; const dy = e.touches[0].clientY - sy;
+    if (mode === 0) { if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.3) { mode = 1; sx += dx > 0 ? 10 : -10; dx = e.touches[0].clientX - sx; m().style.transition = 'none'; } else if (Math.abs(dy) > 10) { mode = -1; return; } else return; }
+    if (e.cancelable) e.preventDefault();
     const idx = TAB_ORDER.indexOf(tab); const edge = (dx > 0 && idx === 0) || (dx < 0 && idx === TAB_ORDER.length - 1);
-    m().style.transition = 'none'; m().style.transform = `translateX(${edge ? dx * 0.2 : dx * 0.6}px)`; m().style.opacity = String(1 - Math.min(0.35, Math.abs(dx) / 900));
-  }, { passive: true });
-  document.addEventListener('touchend', e => {
-    if (mode !== 1) return; mode = 0;
-    const dx = e.changedTouches[0].clientX - sx; const el = m(); el.style.transition = ''; el.style.transform = ''; el.style.opacity = '';
-    const idx = TAB_ORDER.indexOf(tab); const fast = Date.now() - t0 < 300;
-    if (Math.abs(dx) > 80 || (fast && Math.abs(dx) > 40)) { const n = idx + (dx < 0 ? 1 : -1); if (n >= 0 && n < TAB_ORDER.length) goTab(TAB_ORDER[n], dx < 0 ? 1 : -1); }
+    const x = edge ? dx * 0.18 : dx;
+    cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { m().style.transform = `translate3d(${x}px,0,0)`; m().style.opacity = String(1 - Math.min(0.5, Math.abs(x) / 700)); });
+  }, { passive: false });
+  document.addEventListener('touchend', () => {
+    if (mode !== 1) return; mode = 0; cancelAnimationFrame(raf);
+    const el = m(); const idx = TAB_ORDER.indexOf(tab); const v = Math.abs(dx) / Math.max(1, Date.now() - t0);
+    const n = idx + (dx < 0 ? 1 : -1);
+    if ((Math.abs(dx) > window.innerWidth * 0.25 || (v > 0.45 && Math.abs(dx) > 30)) && n >= 0 && n < TAB_ORDER.length) goTab(TAB_ORDER[n], dx < 0 ? 1 : -1, true);
+    else { el.style.transition = 'transform .3s cubic-bezier(.2,.9,.3,1.1), opacity .25s'; el.style.transform = 'translate3d(0,0,0)'; el.style.opacity = '1'; setTimeout(() => { el.style.transition = ''; el.style.transform = ''; el.style.opacity = ''; }, 320); }
   }, { passive: true });
 })();
 function render() {
@@ -813,11 +825,35 @@ function openRecipeView(r) {
 /* ============ Sheet ============ */
 let sheetStack = [];
 function openSheet(title, content) {
-  const s = $('#sheet'); s.replaceChildren(h('div', { class: 'shead' }, h('h2', { text: title }), h('button', { class: 'ib', 'aria-label': 'Schließen', onclick: closeSheet }, ic('xmark'))), ...content.filter(Boolean));
-  $('#ov').classList.add('on'); s.scrollTop = 0; document.body.style.overflow = 'hidden';
+  const s = $('#sheet'); const ov = $('#ov'); const was = ov.classList.contains('on');
+  s.replaceChildren(h('div', { class: 'grab' }), h('div', { class: 'shead' }, h('h2', { text: title }), h('button', { class: 'ib xclose', 'aria-label': 'Schließen', onclick: closeSheet }, ic('xmark'))), ...content.filter(Boolean));
+  s.style.transition = ''; s.style.transform = ''; ov.style.background = '';
+  ov.classList.add('on'); s.scrollTop = 0; document.body.style.overflow = 'hidden';
+  if (!was) { s.classList.remove('rise'); void s.offsetWidth; s.classList.add('rise'); }
 }
 function closeSheet() { $('#ov').classList.remove('on'); document.body.style.overflow = ''; }
-$('#ov').addEventListener('click', e => { if (e.target.id === 'ov' && !$('#ov').dataset.locked) closeSheet(); });
+function dismissSheet() {
+  const s = $('#sheet'), ov = $('#ov'); if (ov.dataset.locked) return;
+  s.style.transition = 'transform .26s cubic-bezier(.3,.7,.4,1)'; s.style.transform = 'translate3d(0,105%,0)'; ov.style.transition = 'background .26s'; ov.style.background = 'rgba(20,26,40,0)';
+  setTimeout(() => { const b = s.querySelector('.xclose'); s.style.transition = ''; s.style.transform = ''; ov.style.background = ''; ov.style.transition = ''; if (b) b.click(); else closeSheet(); }, 260);
+}
+$('#ov').addEventListener('click', e => { if (e.target.id === 'ov') dismissSheet(); });
+(() => {
+  const s = $('#sheet'); let y0 = 0, dy = 0, on = false, t0 = 0, raf = 0;
+  s.addEventListener('touchstart', e => { on = false; if ($('#ov').dataset.locked || e.touches.length > 1) return; const fromGrab = e.target.closest('.grab,.shead'); if (s.scrollTop > 0 && !fromGrab) return; y0 = e.touches[0].clientY; dy = 0; t0 = Date.now(); on = 'maybe'; }, { passive: true });
+  s.addEventListener('touchmove', e => {
+    if (!on) return; dy = e.touches[0].clientY - y0;
+    if (on === 'maybe') { if (dy > 6) on = true; else if (dy < -4) { on = false; return; } else return; }
+    e.preventDefault(); s.style.transition = 'none';
+    cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { const d = Math.max(0, dy); s.style.transform = `translate3d(0,${d}px,0)`; $('#ov').style.background = `rgba(20,26,40,${0.35 * Math.max(0, 1 - d / 500)})`; });
+  }, { passive: false });
+  s.addEventListener('touchend', () => {
+    if (on !== true) { on = false; return; } on = false; cancelAnimationFrame(raf);
+    const v = dy / Math.max(1, Date.now() - t0);
+    if (dy > 120 || (v > 0.5 && dy > 40)) dismissSheet();
+    else { s.style.transition = 'transform .3s cubic-bezier(.2,.9,.3,1.15)'; s.style.transform = ''; $('#ov').style.background = ''; }
+  }, { passive: true });
+})();
 
 /* ============ Tag öffnen ============ */
 function openDay(ds, focus) {
@@ -1151,24 +1187,41 @@ function scaleFor(mode, d, ref) {
   if (mode === 'day') return { val: d.total / Math.max(1, d.nDays), need: ref };
   return { val: d.total / Math.max(1, d.meals.length), need: ref / 3 };
 }
-const fmtN = (v, u) => (v < 10 ? (Math.round(v * 10) / 10).toString().replace('.', ',') : fmtInt(v)) + ' ' + u;
+const fmtN = (v, u) => {
+  if (u === 'g' && v > 0 && v < 0.1) return fmtN(v * 1000, 'mg');
+  if (u === 'mg' && v > 0 && v < 0.1) return fmtN(v * 1000, 'µg');
+  return (v < 1 ? (Math.round(v * 100) / 100) : v < 10 ? (Math.round(v * 10) / 10) : Math.round(v)).toLocaleString('de-DE') + ' ' + u;
+};
+const WAVE = '<svg viewBox="0 0 120 12" preserveAspectRatio="none"><path d="M0 6 Q15 0 30 6 T60 6 T90 6 T120 6 V12 H0Z"/></svg>';
+function fill(lvl, bubbles) {
+  const f = h('span', { class: 'jfill', style: `--lvl:${lvl}%` });
+  const w1 = h('span', { class: 'wave' }); w1.innerHTML = WAVE; const w2 = h('span', { class: 'wave b' }); w2.innerHTML = WAVE; f.append(w1, w2);
+  if (bubbles && lvl > 12) for (let k = 0; k < 5; k++) f.append(h('i', { class: 'bub', style: `left:${12 + k * 17}%;animation-delay:${k * 0.7}s;--s:${4 + (k % 3) * 2}px` }));
+  return f;
+}
+function countUp(el, to, fmt) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = fmt(to); return el; }
+  const t0 = performance.now(), D = 700; el.textContent = fmt(0);
+  const step = t => { const p = Math.min(1, (t - t0) / D); el.textContent = fmt(to * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step); return el;
+}
 function jar(name, pct, state, sub, onclick) {
   const lvl = Math.max(4, Math.min(100, pct));
   return h('button', { class: 'jar ' + state, onclick },
-    h('span', { class: 'jfill', style: `height:${lvl}%` }),
-    h('span', { class: 'jpct', text: fmtInt(pct) + ' %' }),
+    fill(lvl),
+    countUp(h('span', { class: 'jpct' }), pct, x => fmtInt(x) + ' %'),
     h('span', { class: 'jname', text: name }),
     sub ? h('span', { class: 'jsub', text: sub }) : null);
 }
 function openReport(start) {
   const d = reportData(start);
   if (!d.meals.length) return openSheet('Nährstoffe der Woche', [emptyArt('Noch keine Rezepte mit Mengen eingeplant'), grey('Sobald in dieser Woche Rezepte mit Mengen eingeplant sind, siehst du hier, was eure Gerichte an Nährstoffen liefern.')]);
-  const modeSeg = h('div', { class: 'seg wide' }, ...[['week', 'Woche'], ['day', 'Pro Tag'], ['meal', 'Pro Gericht']].map(([k, t]) => h('button', { class: repMode === k ? 'on' : '', onclick: () => { repMode = k; openReport(start); } }, t)));
+  const modeSeg = h('div', { class: 'seg wide' }, ...[['week', 'Woche'], ['day', 'Pro Tag'], ['meal', 'Pro Gericht']].map(([k, t]) => h('button', { class: repMode === k ? 'on' : '', onclick: () => { repMode = k; openReport(start); $('#sheet').scrollTop = 0; } }, t)));
   const explain = { week: `Alles, was ihr in dieser Woche eingeplant habt, pro Person, verglichen mit dem Bedarf für 7 Tage.`, day: `Durchschnitt pro Tag mit eingeplantem Gericht (${d.nDays} ${d.nDays === 1 ? 'Tag' : 'Tage'}), verglichen mit dem Tagesbedarf.`, meal: `Durchschnitt pro Gericht. Als Ziel gilt ein Drittel des Tagesbedarfs, weil ein Hauptgericht etwa eine von drei Mahlzeiten ist.` }[repMode];
   const rows = Object.entries(REF).map(([i, [ref, name, unit]]) => { const sc = scaleFor(repMode, d, ref); return { i: +i, name, unit, ref, val: sc.val[i], need: sc.need, pct: sc.val[i] / sc.need * 100 }; });
   const top1 = i => { const t = Object.entries(d.src[i] || {}).sort((a, b) => b[1] - a[1])[0]; return t ? t[0] : ''; };
   const open = r => openNutrient(r, d, start);
-  const grid = list => h('div', { class: 'jars' }, list.map(r => jar(r.name, r.pct, r.state, top1(r.i), () => open(r))));
+  let jn = 0; const grid = list => h('div', { class: 'jars' }, list.map(r => jar(r.name, r.pct, r.state, top1(r.i), () => open(r))).map(b => (b.style.animationDelay = (jn++ * 35) + 'ms', b)));
   rows.forEach(r => r.state = r.pct >= 100 ? 'good' : r.pct >= 60 ? 'ok' : 'low');
   const low = rows.filter(r => r.state === 'low' && r.i !== 9).sort((a, b) => a.pct - b.pct), ok = rows.filter(r => r.state === 'ok').sort((a, b) => a.pct - b.pct), good = rows.filter(r => r.state === 'good').sort((a, b) => b.pct - a.pct);
   const vitD = rows.find(r => r.i === 9); if (vitD && vitD.state === 'low') ok.push({ ...vitD, state: 'sun' });
@@ -1176,7 +1229,7 @@ function openReport(start) {
   const kcal = scaleFor(repMode, d, 1).val[0];
   const content = [
     h('div', { class: 'rephero' },
-      h('div', { class: 'rhnum', text: fmtInt(kcal) }),
+      countUp(h('div', { class: 'rhnum' }), kcal, fmtInt),
       h('div', { class: 'rhlbl', text: repMode === 'week' ? 'kcal pro Person in dieser Woche' : repMode === 'day' ? 'kcal pro Person und Tag' : 'kcal pro Person und Gericht' }),
       h('div', { class: 'rhmeta', text: `${d.meals.length} ${d.meals.length === 1 ? 'Gericht' : 'Gerichte'} an ${d.nDays} ${d.nDays === 1 ? 'Tag' : 'Tagen'} eingeplant` })),
     modeSeg,
@@ -1188,29 +1241,32 @@ function openReport(start) {
   openSheet('Nährstoffe', content);
 }
 function openNutrient(r, d, start) {
-  const srcs = Object.entries(d.src[r.i] || {}).sort((a, b) => b[1] - a[1]);
-  const totalSrc = srcs.reduce((a, b) => a + b[1], 0) || 1;
   const scaleDiv = repMode === 'week' ? 1 : repMode === 'day' ? Math.max(1, d.nDays) : Math.max(1, d.meals.length);
+  const srcs = Object.entries(d.src[r.i] || {}).filter(([, v]) => v / scaleDiv >= r.need * 0.005).sort((a, b) => b[1] - a[1]);
+  const maxSrc = srcs.length ? srcs[0][1] : 1;
+  const tiny = Object.keys(d.src[r.i] || {}).length - srcs.length;
+  const st = r.limit ? 'high' : r.state;
   const sug = suggestFoods(r.i), have = items.filter(it => !it.checked).filter(it => { const v = window.NUTRI && window.NUTRI[canon(it.name)]; return v && v[r.i] / r.ref > 0.15; }).map(it => it.name).slice(0, 5);
   const needTxt = repMode === 'week' ? 'Bedarf für 7 Tage' : repMode === 'day' ? 'Bedarf pro Tag' : 'Ziel pro Gericht';
   const content = [
     h('div', { class: 'nuthero ' + (r.limit ? 'high' : r.state) },
-      h('div', { class: 'nhjar' }, h('span', { class: 'jfill', style: `height:${Math.max(4, Math.min(100, r.pct))}%` }), h('span', { class: 'nhpct', text: fmtInt(r.pct) + ' %' })),
+      h('div', { class: 'nhglow' }), h('div', { class: 'nhjar' }, fill(Math.max(4, Math.min(100, r.pct)), true), countUp(h('span', { class: 'nhpct' }), r.pct, x => fmtInt(x) + ' %')),
       h('div', { class: 'nhtxt' },
         h('div', null, h('b', { text: fmtN(r.val[r.i] ?? r.val, r.unit) }), ` ${repMode === 'week' ? 'diese Woche' : repMode === 'day' ? 'pro Tag' : 'pro Gericht'}`),
         h('div', { class: 'muted', text: `${r.limit ? 'Obergrenze' : needTxt}: ${fmtN(r.need, r.unit)}` }),
         h('div', { class: 'muted', text: `Tagesbedarf: ${fmtN(r.ref, r.unit)} / Woche: ${fmtN(r.ref * 7, r.unit)}` }))),
-    h('div', { class: 'infocard' }, h('h3', { text: r.limit ? 'Warum darauf achten?' : 'Wofür wichtig?' }), h('p', { text: INFO[r.i] || '' })),
+    h('div', { class: 'infocard why' }, h('h3', { text: r.limit ? 'Warum darauf achten?' : 'Wofür wichtig?' }), h('p', { text: INFO[r.i] || '' })),
   ];
   if (srcs.length) content.push(h('div', { class: 'infocard' }, h('h3', { text: 'Woher es bei euch kommt' }),
-    h('div', { class: 'srclist' }, srcs.map(([name, v]) => h('div', { class: 'src' }, h('span', { class: 'sname', text: name }), h('span', { class: 'sbar' }, h('i', { style: `width:${Math.round(v / totalSrc * 100)}%` })), h('span', { class: 'sval', text: fmtN(v / scaleDiv, r.unit) }))))));
+    h('div', { class: 'srclist' }, srcs.map(([name, v], k) => h('div', { class: 'src' }, h('span', { class: 'sname', text: name }), h('span', { class: 'sbar' }, h('i', { style: `width:${Math.max(3, Math.round(v / maxSrc * 100))}%;animation-delay:${120 + k * 70}ms` })), h('span', { class: 'sval', text: fmtN(v / scaleDiv, r.unit) }))))));
   else content.push(h('div', { class: 'infocard' }, h('h3', { text: 'Woher es bei euch kommt' }), grey('Aus euren eingeplanten Gerichten kommt davon praktisch nichts.')));
+  if (srcs.length && tiny > 0) content[content.length - 1].append(h('div', { class: 'muted', style: 'margin-top:8px;font-size:13px', text: `Dazu Spuren aus ${tiny} ${tiny === 1 ? 'weiterer Zutat' : 'weiteren Zutaten'}` }));
   if (!r.limit && r.state !== 'good' && sug.length) content.push(h('div', { class: 'infocard' }, h('h3', { text: 'Davon steckt viel in' }), h('div', { class: 'tagbox' }, sug.map(x => h('span', { class: 'pill', text: x })))));
   if (!r.limit && have.length) content.push(h('div', { class: 'infocard' }, h('h3', { text: 'Schon auf eurer Liste' }), h('div', { class: 'tagbox' }, have.map(x => h('span', { class: 'pill t', text: x })))));
   if (r.i === 9) content.push(grey('Vitamin D bildet der Körper vor allem über Sonnenlicht, über das Essen kommt nur ein kleiner Teil.'));
   if (r.i === 22) content.push(grey('Jodsalz ist hier nicht mitgerechnet, darüber kommt im Alltag ein großer Teil.'));
-  content.push(h('div', { class: 'actions' }, h('button', { class: 'btn s', onclick: () => openReport(start) }, 'Zurück zur Übersicht')));
-  openSheet(r.name, content);
+  content.push(h('div', { class: 'actions' }, h('button', { class: 'btn grad', onclick: () => openReport(start) }, 'Zurück zur Übersicht')));
+  openSheet(r.name, [h('div', { class: 'nutpage ' + st }, ...content.filter(Boolean))]);
 }
 function suggestFoods(i) {
   const cand = [];
