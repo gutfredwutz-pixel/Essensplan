@@ -433,7 +433,7 @@ const TAB_ORDER = ['set', 'list', 'cal', 'rec', 'nutri'];
 function goTab(id, dir, fromX) {
   if (id === tab) return;
   const m = $('#main'); const W = window.innerWidth; const x0 = fromX || 0;
-  const swap = () => { tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, 0); };
+  const swap = () => { if (tab === 'nutri' && window.resetNutriState) resetNutriState(); tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, 0); };
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) { swap(); return; }
   document.querySelectorAll('.ghost').forEach(g => g.remove()); cachePage(); document.documentElement.style.setProperty('--tdur', '.42s');
   const r = m.getBoundingClientRect();
@@ -518,7 +518,7 @@ function peekNode(id) {
       setTimeout(() => {
         const sy0 = 0;
         el.style.transition = 'none';
-        tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, sy0);
+        if (tab === 'nutri' && window.resetNutriState) resetNutriState(); tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, sy0);
         el.style.transform = '';
         requestAnimationFrame(() => { clearPeeks(); el.style.transition = ''; busy = false; });
       }, dur * 1000 + 10);

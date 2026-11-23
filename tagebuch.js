@@ -91,10 +91,10 @@ function whoSeg(cur, start) {
 }
 
 /* ---- Persönliche Auswertung ---- */
-let pRange = 'week', pCur = null;
+let pRange = 'day', pSel = null;
+function resetNutriState() { pRange = 'day'; pSel = null; }
 function openPersonReport(name, start) {
   nutriWho = name;
-  if (!pCur || pCur.start !== start) pCur = { start, d: new Date(start) };
   const pf = profiles[name];
   const content = [whoSeg(name, start)];
   if (!pf) {
@@ -104,41 +104,60 @@ function openPersonReport(name, start) {
       h('button', { class: 'btn grad', onclick: go }, 'Angaben machen')));
     return nutriOut('Nährstoffe', content, () => openPersonReport(name, start));
   }
+  const today = ymd(new Date());
+  if (!pSel) pSel = today;
+  const re = () => openPersonReport(name, start);
+  const selD = new Date(pSel); const ws = weekStartOf(selD); const we = addDays(ws, 6);
+  const days = [...Array(7)].map((_, i) => ymd(addDays(ws, i)));
   const nd = needsOf(pf);
-  let days, label;
-  if (pRange === 'week') { const s = weekStartOf(pCur.d); days = [...Array(7)].map((_, i) => ymd(addDays(s, i))); const e = addDays(s, 6); label = `${s.getDate()}. ${MON[s.getMonth()].slice(0, 3)}. bis ${e.getDate()}. ${MON[e.getMonth()].slice(0, 3)}.`; }
-  else { const m = new Date(pCur.d.getFullYear(), pCur.d.getMonth(), 1); const n = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate(); days = [...Array(n)].map((_, i) => ymd(addDays(m, i))); label = `${MON[m.getMonth()]} ${m.getFullYear()}`; }
-  const d = rangeData(name, days);
-  const avg = d.total.map(x => x / Math.max(1, d.n));
-  const cov = d.n ? coverage(avg, nd.R) : 0;
-  const move = dir => { pCur.d = pRange === 'week' ? addDays(pCur.d, 7 * dir) : new Date(pCur.d.getFullYear(), pCur.d.getMonth() + dir, 1); openPersonReport(name, start); };
-  const today0 = ymd(new Date());
-  content.push(h('button', { class: 'btn grad big quick', onclick: () => openDiary(name, today0, () => openPersonReport(name, start)) }, ic('microphone'), 'Heute eintragen'));
-  content.push(h('div', { class: 'seg wide', style: 'margin-top:14px' }, ...[['week', 'Woche'], ['month', 'Monat']].map(([k, t]) => h('button', { class: pRange === k ? 'on' : '', onclick: () => { pRange = k; openPersonReport(name, start); } }, t))));
-  content.push(h('div', { class: 'pnav' }, h('button', { class: 'ib', 'aria-label': 'Zurück', onclick: () => move(-1) }, ic('chevron-left')), h('div', { text: label }), h('button', { class: 'ib', 'aria-label': 'Weiter', onclick: () => move(1) }, ic('chevron-right'))));
+  const wk = rangeData(name, days);
+  const dayLbl = ds => { const x = new Date(ds); return (ds === today ? 'Heute' : ds === ymd(addDays(new Date(), -1)) ? 'Gestern' : WDL[x.getDay()]) + `, ${x.getDate()}. ${MON[x.getMonth()]}`; };
+  // Eintragen für den gewählten Tag
+  const selName = pSel === today ? 'Heute' : pSel === ymd(addDays(new Date(), -1)) ? 'Gestern' : WDL[selD.getDay()];
+  content.push(h('button', { class: 'btn grad big quick', onclick: () => openDiary(name, pSel, re) }, ic('microphone'), `${selName} eintragen`));
+  content.push(h('div', { class: 'seg wide', style: 'margin-top:14px' }, ...[['day', 'Tag'], ['week', 'Woche']].map(([k, tt]) => h('button', { class: pRange === k ? 'on' : '', onclick: () => { pRange = k; re(); } }, tt))));
+  const move = dir => { pSel = ymd(addDays(selD, 7 * dir)); re(); };
+  content.push(h('div', { class: 'pnav' }, h('button', { class: 'ib', 'aria-label': 'Woche davor', onclick: () => move(-1) }, ic('chevron-left')),
+    h('div', { text: `${ws.getDate()}. ${MON[ws.getMonth()].slice(0, 3)}. bis ${we.getDate()}. ${MON[we.getMonth()].slice(0, 3)}.` }),
+    h('button', { class: 'ib', 'aria-label': 'Woche danach', onclick: () => move(1) }, ic('chevron-right'))));
+  // Tage der Woche
+  const strip = h('div', { class: 'dstrip week' });
+  days.forEach(ds => {
+    const x = wk.per[ds]; const c = x.counted ? coverage(x.tot, nd.R) : 0; const dt = new Date(ds);
+    const sel = pRange === 'day' && ds === pSel;
+    strip.append(h('button', { class: 'dj ' + (x.counted ? covState(c) : 'none') + (x.logged ? ' logged' : '') + (ds === today ? ' today' : '') + (sel ? ' sel' : ''), onclick: () => { pSel = ds; pRange = 'day'; re(); } },
+      x.counted ? fill(Math.max(6, Math.min(100, c))) : null,
+      h('span', { class: 'djl', text: WD[(dt.getDay() + 6) % 7] })));
+  });
+  content.push(strip);
+  // Werte: ein Tag oder Durchschnitt der Woche
+  let vals, src, n, heroLbl, heroMeta, opt;
+  if (pRange === 'day') {
+    const x = wk.per[pSel] || dayIntake(name, pSel);
+    vals = x.tot; src = x.src; n = x.counted ? 1 : 0;
+    heroLbl = `deiner Nährstoffe gedeckt / ${dayLbl(pSel)}`;
+    heroMeta = n ? `${fmtInt(vals[0])} von ${fmtInt(nd.kcal)} kcal${x.logged ? '' : ' / nur aus dem Wochenplan'}` : 'Für diesen Tag ist noch nichts eingetragen oder geplant';
+    opt = { div: 1, perLabel: 'an diesem Tag', needTxt: 'Dein Bedarf pro Tag', back: re };
+  } else {
+    n = wk.n; vals = wk.total.map(v => v / Math.max(1, n)); src = wk.src;
+    heroLbl = 'deiner Nährstoffe gedeckt / im Schnitt pro Tag dieser Woche';
+    heroMeta = n ? `Ø ${fmtInt(vals[0])} von ${fmtInt(nd.kcal)} kcal pro Tag / ${wk.logged} von 7 Tagen eingetragen` : 'In dieser Woche ist noch nichts eingetragen oder geplant';
+    opt = { div: Math.max(1, n), perLabel: 'pro Tag im Schnitt', needTxt: 'Dein Bedarf pro Tag', back: re };
+  }
+  const cov = n ? coverage(vals, nd.R) : 0;
   content.push(h('div', { class: 'rephero phero ' + covState(cov) },
     h('div', { class: 'rhnum', text: fmtInt(cov) + ' %' }),
-    h('div', { class: 'rhlbl', text: 'deiner Nährstoffe im Schnitt gedeckt' }),
-    h('div', { class: 'rhmeta', text: d.n ? `Ø ${fmtInt(avg[0])} von ${fmtInt(nd.kcal)} kcal am Tag / ${d.logged} von ${days.length} Tagen eingetragen` : 'Noch nichts eingetragen oder geplant' })));
-  // Tage als kleine Gläser
-  const today = ymd(new Date());
-  const strip = h('div', { class: 'dstrip ' + pRange });
-  if (pRange === 'month') { const off = (new Date(days[0]).getDay() + 6) % 7; for (let k = 0; k < off; k++) strip.append(h('span')); }
-  days.forEach((ds, k) => {
-    const x = d.per[ds]; const c = x.counted ? coverage(x.tot, nd.R) : 0; const dt = new Date(ds);
-    strip.append(h('button', { class: 'dj ' + (x.counted ? covState(c) : 'none') + (x.logged ? ' logged' : '') + (ds === today ? ' today' : ''), style: `animation-delay:${k * 25}ms`, onclick: () => openDiary(name, ds, () => openPersonReport(name, start)) },
-      x.counted ? fill(Math.max(6, Math.min(100, c))) : null,
-      h('span', { class: 'djl', text: pRange === 'week' ? WD[(dt.getDay() + 6) % 7] : String(dt.getDate()) })));
-  });
-  content.push(strip, h('div', { class: 'muted', style: 'text-align:center;font-size:13px;margin:8px 0 0', text: 'Tippe auf einen Tag, um ihn einzutragen. Voll umrandet heißt eingetragen.' }));
-  if (d.n) {
-    const top1 = i => { const t = Object.entries(d.src[i] || {}).sort((a, b) => b[1] - a[1])[0]; return t ? t[0].replace(' (Supplement)', '') : ''; };
-    const opt = { div: d.n, perLabel: 'pro Tag im Schnitt', needTxt: 'Dein Bedarf pro Tag', back: () => openPersonReport(name, start) };
-    content.push(...nutSections(nutRows(nd, avg, 1), top1, r => openNutrient(r, d, start, opt)));
+    h('div', { class: 'rhlbl', text: heroLbl.split(' / ')[0] }),
+    h('div', { class: 'rhsub', text: heroLbl.split(' / ')[1] }),
+    h('div', { class: 'rhmeta', text: heroMeta })));
+  if (n) {
+    const top1 = i => { const tt = Object.entries(src[i] || {}).sort((a, b) => b[1] - a[1])[0]; return tt ? tt[0].replace(' (Supplement)', '') : ''; };
+    const dd = { src, n, unknown: new Set() };
+    content.push(...nutSections(nutRows(nd, vals, 1), top1, r => openNutrient(r, dd, start, opt)));
   }
-  content.push(grey('Geplante Gerichte zählen als eine Portion, außer du hast im Tagebuch etwas anderes eingetragen. Tage ohne Plan und ohne Eintrag zählen nicht mit. Supplemente sind eingerechnet.'));
-  content.push(h('div', { class: 'actions' }, h('button', { class: 'btn s', onclick: () => openProfileEdit(name, () => openPersonReport(name, start)) }, 'Angaben und Supplemente')));
-  nutriOut('Nährstoffe', content, () => openPersonReport(name, start));
+  content.push(grey('Geplante Gerichte zählen als eine Portion, außer du hast im Tagebuch etwas anderes eingetragen. Supplemente sind eingerechnet. In der Woche zählen nur Tage mit Eintrag oder Plan.'));
+  content.push(h('div', { class: 'actions' }, h('button', { class: 'btn s', onclick: () => openProfileEdit(name, re) }, 'Angaben und Supplemente')));
+  nutriOut('Nährstoffe', content, re);
 }
 function weekStartOf(dt) { const x = dayOnly(dt); return addDays(x, -((x.getDay() + 6) % 7)); }
 
