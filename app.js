@@ -625,28 +625,33 @@ function itemRow(i) {
   makeSwipe(wrap, row, toggle, del);
   return wrap;
 }
-function closeSwipe() { if (openSwipe) { openSwipe.style.transform = ''; openSwipe.classList.remove('open'); openSwipe = null; } }
+function closeSwipe() { if (openSwipe) { openSwipe.style.transform = ''; openSwipe.classList.remove('open'); const w = openSwipe.parentNode; if (w) setTimeout(() => w.classList.remove('swiping'), 200); openSwipe = null; } }
 function makeSwipe(wrap, row, onTap, onDelete) {
-  let sx = 0, sy = 0, dx = 0, base = 0, drag = false, down = false, moved = false;
-  const OPEN = -170;
+  let sx = 0, sy = 0, dx = 0, base = 0, drag = false, down = false, t0 = 0;
+  const OPEN = -176;
   row.style.touchAction = 'pan-y';
-  row.addEventListener('pointerdown', e => { if (e.target.closest('.cb,.nx')) return; down = true; drag = false; moved = false; sx = e.clientX; sy = e.clientY; base = row.classList.contains('open') ? OPEN : 0; row.style.transition = 'none'; });
+  const pos = x => { row.style.transform = x ? `translateX(${x}px)` : ''; wrap.classList.toggle('swiping', x < 0); };
+  row.addEventListener('pointerdown', e => { if (e.target.closest('.cb,.nx')) return; down = true; drag = false; sx = e.clientX; sy = e.clientY; t0 = Date.now(); base = row.classList.contains('open') ? OPEN : 0; row.style.transition = 'none'; });
   row.addEventListener('pointermove', e => {
     if (!down) return; const mx = e.clientX - sx, my = e.clientY - sy;
-    if (!drag) { if (Math.abs(mx) > 8 && Math.abs(mx) > Math.abs(my)) { drag = true; try { row.setPointerCapture(e.pointerId); } catch (x) { } if (openSwipe && openSwipe !== row) closeSwipe(); } else if (Math.abs(my) > 10) { down = false; return; } else return; }
-    moved = true; dx = Math.min(0, base + mx); row.style.transform = `translateX(${dx}px)`;
-    wrap.classList.toggle('far', dx < -wrap.offsetWidth * 0.55);
+    if (!drag) { if (Math.abs(mx) > 6 && Math.abs(mx) > Math.abs(my) * 1.2) { drag = true; try { row.setPointerCapture(e.pointerId); } catch (x) { } if (openSwipe && openSwipe !== row) closeSwipe(); } else if (Math.abs(my) > 10) { down = false; row.style.transition = ''; return; } else return; }
+    let raw = Math.min(0, base + mx);
+    // bis zum Menü leicht, danach mit Widerstand
+    if (raw < OPEN) raw = OPEN + (raw - OPEN) * 0.45;
+    dx = raw; pos(dx);
+    wrap.classList.toggle('far', dx < -wrap.offsetWidth * 0.62);
   });
   const end = () => {
     if (!down) return; down = false; row.style.transition = '';
     if (!drag) { if (row.classList.contains('open')) closeSwipe(); else { closeSwipe(); onTap(); } return; }
-    const w = wrap.offsetWidth;
-    if (dx < -w * 0.55) { row.style.transform = `translateX(${-w}px)`; wrap.classList.add('gone'); setTimeout(onDelete, 180); }
-    else if (dx < -60) { row.style.transform = `translateX(${OPEN}px)`; row.classList.add('open'); openSwipe = row; }
-    else { row.style.transform = ''; row.classList.remove('open'); if (openSwipe === row) openSwipe = null; }
+    const w = wrap.offsetWidth, fast = (Date.now() - t0) < 250 && dx < -40;
+    if (dx < -w * 0.62) { pos(-w); wrap.classList.add('gone'); setTimeout(onDelete, 200); }
+    else if (dx < -36 || (fast && base === 0)) { pos(OPEN); row.classList.add('open'); openSwipe = row; }
+    else { pos(0); row.classList.remove('open'); if (openSwipe === row) openSwipe = null; }
     wrap.classList.remove('far');
   };
-  row.addEventListener('pointerup', end); row.addEventListener('pointercancel', () => { down = false; row.style.transition = ''; if (!row.classList.contains('open')) row.style.transform = ''; });
+  row.addEventListener('pointerup', end);
+  row.addEventListener('pointercancel', () => { down = false; row.style.transition = ''; if (!row.classList.contains('open')) pos(0); });
 }
 document.addEventListener('pointerdown', e => { if (openSwipe && !e.target.closest('.swipe')) closeSwipe(); });
 function editQty(i) {

@@ -1,4 +1,4 @@
-// Große Dateien (Modelle, Bibliotheken) lokal behalten, alles andere frisch laden
+// Große Dateien (Modelle, Bibliotheken) lokal behalten; App-Dateien immer frisch vom Server holen
 const BIG = 'ep-big-v1';
 self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
@@ -10,5 +10,8 @@ self.addEventListener('fetch', e => {
       const hit = await c.match(e.request); if (hit) return hit;
       const r = await fetch(e.request); if (r.ok) c.put(e.request, r.clone()); return r;
     }));
+    return;
   }
+  // Seite, Code und Daten: am Browser-Cache vorbei, damit Updates sofort ankommen
+  e.respondWith(fetch(e.request, { cache: 'no-cache' }).catch(() => caches.match(e.request)));
 });

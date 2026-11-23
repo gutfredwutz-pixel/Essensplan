@@ -198,10 +198,11 @@ html.dark .blobs i{opacity:.35}
 html.dark .chip .m{background:var(--card2)}
 /* Wischen auf der Einkaufsliste */
 .swipe{position:relative;margin-bottom:6px;border-radius:999px;overflow:hidden}
-.swacts{position:absolute;inset:0;display:flex;justify-content:flex-end;align-items:stretch;gap:0;border-radius:999px;overflow:hidden}
-.sw{border:0;font-weight:700;font-size:14px;color:#fff;width:85px;cursor:pointer}
+.swacts{opacity:0;transition:opacity .15s;position:absolute;inset:0;display:flex;justify-content:flex-end;align-items:stretch;gap:0;border-radius:999px;overflow:hidden}
+.sw{border:0;font-weight:700;font-size:14px;color:#fff;width:88px;cursor:pointer;transition:width .15s}
 .sw.amt{background:var(--blue)}
 .sw.del{background:#E05A5A;border-radius:0 999px 999px 0}
+.swipe.swiping .swacts{opacity:1}
 .swipe.far .sw.amt{width:0;padding:0;overflow:hidden}
 .swipe.far .sw.del{width:100%}
 .swipe.gone{transition:opacity .18s;opacity:0}
@@ -288,7 +289,8 @@ html.dark .chip .m{background:var(--card2)}
 .item{background:color-mix(in srgb, var(--cfg, #8891A5) 13%, var(--card))}
 .item .cb{border-color:color-mix(in srgb, var(--cfg, #8891A5) 45%, var(--card))}
 .donebox{margin-top:22px}
-.donebox .item{background:var(--card);opacity:.75}
+.donebox .item{background:var(--card)}
+.donebox .item .body{opacity:.6}
 /* Rezept-Kategorien als Raster */
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 0;padding:0;overflow:visible;position:relative;z-index:1}
 .tile{width:auto;height:64px;border-radius:18px;font-size:15px;padding:10px 14px;touch-action:manipulation}
