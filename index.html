@@ -617,7 +617,9 @@ body[data-tab=set] .blobs .b2{left:calc(var(--bw) * -.5);top:calc(100% - var(--b
 .btn.quick{width:100%;margin:12px 0 2px}
 body[data-tab=nutri] .blobs .b1{left:calc(100% - var(--bw) * .5);top:calc(100% - var(--bot) - 2% - var(--bh));background:var(--blue-l);opacity:.8;border-radius:55% 45% 42% 58% / 48% 58% 42% 52%}
 body[data-tab=nutri] .blobs .b2{left:calc(var(--bw) * -.52);top:30%;background:var(--rosa);opacity:.55;border-radius:44% 56% 60% 40% / 52% 40% 60% 48%}
-.blobs i{transition:left .45s cubic-bezier(.22,.8,.24,1),top .45s cubic-bezier(.22,.8,.24,1),border-radius .45s ease,background-color .45s ease,opacity .45s ease}
+:root{--tdur:.42s}
+.blobs i{transition:left var(--tdur) cubic-bezier(.22,.8,.24,1),top var(--tdur) cubic-bezier(.22,.8,.24,1),border-radius var(--tdur) ease,background-color var(--tdur) ease,opacity var(--tdur) ease}
+.peek{background:transparent}
 
 /* Runde 12: Symmetrie */
 .tabs{display:grid;grid-template-columns:repeat(5,58px);justify-content:space-between;align-items:end;gap:6px;padding:6px 12px;width:auto}
@@ -646,6 +648,14 @@ main{padding-bottom:calc(var(--bot) + 160px)}
 html.dark .pill,html.dark .pill.t{color:#B9C6FF}
 .pod span{white-space:nowrap;font-size:11.5px;padding:0 4px}
 .seg.wide.sm button{font-size:13px}
+
+/* Hinweis ohne Angaben: als Karte, mittig, gleiche Maße wie die übrigen Karten */
+.pcta{background:var(--card);border-radius:36px 28px 34px 26px / 28px 36px 26px 34px;box-shadow:0 2px 12px var(--shadow);padding:26px 20px 20px;margin:max(4vh,18px) 0 0;text-align:center}
+.pcta .pctaart{width:92px;height:84px;margin:0 auto 16px;box-shadow:0 12px 26px -14px rgba(120,100,255,.8)}
+.pctaart span{font-size:40px}
+.pcta h3{font-size:18px;margin:0 0 8px}
+.pcta p{font-size:15px;margin:0 auto 18px;max-width:300px}
+.pcta .btn{width:100%}
 .hidden{display:none!important}
 </style>
 </head>

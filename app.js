@@ -435,7 +435,7 @@ function goTab(id, dir, fromX) {
   const m = $('#main'); const W = window.innerWidth; const x0 = fromX || 0;
   const swap = () => { tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, 0); };
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) { swap(); return; }
-  document.querySelectorAll('.ghost').forEach(g => g.remove());
+  document.querySelectorAll('.ghost').forEach(g => g.remove()); cachePage(); document.documentElement.style.setProperty('--tdur', '.42s');
   const r = m.getBoundingClientRect();
   const ghost = m.cloneNode(true); ghost.removeAttribute('id'); ghost.classList.add('ghost');
   Object.assign(ghost.style, { position: 'fixed', left: (r.left - x0) + 'px', top: r.top + 'px', width: r.width + 'px', margin: '0', pointerEvents: 'none', zIndex: '5', transition: 'none', transform: `translate3d(${x0}px,0,0)`, opacity: '1' });
@@ -449,27 +449,85 @@ function goTab(id, dir, fromX) {
   requestAnimationFrame(() => { ghost.style.transform = `translate3d(${-off}px,0,0)`; ghost.style.opacity = '0.2'; m.style.transform = 'translate3d(0,0,0)'; });
   setTimeout(() => { ghost.remove(); m.style.transition = ''; m.style.transform = ''; }, 460);
 }
+/* Nachbarseiten als Vorschau, damit beim Wischen die neue Seite direkt mitkommt */
+const pageCache = {}; let nutriTarget = null;
+function cachePage() { const m = $('#main'); if (m && m.firstChild) { const d = h('div'); d.append(...[...m.childNodes].map(n => n.cloneNode(true))); pageCache[tab] = d; } }
+function peekNode(id) {
+  try {
+    if (id === 'nutri') {
+      if (pageCache.nutri) return pageCache.nutri.cloneNode(true);
+      const d = h('div'); const f = nutriFn, w = nutriWho; nutriTarget = d; try { nutriHome(); } finally { nutriTarget = null; nutriFn = f; nutriWho = w; } return d;
+    }
+    const sl = listUI, sr = recUI; let n = null;
+    if (id === 'cal') n = renderCal(); else if (id === 'set') n = renderSettings(); else if (id === 'list') n = renderList(); else if (id === 'rec') n = renderRec();
+    listUI = sl; recUI = sr; return n || (pageCache[id] && pageCache[id].cloneNode(true));
+  } catch (err) { console.warn(err); return pageCache[id] ? pageCache[id].cloneNode(true) : null; }
+}
 (() => {
-  let sx = 0, sy = 0, mode = 0, t0 = 0, dx = 0, raf = 0, lastX = 0; const m = () => $('#main');
+  let sx = 0, sy = 0, mode = 0, dx = 0, raf = 0, peeks = {}, vx = 0, lt = 0, lxp = 0, busy = false; const m = () => $('#main');
+  const EASE = 'cubic-bezier(.22,.8,.24,1)';
+  const clearPeeks = () => { Object.values(peeks).forEach(p => p && p.remove()); peeks = {}; };
+  const mkPeek = id => {
+    if (!id) return null; const node = peekNode(id); if (!node) return null;
+    const r = m().getBoundingClientRect(); const p = h('div', { class: 'peek' }); p.append(node);
+    Object.assign(p.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', pointerEvents: 'none', zIndex: '5', willChange: 'transform' });
+    document.body.appendChild(p); return p;
+  };
+  const place = x => {
+    const W = window.innerWidth;
+    m().style.transform = `translate3d(${x}px,0,0)`;
+    if (peeks.r) peeks.r.style.transform = `translate3d(${W + x}px,0,0)`;
+    if (peeks.l) peeks.l.style.transform = `translate3d(${-W + x}px,0,0)`;
+  };
   document.addEventListener('touchstart', e => {
-    mode = 0; if ($('#ov').classList.contains('on') || document.querySelector('.cook') || e.touches.length > 1) { mode = -1; return; }
+    mode = 0; if (busy || $('#ov').classList.contains('on') || document.querySelector('.cook') || e.touches.length > 1) { mode = -1; return; }
     const t = e.target; if (t.closest('.swipe,input,textarea,select,[data-no-tab-swipe],.tabs,.month')) { mode = -1; return; }
-    sx = e.touches[0].clientX; sy = e.touches[0].clientY; t0 = Date.now(); dx = 0;
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY; dx = 0; vx = 0; lt = performance.now(); lxp = sx;
   }, { passive: true });
   document.addEventListener('touchmove', e => {
-    if (mode === -1) return; dx = e.touches[0].clientX - sx; const dy = e.touches[0].clientY - sy;
-    if (mode === 0) { if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.3) { mode = 1; sx += dx > 0 ? 10 : -10; dx = e.touches[0].clientX - sx; m().style.transition = 'none'; } else if (Math.abs(dy) > 10) { mode = -1; return; } else return; }
+    if (mode === -1) return; const cx = e.touches[0].clientX; dx = cx - sx; const dy = e.touches[0].clientY - sy;
+    if (mode === 0) {
+      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+        mode = 1; sx += dx > 0 ? 8 : -8; dx = cx - sx; m().style.transition = 'none';
+        const idx = TAB_ORDER.indexOf(tab); peeks.l = mkPeek(TAB_ORDER[idx - 1]); peeks.r = mkPeek(TAB_ORDER[idx + 1]);
+      } else if (Math.abs(dy) > 10) { mode = -1; return; } else return;
+    }
     if (e.cancelable) e.preventDefault();
+    const now = performance.now(); if (now > lt) { vx = 0.7 * vx + 0.3 * ((cx - lxp) / (now - lt)); lt = now; lxp = cx; }
     const idx = TAB_ORDER.indexOf(tab); const edge = (dx > 0 && idx === 0) || (dx < 0 && idx === TAB_ORDER.length - 1);
-    const x = edge ? dx * 0.18 : dx;
-    lastX = x; cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { m().style.transform = `translate3d(${x}px,0,0)`; });
+    const x = edge ? Math.sign(dx) * Math.pow(Math.abs(dx), 0.75) : dx;
+    cancelAnimationFrame(raf); raf = requestAnimationFrame(() => place(x));
   }, { passive: false });
   document.addEventListener('touchend', () => {
     if (mode !== 1) return; mode = 0; cancelAnimationFrame(raf);
-    const el = m(); const idx = TAB_ORDER.indexOf(tab); const v = Math.abs(dx) / Math.max(1, Date.now() - t0);
-    const n = idx + (dx < 0 ? 1 : -1);
-    if ((Math.abs(dx) > window.innerWidth * 0.25 || (v > 0.45 && Math.abs(dx) > 30)) && n >= 0 && n < TAB_ORDER.length) goTab(TAB_ORDER[n], dx < 0 ? 1 : -1, lastX);
-    else { el.style.transition = 'transform .3s cubic-bezier(.2,.9,.3,1.1)'; el.style.transform = 'translate3d(0,0,0)'; setTimeout(() => { el.style.transition = ''; el.style.transform = ''; el.style.opacity = ''; }, 320); }
+    const el = m(), W = window.innerWidth; const idx = TAB_ORDER.indexOf(tab);
+    const dir = (Math.abs(vx) > 0.35 ? -Math.sign(vx) : -Math.sign(dx)) || 1;
+    const n = idx + dir; const id = TAB_ORDER[n];
+    const go = id && (Math.abs(dx) > W * 0.22 || (Math.abs(vx) > 0.35 && Math.sign(vx) === -dir));
+    const peek = dir > 0 ? peeks.r : peeks.l;
+    if (go && peek && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      busy = true;
+      const rest = W - Math.abs(dx); const dur = Math.max(0.2, Math.min(0.38, rest / Math.max(Math.abs(vx) * 1000 * 0.9, 1400)));
+      document.documentElement.style.setProperty('--tdur', dur + 's');
+      const tr = `transform ${dur}s ${EASE}`;
+      el.style.transition = tr; peek.style.transition = tr;
+      cachePage();
+      document.body.dataset.tab = id;
+      el.style.transform = `translate3d(${-dir * W}px,0,0)`; peek.style.transform = 'translate3d(0,0,0)';
+      const other = dir > 0 ? peeks.l : peeks.r; if (other) other.remove();
+      setTimeout(() => {
+        const sy0 = 0;
+        el.style.transition = 'none';
+        tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, sy0);
+        el.style.transform = '';
+        requestAnimationFrame(() => { clearPeeks(); el.style.transition = ''; busy = false; });
+      }, dur * 1000 + 10);
+    } else {
+      const tr = 'transform .32s cubic-bezier(.2,.9,.3,1.08)';
+      el.style.transition = tr; Object.values(peeks).forEach(p => p && (p.style.transition = tr));
+      place(0);
+      setTimeout(() => { clearPeeks(); el.style.transition = ''; el.style.transform = ''; }, 340);
+    }
   }, { passive: true });
 })();
 function render() {
@@ -1320,10 +1378,10 @@ function openReport(start) {
 let nutriFn = null, nutriWho = null;
 function nutriHome() { const who = nutriWho == null ? (me() || '') : nutriWho; if (who) openPersonReport(who, anchor); else openReport(anchor); }
 function nutriOut(title, content, fn) {
-  if (tab !== 'nutri') return openSheet(title, content);
-  if ($('#ov').classList.contains('on')) closeSheet();
+  if (tab !== 'nutri' && !nutriTarget) return openSheet(title, content);
+  if (!nutriTarget && $('#ov').classList.contains('on')) closeSheet();
   nutriFn = fn || null;
-  $('#main').replaceChildren(h('div', { class: 'npage' }, title && title !== 'Nährstoffe' ? h('h2', { class: 'ntitle', text: title }) : null, ...content.filter(Boolean)));
+  (nutriTarget || $('#main')).replaceChildren(h('div', { class: 'npage' }, title && title !== 'Nährstoffe' ? h('h2', { class: 'ntitle', text: title }) : null, ...content.filter(Boolean)));
 }
 function weekNav(start, go) {
   const e = addDays(start, 6);
