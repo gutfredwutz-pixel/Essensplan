@@ -8,19 +8,40 @@ const PAL_OPTS = [
   [1.7, 'Viel auf den Beinen', 'Zum Beispiel im Verkauf, in der Pflege oder Gastro'],
   [1.9, 'Körperlich hart', 'Zum Beispiel auf dem Bau oder in der Landwirtschaft']];
 const SPORT_I = { 1: ['Locker', 0.03], 2: ['Mittel', 0.05], 3: ['Intensiv', 0.07] };
+const STEPS_EXP = { 1.4: 4000, 1.55: 6000, 1.7: 9000, 1.9: 12000 };
 function needsOf(pf) {
-  const f = pf.sex === 'w', a = +pf.age || 30, w = +pf.weight || (f ? 62 : 75), hg = +pf.height || (f ? 167 : 180);
-  const bmr = 10 * w + 6.25 * hg - 5 * a + (f ? -161 : 5);
-  const pal = (+pf.pal || 1.55) + (+pf.sportH || 0) * SPORT_I[pf.sportI || 2][1];
-  let kcal = bmr * pal; if (pf.goal === 'ab') kcal *= 0.85; if (pf.goal === 'zu') kcal *= 1.1;
+  const f = pf.sex === 'w', a = +pf.age || 30, w = +pf.weight || (f ? 62 : 75), hg = +pf.height || (f ? 167 : 180), bf = +pf.bodyFat || 0;
+  const bmr = bf > 3 && bf < 60 ? 370 + 21.6 * w * (1 - bf / 100) : 10 * w + 6.25 * hg - 5 * a + (f ? -161 : 5);
+  const basePal = +pf.pal || 1.55;
+  const stepAdj = +pf.steps ? Math.max(-0.2, Math.min(0.3, (+pf.steps - (STEPS_EXP[basePal] || 6000)) * 0.0000225)) : 0;
+  const sportAdj = (+pf.sportH || 0) * SPORT_I[pf.sportI || 2][1];
+  const pal = basePal + stepAdj + sportAdj;
+  const tdee = bmr * pal;
+  const rate = +pf.rate || (pf.goal === 'zu' ? 0.25 : 0.5);
+  const goalAdj = pf.goal === 'ab' ? -rate * 7700 / 7 : pf.goal === 'zu' ? rate * 7700 / 7 : 0;
+  const extra = f && pf.special === 'schwanger' ? 250 : f && pf.special === 'stillend' ? 500 : 0;
+  const kcal = Math.max(1200, tdee + goalAdj + extra);
   const R = JSON.parse(JSON.stringify(REF));
   const set = (i, m, w2) => { R[i][0] = f ? w2 : m; };
   set(8, 850, 700); set(10, 14, 12); set(11, 1.2, 1.0); set(12, 1.4, 1.1); set(13, 1.6, 1.4); set(16, 110, 95); set(19, 350, 300); set(20, 11, a >= 51 ? 14 : 16); set(21, 14, 8);
   R[22][0] = a >= 51 ? 180 : 200;
-  R[1][0] = Math.round(w * ((+pf.sportH || 0) >= 4 ? 1.2 : a >= 65 ? 1.0 : 0.8));
+  if (pf.smoker === 'ja') R[16][0] = f ? 135 : 155;
+  if (f && pf.special === 'schwanger') { R[14][0] = 550; R[22][0] = 230; R[20][0] = 27; R[15][0] = 4.5; R[21][0] = 10; }
+  if (f && pf.special === 'stillend') { R[14][0] = 450; R[22][0] = 260; R[20][0] = 20; R[15][0] = 5.5; R[21][0] = 11; }
+  const sp = +pf.sportH || 0;
+  let pk = a >= 65 ? 1.0 : 0.8;
+  if (sp >= 2) pk = { kraft: 1.6, ausdauer: 1.2, mix: 1.4 }[pf.train || 'mix'];
+  if (pf.goal === 'ab' && sp >= 2) pk = Math.min(2.0, pk + 0.2);
+  if (f && pf.special) pk = Math.max(pk, 1.0);
+  R[1][0] = Math.round(w * pk);
   R[23][0] = Math.round(kcal * 0.005 / 9 * 10) / 10;
+  const fat = Math.round(kcal * 0.3 / 9), carb = Math.max(100, Math.round((kcal - R[1][0] * 4 - fat * 9) / 4));
+  const M = { 0: [Math.round(kcal), 'Kalorien', 'kcal'], 2: [fat, 'Fett', 'g'], 3: [carb, 'Kohlenhydrate', 'g'] };
   const L = { 7: [6, 'Salz', 'g'], 5: [Math.round(kcal * 0.1 / 4), 'Zucker', 'g'], 6: [Math.round(kcal * 0.1 / 9), 'Gesättigte Fette', 'g'] };
-  return { kcal, R, L };
+  return { kcal, R, L, M, bmr, pal, tdee, goalAdj, extra, bmi: w / Math.pow(hg / 100, 2), bfUsed: bf > 3 && bf < 60, pk };
+}
+function avgNeeds() {
+  return { kcal: 2150, R: JSON.parse(JSON.stringify(REF)), L: JSON.parse(JSON.stringify(LIMITS)), M: { 0: [2150, 'Kalorien', 'kcal'], 2: [72, 'Fett', 'g'], 3: [270, 'Kohlenhydrate', 'g'] } };
 }
 
 /* ---- Supplemente ---- */
@@ -108,16 +129,9 @@ function openPersonReport(name, start) {
   content.push(strip, h('div', { class: 'muted', style: 'text-align:center;font-size:13px;margin:8px 0 0', text: 'Tippe auf einen Tag, um ihn einzutragen. Voll umrandet heißt eingetragen.' }));
   content.push(h('div', { class: 'actions', style: 'margin-top:14px' }, h('button', { class: 'btn grad big', onclick: () => openDiary(name, today, () => openPersonReport(name, start)) }, ic('microphone'), 'Heute eintragen')));
   if (d.n) {
-    const rows = Object.entries(nd.R).map(([i, [ref, nm, unit]]) => ({ i: +i, name: nm, unit, ref, val: avg, need: ref, pct: avg[i] / ref * 100 }));
-    rows.forEach(r => r.state = r.pct >= 100 ? 'good' : r.pct >= 60 ? 'ok' : 'low');
     const top1 = i => { const t = Object.entries(d.src[i] || {}).sort((a, b) => b[1] - a[1])[0]; return t ? t[0].replace(' (Supplement)', '') : ''; };
     const opt = { div: d.n, perLabel: 'pro Tag im Schnitt', needTxt: 'Dein Bedarf pro Tag', back: () => openPersonReport(name, start) };
-    let jn = 0; const grid = list => h('div', { class: 'jars' }, list.map(r => { const b = jar(r.name, r.pct, r.state, top1(r.i), () => openNutrient(r, d, start, opt)); b.style.animationDelay = (jn++ * 35) + 'ms'; return b; }));
-    const low = rows.filter(r => r.state === 'low' && r.i !== 9).sort((a, b) => a.pct - b.pct), ok = rows.filter(r => r.state === 'ok').sort((a, b) => a.pct - b.pct), good = rows.filter(r => r.state === 'good').sort((a, b) => b.pct - a.pct);
-    const vitD = rows.find(r => r.i === 9); if (vitD && vitD.state === 'low') ok.push({ ...vitD, state: 'sun' });
-    const lim = Object.entries(nd.L).map(([i, [ref, nm, unit]]) => ({ i: +i, name: nm, unit, ref, val: avg, need: ref, pct: avg[i] / ref * 100, state: 'high', limit: true })).filter(x => x.pct > 100);
-    const sec = (t, l) => { if (l.length) content.push(h('div', { class: 'jarsec' }, h('h3', { text: t }), grid(l))); };
-    sec('Eher wenig', low); sec('Ganz ordentlich', ok); sec('Gut abgedeckt', good); sec('Eher viel', lim);
+    content.push(...nutSections(nutRows(nd, avg, 1), top1, r => openNutrient(r, d, start, opt)));
   }
   content.push(grey('Geplante Gerichte zählen als eine Portion, außer du hast im Tagebuch etwas anderes eingetragen. Tage ohne Plan und ohne Eintrag zählen nicht mit. Supplemente sind eingerechnet.'));
   content.push(h('div', { class: 'actions' }, h('button', { class: 'btn s', onclick: () => openProfileEdit(name, () => openPersonReport(name, start)) }, 'Angaben und Supplemente')));
@@ -127,13 +141,23 @@ function weekStartOf(dt) { const x = dayOnly(dt); return addDays(x, -((x.getDay(
 
 /* ---- Angaben einmalig ---- */
 function openProfileEdit(name, back) {
-  const pf = JSON.parse(JSON.stringify(profiles[name] || { sex: name === 'Frieda' ? 'w' : 'm', pal: 1.55, sportH: 2, sportI: 2, goal: 'halten', supps: [] }));
-  pf.supps = pf.supps || [];
+  const pf = JSON.parse(JSON.stringify(profiles[name] || { sex: name === 'Frieda' ? 'w' : 'm', pal: 1.55, sportH: 2, sportI: 2, train: 'mix', goal: 'halten', diet: 'alles', smoker: 'nein', special: '', supps: [] }));
+  pf.supps = pf.supps || []; pf.train = pf.train || 'mix'; pf.diet = pf.diet || 'alles'; pf.smoker = pf.smoker || 'nein'; if (pf.special == null) pf.special = '';
   const draw = () => {
     const nd = needsOf(pf);
-    const segOf = (key, opts) => h('div', { class: 'seg wide' }, ...opts.map(([v, t]) => h('button', { class: pf[key] === v ? 'on' : '', onclick: () => { pf[key] = v; draw(); } }, t)));
+    const segOf = (key, opts) => h('div', { class: 'seg wide' + (opts.length > 2 && opts.some(o => o[1].length > 9) ? ' sm' : '') }, ...opts.map(([v, t]) => h('button', { class: (pf[key] === v || (key === 'rate' && pf.rate == null && v === (pf.goal === 'zu' ? 0.25 : 0.5))) ? 'on' : '', onclick: () => { pf[key] = v; draw(); } }, t)));
     const num = (key, lbl, unit, ph) => { const i = h('input', { class: 'podin', type: 'number', inputmode: 'decimal', value: pf[key] ?? '', placeholder: ph }); i.addEventListener('input', () => { pf[key] = i.value; res.replaceChildren(...resKids()); }); return h('label', { class: 'pod' }, i, h('span', { text: lbl + (unit ? ' in ' + unit : '') })); };
-    const resKids = () => { const n = needsOf(pf); return [h('div', { class: 'reskcal', text: fmtInt(n.kcal) + ' kcal' }), h('div', { class: 'muted', text: `am Tag, dazu etwa ${fmtInt(n.R[1][0])} g Eiweiß` })]; };
+    const resKids = () => {
+      const n = needsOf(pf); const ln = (a, b) => h('div', { class: 'resl' }, h('span', { text: a }), h('b', { text: b }));
+      return [h('div', { class: 'reskcal', text: fmtInt(n.kcal) + ' kcal' }), h('div', { class: 'muted', style: 'margin-bottom:10px', text: 'am Tag' }),
+        ln(n.bfUsed ? 'Grundumsatz aus Muskelmasse' : 'Grundumsatz', fmtInt(n.bmr) + ' kcal'),
+        ln('Alltag, Schritte und Sport', '× ' + n.pal.toFixed(2).replace('.', ',')),
+        n.goalAdj ? ln(n.goalAdj < 0 ? 'Abnehmen' : 'Zunehmen', (n.goalAdj > 0 ? '+ ' : '− ') + fmtInt(Math.abs(n.goalAdj)) + ' kcal') : null,
+        n.extra ? ln(pf.special === 'schwanger' ? 'Schwangerschaft' : 'Stillzeit', '+ ' + fmtInt(n.extra) + ' kcal') : null,
+        ln('Eiweiß', `${fmtInt(n.R[1][0])} g (${String(n.pk).replace('.', ',')} g pro kg)`),
+        ln('Fett / Kohlenhydrate', `${fmtInt(n.M[2][0])} g / ${fmtInt(n.M[3][0])} g`),
+        pf.height && pf.weight ? ln('BMI', n.bmi.toFixed(1).replace('.', ',')) : null];
+    };
     const res = h('div', { class: 'rescard' }, ...resKids());
     const pals = h('div', { class: 'palopts' }, ...PAL_OPTS.map(([v, t, s]) => h('button', { class: 'palopt' + (+pf.pal === v ? ' on' : ''), onclick: () => { pf.pal = v; draw(); } }, h('b', { text: t }), h('span', { text: s }))));
     const sport = h('div', { class: 'stepper' }, h('button', { class: 'ib', onclick: () => { pf.sportH = Math.max(0, (+pf.sportH || 0) - 1); draw(); } }, '−'), h('div', { class: 'stv' }, h('b', { text: String(+pf.sportH || 0) }), h('span', { text: 'Std. Sport pro Woche' })), h('button', { class: 'ib', onclick: () => { pf.sportH = Math.min(25, (+pf.sportH || 0) + 1); draw(); } }, ic('plus')));
@@ -153,10 +177,17 @@ function openProfileEdit(name, back) {
     openSheet('Angaben von ' + name, [
       h('div', { class: 'muted', style: 'margin:-4px 4px 14px', text: 'Daraus schätzt die App deinen Bedarf. Ihr seht im Haushalt beide, was hier steht.' }),
       h('div', { class: 'fsec' }, h('h3', { text: 'Körper' }), segOf('sex', [['w', 'Weiblich'], ['m', 'Männlich']]),
-        h('div', { class: 'pods' }, num('age', 'Alter', '', '30'), num('height', 'Größe', 'cm', '175'), num('weight', 'Gewicht', 'kg', '70'))),
-      h('div', { class: 'fsec' }, h('h3', { text: 'Alltag' }), pals),
-      h('div', { class: 'fsec' }, h('h3', { text: 'Sport' }), sport, segOf('sportI', [[1, 'Locker'], [2, 'Mittel'], [3, 'Intensiv']])),
-      h('div', { class: 'fsec' }, h('h3', { text: 'Ziel' }), segOf('goal', [['halten', 'Halten'], ['ab', 'Abnehmen'], ['zu', 'Zunehmen']])),
+        h('div', { class: 'pods' }, num('age', 'Alter', '', '30'), num('height', 'Größe', 'cm', '175'), num('weight', 'Gewicht', 'kg', '70')),
+        h('div', { class: 'pods two' }, num('bodyFat', 'Körperfett geschätzt', '%', 'optional'), num('steps', 'Schritte am Tag', '', 'optional')),
+        h('div', { class: 'muted', style: 'margin:10px 4px 0;font-size:12.5px', text: 'Mit Körperfett rechnet die App über die Muskelmasse, das ist genauer. Schritte am besten aus der Health-App, Durchschnitt der letzten Wochen.' })),
+      h('div', { class: 'fsec' }, h('h3', { text: 'Arbeit und Alltag' }), pals),
+      h('div', { class: 'fsec' }, h('h3', { text: 'Sport' }), sport, segOf('sportI', [[1, 'Locker'], [2, 'Mittel'], [3, 'Intensiv']]), h('div', { style: 'height:8px' }), segOf('train', [['kraft', 'Kraft'], ['mix', 'Gemischt'], ['ausdauer', 'Ausdauer']])),
+      h('div', { class: 'fsec' }, h('h3', { text: 'Ziel' }), segOf('goal', [['halten', 'Halten'], ['ab', 'Abnehmen'], ['zu', 'Zunehmen']]),
+        pf.goal === 'ab' || pf.goal === 'zu' ? h('div', { style: 'margin-top:8px' }, segOf('rate', pf.goal === 'ab' ? [[0.25, '¼ kg pro Woche'], [0.5, '½ kg pro Woche'], [0.75, '¾ kg pro Woche']] : [[0.25, '¼ kg pro Woche'], [0.5, '½ kg pro Woche']])) : null),
+      h('div', { class: 'fsec' }, h('h3', { text: 'Ernährung' }), segOf('diet', [['alles', 'Alles'], ['vegetarisch', 'Vegetarisch'], ['vegan', 'Vegan']]),
+        pf.diet === 'vegan' ? h('div', { class: 'muted', style: 'margin:8px 4px 0;font-size:12.5px', text: 'Vitamin B12 kommt vegan fast nur über Supplemente oder angereicherte Produkte. Trag es unten ein, wenn du es nimmst.' }) : null),
+      h('div', { class: 'fsec' }, h('h3', { text: 'Sonst noch' }), h('div', { class: 'muted', style: 'margin:0 4px 6px', text: 'Rauchen' }), segOf('smoker', [['nein', 'Nein'], ['ja', 'Ja']]),
+        pf.sex === 'w' ? h('div', null, h('div', { class: 'muted', style: 'margin:12px 4px 6px', text: 'Schwangerschaft oder Stillzeit' }), segOf('special', [['', 'Nein'], ['schwanger', 'Schwanger'], ['stillend', 'Stillzeit']])) : null),
       res,
       h('div', { class: 'fsec' }, h('h3', { text: 'Supplemente' }), pf.supps.length ? supps : h('div', { class: 'muted', style: 'margin:0 4px 10px', text: 'Nimmst du etwas regelmäßig? Tippe es an und pass die Menge an.' }), addS),
       h('div', { class: 'actions' }, save)]);
