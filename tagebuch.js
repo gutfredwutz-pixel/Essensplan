@@ -97,9 +97,11 @@ function openPersonReport(name, start) {
   const pf = profiles[name];
   const content = [whoSeg(name, start)];
   if (!pf) {
-    content.push(h('div', { class: 'pcta' }, h('div', { class: 'pctaart' }), h('h3', { text: `Für ${name} fehlen noch ein paar Angaben` }),
+    const go = () => openProfileEdit(name, () => openPersonReport(name, start));
+    content.push(h('div', { class: 'pcta' }, h('h3', { text: `Für ${name} fehlen noch ein paar Angaben` }),
       h('p', { text: 'Größe, Gewicht, Alter und wie viel Bewegung. Daraus schätzt die App den persönlichen Bedarf. Das musst du nur einmal machen.' }),
-      h('button', { class: 'btn grad', onclick: () => openProfileEdit(name, () => openPersonReport(name, start)) }, 'Angaben machen')));
+      h('div', { class: 'pods' }, ...[['Alter', ''], ['Größe', 'in cm'], ['Gewicht', 'in kg']].map(([l, u]) => h('button', { class: 'pod empty', onclick: go }, h('b', { class: 'podq', text: '?' }), h('span', { text: l + (u ? ' ' + u : '') })))),
+      h('button', { class: 'btn grad', style: 'margin-top:18px', onclick: go }, 'Angaben machen')));
     return openSheet('Nährstoffe', content);
   }
   const nd = needsOf(pf);
