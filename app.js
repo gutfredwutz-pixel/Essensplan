@@ -1211,7 +1211,7 @@ function jar(name, pct, state, sub, onclick) {
   const lvl = Math.max(4, Math.min(100, pct));
   return h('button', { class: 'jar ' + state, onclick },
     fill(lvl),
-    countUp(h('span', { class: 'jpct' }), pct, x => fmtInt(x) + ' %'),
+    countUp(h('span', { class: 'jpct' }), pct, x => fmtInt(x) + ' %'), h('span', { class: 'jcov', text: 'gedeckt' }),
     h('span', { class: 'jname', text: name }),
     sub ? h('span', { class: 'jsub', text: sub }) : null);
 }
@@ -1252,7 +1252,7 @@ function openNutrient(r, d, start, opt) {
   const needTxt = opt ? opt.needTxt : repMode === 'week' ? 'Bedarf für 7 Tage' : repMode === 'day' ? 'Bedarf pro Tag' : 'Ziel pro Gericht';
   const content = [
     h('div', { class: 'nuthero ' + (r.limit ? 'high' : r.state) },
-      h('div', { class: 'nhglow' }), h('div', { class: 'nhjar' }, fill(Math.max(4, Math.min(100, r.pct)), true), countUp(h('span', { class: 'nhpct' }), r.pct, x => fmtInt(x) + ' %')),
+      h('div', { class: 'nhglow' }), h('div', { class: 'nhjar' }, fill(Math.max(4, Math.min(100, r.pct)), true), h('span', { class: 'nhc' }, countUp(h('span', { class: 'nhpct' }), r.pct, x => fmtInt(x) + ' %'), h('span', { class: 'jcov', text: 'gedeckt' }))),
       h('div', { class: 'nhtxt' },
         h('div', null, h('b', { text: fmtN(r.val[r.i] ?? r.val, r.unit) }), ` ${opt ? opt.perLabel : repMode === 'week' ? 'diese Woche' : repMode === 'day' ? 'pro Tag' : 'pro Gericht'}`),
         h('div', { class: 'muted', text: `${r.limit ? 'Obergrenze' : needTxt}: ${fmtN(r.need, r.unit)}` }),
