@@ -131,32 +131,29 @@ function openPersonReport(name, start) {
   });
   content.push(strip);
   // Werte: ein Tag oder Durchschnitt der Woche
-  let vals, src, n, heroLbl, heroMeta, opt;
+  let vals, src, n, scale, sub, meta, opt;
   if (pRange === 'day') {
     const x = wk.per[pSel] || dayIntake(name, pSel);
-    vals = x.tot; src = x.src; n = x.counted ? 1 : 0;
-    heroLbl = `deiner Nährstoffe gedeckt / ${dayLbl(pSel)}`;
-    heroMeta = n ? `${fmtInt(vals[0])} von ${fmtInt(nd.kcal)} kcal${x.logged ? '' : ' / nur aus dem Wochenplan'}` : 'Für diesen Tag ist noch nichts eingetragen oder geplant';
+    vals = x.tot; src = x.src; n = x.counted ? 1 : 0; scale = 1;
+    const sd = new Date(pSel); sub = pSel === today ? 'heute gedeckt' : `gedeckt am ${sd.getDate()}. ${MON[sd.getMonth()]}`;
+    meta = n ? `${fmtInt(vals[0])} von ${fmtInt(nd.kcal)} kcal` : 'Noch nichts eingetragen';
     opt = { div: 1, perLabel: 'an diesem Tag', needTxt: 'Dein Bedarf pro Tag', back: re };
   } else {
-    n = wk.n; vals = wk.total.map(v => v / Math.max(1, n)); src = wk.src;
-    heroLbl = 'deiner Nährstoffe gedeckt / im Schnitt pro Tag dieser Woche';
-    heroMeta = n ? `Ø ${fmtInt(vals[0])} von ${fmtInt(nd.kcal)} kcal pro Tag / ${wk.logged} von 7 Tagen eingetragen` : 'In dieser Woche ist noch nichts eingetragen oder geplant';
-    opt = { div: Math.max(1, n), perLabel: 'pro Tag im Schnitt', needTxt: 'Dein Bedarf pro Tag', back: re };
+    vals = wk.total; src = wk.src; n = wk.n; scale = 7;
+    sub = 'vom Wochenbedarf gedeckt';
+    meta = n ? `${fmtInt(vals[0])} von ${fmtInt(nd.kcal * 7)} kcal` : 'Noch nichts eingetragen';
+    opt = { div: 1, perLabel: 'diese Woche', needTxt: 'Dein Bedarf für 7 Tage', back: re };
   }
-  const cov = n ? coverage(vals, nd.R) : 0;
+  const cov = n ? coverage(vals.map(v => v / scale), nd.R) : 0;
   content.push(h('div', { class: 'rephero phero ' + covState(cov) },
     h('div', { class: 'rhnum', text: fmtInt(cov) + ' %' }),
-    h('div', { class: 'rhlbl', text: heroLbl.split(' / ')[0] }),
-    h('div', { class: 'rhsub', text: heroLbl.split(' / ')[1] }),
-    h('div', { class: 'rhmeta', text: heroMeta })));
+    h('div', { class: 'rhlbl', text: sub }),
+    h('div', { class: 'rhmeta', text: meta })));
   if (n) {
     const top1 = i => { const tt = Object.entries(src[i] || {}).sort((a, b) => b[1] - a[1])[0]; return tt ? tt[0].replace(' (Supplement)', '') : ''; };
     const dd = { src, n, unknown: new Set() };
-    content.push(...nutSections(nutRows(nd, vals, 1), top1, r => openNutrient(r, dd, start, opt)));
+    content.push(...nutSections(nutRows(nd, vals, scale), top1, r => openNutrient(r, dd, start, opt)));
   }
-  content.push(grey('Geplante Gerichte zählen als eine Portion, außer du hast im Tagebuch etwas anderes eingetragen. Supplemente sind eingerechnet. In der Woche zählen nur Tage mit Eintrag oder Plan.'));
-  content.push(h('div', { class: 'actions' }, h('button', { class: 'btn s', onclick: () => openProfileEdit(name, re) }, 'Angaben und Supplemente')));
   nutriOut('Nährstoffe', content, re);
 }
 function weekStartOf(dt) { const x = dayOnly(dt); return addDays(x, -((x.getDay() + 6) % 7)); }
