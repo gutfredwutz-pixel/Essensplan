@@ -658,8 +658,9 @@ function makeSwipe(wrap, row, onTap, onDelete) {
     if (mode === -1) return;
     if (mode === 0) { if (dx > 0) { closeSwipe(); set(0, true); } else onTap(); return; }
     const w = wrap.offsetWidth, flick = Date.now() - t0 < 300;
+    const closing = base > 0 && dx < base - 20; // war offen und wurde zurückgewischt
     if (dx > w * 0.6) { set(w, true); wrap.classList.add('gone'); setTimeout(onDelete, 220); }
-    else if (dx > 30 || (flick && dx > 12)) { set(OPEN, true); openSwipe = wrap; }
+    else if (!closing && (dx > 30 || (flick && dx > 12))) { set(OPEN, true); openSwipe = wrap; }
     else { set(0, true); if (openSwipe === wrap) openSwipe = null; }
   };
   row.addEventListener('touchstart', e => { const t = e.touches[0]; if (!start(t.clientX, t.clientY, e.target)) mode = -1; }, { passive: true });
