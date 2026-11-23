@@ -98,7 +98,7 @@ function openPersonReport(name, start) {
   const content = [whoSeg(name, start)];
   if (!pf) {
     const go = () => openProfileEdit(name, () => openPersonReport(name, start));
-    content.push(h('div', { class: 'pcta' }, h('h3', { text: `Noch keine Angaben von ${name}` }),
+    content.push(h('div', { class: 'pcta' }, h('button', { class: 'pctaart', 'aria-label': 'Angaben machen', onclick: go }, h('span', { text: '?' })), h('h3', { text: `Noch keine Angaben von ${name}` }),
       h('p', { text: `Körper, Alltag und Sport einmal eintragen. Danach rechnet die App mit ${name}s eigenem Bedarf statt mit Durchschnittswerten.` }),
       h('button', { class: 'btn grad', onclick: go }, 'Angaben machen')));
     return openSheet('Nährstoffe', content);
