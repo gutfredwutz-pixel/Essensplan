@@ -596,6 +596,22 @@ html.dark .pod span{color:#A9BBFF}
 .varl{font-size:12.5px;color:var(--ink3);font-weight:600;margin-right:2px}
 .varb{border:0;border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;background:color-mix(in srgb,#7B5CFF 10%,var(--card));color:var(--ink2);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,#7B5CFF 25%,transparent)}
 .varb.on{background:var(--grad);color:#fff;box-shadow:0 6px 14px -8px rgba(91,100,255,.9)}
+
+/* Runde 11: 5er-Leiste, Nährstoffe als Seite */
+.tabs{bottom:calc(var(--bot) * .45 + 8px);gap:2px;padding:6px 8px}
+.tabs button{min-width:56px;padding:12px 10px}
+.tabs button .fa{width:22px;height:22px}
+.tabs .mid{margin-top:-26px;padding:0 6px}
+.tabs .side.set{color:var(--ink3);opacity:.85}
+.ghost{background:transparent}
+.npage{padding-top:4px}
+.ntitle{font-size:24px;font-weight:800;margin:6px 4px 14px}
+.nback{border:0;background:none;display:inline-flex;align-items:center;gap:4px;font:inherit;font-weight:700;color:var(--blue);padding:6px 4px;cursor:pointer}
+.nback .fa{width:14px;height:14px;fill:currentColor}
+.btn.quick{width:100%;margin:12px 0 2px}
+body[data-tab=nutri] .blobs .b1{left:calc(100% - var(--bw) * .5);top:calc(100% - var(--bot) - 2% - var(--bh));background:var(--blue-l);opacity:.8;border-radius:55% 45% 42% 58% / 48% 58% 42% 52%}
+body[data-tab=nutri] .blobs .b2{left:calc(var(--bw) * -.52);top:30%;background:var(--rosa);opacity:.55;border-radius:44% 56% 60% 40% / 52% 40% 60% 48%}
+.blobs i{transition:left .45s cubic-bezier(.22,.8,.24,1),top .45s cubic-bezier(.22,.8,.24,1),border-radius .45s ease,background-color .45s ease,opacity .45s ease}
 .hidden{display:none!important}
 </style>
 </head>
@@ -606,7 +622,7 @@ html.dark .pod span{color:#A9BBFF}
     <div id="art"></div>
     <h1 id="title">Essenswoche</h1>
     <span class="status" id="status"></span>
-    <button class="ib gearb" id="gear" aria-label="Einstellungen" onclick="openSettings()"></button>
+    
     <button class="av big hidden" id="who" aria-label="Profil" onclick="openProfile()"></button>
   </div>
 </header>

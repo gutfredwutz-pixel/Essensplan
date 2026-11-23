@@ -39,11 +39,14 @@ function longDate(ds) { const d = parseYmd(ds); return `${WDL[d.getDay()]}, ${d.
 
 /* ============ Kopfbilder ============ */
 const ART = {
+  nutri: `<svg viewBox="0 0 64 64"><defs><linearGradient id="gn" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3E6BFF"/><stop offset="1" stop-color="#FF8DBA"/></linearGradient></defs><path d="M31 2C49 1 63 15 62 33 61 50 48 63 30 62 13 61 1 48 2 30 3 14 15 3 31 2Z" fill="url(#gn)"/><rect x="25" y="13" width="14" height="6" rx="2.5" fill="#fff"/><path d="M24 21h16c0 3 9 8 9 19 0 9-7 14-17 14S15 49 15 40c0-11 9-16 9-19z" fill="#fff"/><path d="M17.5 39c5-3 10-3 14 0s9 3 14 0c0 8-6 12-13.5 12S17.5 47 17.5 39z" fill="#9FE3C4"/></svg>`,
   cal: `<svg viewBox="0 0 64 64"><defs><linearGradient id="ga" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F6BFF"/><stop offset="1" stop-color="#FF5FA2"/></linearGradient></defs><path d="M32 2C50 1 63 14 62 32 61 50 50 63 31 62 13 61 1 49 2 31 3 14 15 3 32 2Z" fill="url(#ga)"/><path d="M40 10l-8 24M47 13l-11 22" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><g fill="none" stroke-linecap="round" stroke-width="3"><path d="M19 36c1-7 6-10 10-7s-1 7-3 5 3-7 9-6 8 6 6 9" stroke="#FFD66B"/><path d="M26 36c3-5 9-6 13-3s3 4 6 3" stroke="#FFC23D"/></g><circle cx="27" cy="30" r="2.4" fill="#E8473E"/><circle cx="38" cy="31" r="2" fill="#E8473E"/><path d="M13 36h38c0 9-8 16-19 16S13 45 13 36z" fill="#fff"/><path d="M18 40c1 5 6 8 12 9" stroke="#FFD1E3" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>`,
   list: `<svg viewBox="0 0 64 64"><defs><linearGradient id="gb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5B8CFF"/><stop offset="1" stop-color="#FF8DBA"/></linearGradient></defs><path d="M30 2C48 0 63 13 62 31 62 49 49 63 31 62 14 62 1 50 2 32 2 15 13 4 30 2Z" fill="url(#gb)"/><path d="M28 21c-1-5 2-9 6-10" stroke="#3FA34D" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M33 13c4-3 8-2 9 0-3 3-7 3-9 0z" fill="#5DBB63"/><path d="M22 26c-2-6 1-11 5-12l3 12z" fill="#FF9F43"/><path d="M38 26c0-5 3-9 7-9 3 2 3 6 1 9z" fill="#E8473E"/><path d="M15 26h34l-3 22c-1 3-3 5-6 5H24c-3 0-5-2-6-5z" fill="#fff"/><path d="M23 33v12M32 33v12M41 33v12" stroke="#DDE6FF" stroke-width="2.6" stroke-linecap="round"/></svg>`,
   rec: `<svg viewBox="0 0 64 64"><defs><linearGradient id="gc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F6BFF"/><stop offset="1" stop-color="#FF8DBA"/></linearGradient></defs><path d="M33 2C51 3 63 15 62 33 61 51 48 63 30 62 12 61 1 48 2 30 3 13 16 1 33 2Z" fill="url(#gc)"/><path d="M12 20c7-3 14-3 20 2v26c-6-5-13-5-20-2z" fill="#fff"/><path d="M52 20c-7-3-14-3-20 2v26c6-5 13-5 20-2z" fill="#F4F7FF"/><path d="M17 27c3-1 7-1 10 1M17 33c3-1 7-1 10 1M17 39c3-1 7-1 10 1" stroke="#C9D6FF" stroke-width="2" stroke-linecap="round"/><path d="M37 27c3-1 7-1 10 1M37 33c3-1 7-1 10 1" stroke="#FFC2DA" stroke-width="2" stroke-linecap="round"/><circle cx="44" cy="41" r="4" fill="#FFC23D"/></svg>`
 };
-const TITLES = { list: 'Einkaufsliste', cal: 'Essenswoche', rec: 'Rezepte' };
+const TITLES = { list: 'Einkaufsliste', cal: 'Essenswoche', rec: 'Rezepte', nutri: 'Nährstoffe' };
+window.FA = window.FA || {};
+window.FA['jar'] = [512, 512, 'M176 32h160c13 0 24 11 24 24v24c0 9-5 17-13 21 66 28 109 88 109 159 0 107-74 220-200 220S56 367 56 260c0-71 43-131 109-159-8-4-13-12-13-21V56c0-13 11-24 24-24zm-48 248c0 78 52 168 128 168s128-90 128-168c0-6 0-12-1-18-33 18-75 18-110 2-38-17-80-16-144 2z'];
 
 /* ============ Lebensmittel-Basis ============ */
 const BASE = []; const CATS = Object.keys(window.FOOD_BASE).concat(['Sonstiges']);
@@ -391,29 +394,36 @@ function renderTabs() {
   const t = $('#tabs'); t.replaceChildren();
   const go = id => () => goTab(id, TAB_ORDER.indexOf(id) - TAB_ORDER.indexOf(tab));
   t.append(
-    h('button', { class: 'side' + (tab === 'list' ? ' on' : ''), onclick: go('list') }, ic('cart-shopping'), h('span', { text: 'Einkaufsliste' })),
-    h('button', { class: 'mid' + (tab === 'cal' ? ' on' : ''), onclick: go('cal') }, h('span', { class: 'bub' }, ic('calendar-days')), h('span', { text: 'Essenswoche' })),
-    h('button', { class: 'side' + (tab === 'rec' ? ' on' : ''), onclick: go('rec') }, ic('book-open'), h('span', { text: 'Rezepte' })));
+    h('button', { class: 'side set', 'aria-label': 'Einstellungen', onclick: () => openSettings() }, ic('gear')),
+    h('button', { class: 'side' + (tab === 'list' ? ' on' : ''), 'aria-label': 'Einkaufsliste', onclick: go('list') }, ic('cart-shopping')),
+    h('button', { class: 'mid' + (tab === 'cal' ? ' on' : ''), 'aria-label': 'Essenswoche', onclick: go('cal') }, h('span', { class: 'bub' }, ic('calendar-days'))),
+    h('button', { class: 'side' + (tab === 'rec' ? ' on' : ''), 'aria-label': 'Rezepte', onclick: go('rec') }, ic('book-open')),
+    h('button', { class: 'side' + (tab === 'nutri' ? ' on' : ''), 'aria-label': 'Nährstoffe', onclick: go('nutri') }, ic('jar')));
   renderHead();
 }
 let listUI = null, recUI = null;
-const TAB_ORDER = ['list', 'cal', 'rec'];
-function goTab(id, dir, fromSwipe) {
+const TAB_ORDER = ['list', 'cal', 'rec', 'nutri'];
+function goTab(id, dir, fromX) {
   if (id === tab) return;
-  const m = $('#main'); const W = window.innerWidth;
-  const swap = () => {
-    tab = id; listUI = null; recUI = null; renderTabs(); render(); window.scrollTo(0, 0);
-    m.style.transition = 'none'; m.style.transform = `translate3d(${dir > 0 ? W * 0.3 : -W * 0.3}px,0,0)`; m.style.opacity = '0';
-    void m.offsetWidth;
-    m.style.transition = 'transform .32s cubic-bezier(.2,.8,.25,1), opacity .22s ease'; m.style.transform = 'translate3d(0,0,0)'; m.style.opacity = '1';
-    setTimeout(() => { m.style.transition = ''; m.style.transform = ''; m.style.opacity = ''; }, 340);
-  };
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { tab = id; listUI = null; recUI = null; renderTabs(); render(); window.scrollTo(0, 0); return; }
-  m.style.transition = 'transform .16s ease-in, opacity .16s ease-in'; m.style.transform = `translate3d(${dir > 0 ? -W * 0.35 : W * 0.35}px,0,0)`; m.style.opacity = '0';
-  setTimeout(swap, 150);
+  const m = $('#main'); const W = window.innerWidth; const x0 = fromX || 0;
+  const swap = () => { tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, 0); };
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { swap(); return; }
+  document.querySelectorAll('.ghost').forEach(g => g.remove());
+  const r = m.getBoundingClientRect();
+  const ghost = m.cloneNode(true); ghost.removeAttribute('id'); ghost.classList.add('ghost');
+  Object.assign(ghost.style, { position: 'fixed', left: (r.left - x0) + 'px', top: r.top + 'px', width: r.width + 'px', margin: '0', pointerEvents: 'none', zIndex: '5', transition: 'none', transform: `translate3d(${x0}px,0,0)`, opacity: '1' });
+  document.body.appendChild(ghost);
+  swap();
+  const off = dir > 0 ? W : -W;
+  m.style.transition = 'none'; m.style.opacity = '1'; m.style.transform = `translate3d(${off + x0}px,0,0)`;
+  void m.offsetWidth;
+  const ease = 'transform .42s cubic-bezier(.22,.8,.24,1)';
+  ghost.style.transition = ease + ', opacity .42s ease'; m.style.transition = ease;
+  requestAnimationFrame(() => { ghost.style.transform = `translate3d(${-off}px,0,0)`; ghost.style.opacity = '0.2'; m.style.transform = 'translate3d(0,0,0)'; });
+  setTimeout(() => { ghost.remove(); m.style.transition = ''; m.style.transform = ''; }, 460);
 }
 (() => {
-  let sx = 0, sy = 0, mode = 0, t0 = 0, dx = 0, raf = 0; const m = () => $('#main');
+  let sx = 0, sy = 0, mode = 0, t0 = 0, dx = 0, raf = 0, lastX = 0; const m = () => $('#main');
   document.addEventListener('touchstart', e => {
     mode = 0; if ($('#ov').classList.contains('on') || document.querySelector('.cook') || e.touches.length > 1) { mode = -1; return; }
     const t = e.target; if (t.closest('.swipe,input,textarea,select,[data-no-tab-swipe],.tabs,.month')) { mode = -1; return; }
@@ -425,20 +435,21 @@ function goTab(id, dir, fromSwipe) {
     if (e.cancelable) e.preventDefault();
     const idx = TAB_ORDER.indexOf(tab); const edge = (dx > 0 && idx === 0) || (dx < 0 && idx === TAB_ORDER.length - 1);
     const x = edge ? dx * 0.18 : dx;
-    cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { m().style.transform = `translate3d(${x}px,0,0)`; m().style.opacity = String(1 - Math.min(0.5, Math.abs(x) / 700)); });
+    lastX = x; cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { m().style.transform = `translate3d(${x}px,0,0)`; });
   }, { passive: false });
   document.addEventListener('touchend', () => {
     if (mode !== 1) return; mode = 0; cancelAnimationFrame(raf);
     const el = m(); const idx = TAB_ORDER.indexOf(tab); const v = Math.abs(dx) / Math.max(1, Date.now() - t0);
     const n = idx + (dx < 0 ? 1 : -1);
-    if ((Math.abs(dx) > window.innerWidth * 0.25 || (v > 0.45 && Math.abs(dx) > 30)) && n >= 0 && n < TAB_ORDER.length) goTab(TAB_ORDER[n], dx < 0 ? 1 : -1, true);
-    else { el.style.transition = 'transform .3s cubic-bezier(.2,.9,.3,1.1), opacity .25s'; el.style.transform = 'translate3d(0,0,0)'; el.style.opacity = '1'; setTimeout(() => { el.style.transition = ''; el.style.transform = ''; el.style.opacity = ''; }, 320); }
+    if ((Math.abs(dx) > window.innerWidth * 0.25 || (v > 0.45 && Math.abs(dx) > 30)) && n >= 0 && n < TAB_ORDER.length) goTab(TAB_ORDER[n], dx < 0 ? 1 : -1, lastX);
+    else { el.style.transition = 'transform .3s cubic-bezier(.2,.9,.3,1.1)'; el.style.transform = 'translate3d(0,0,0)'; setTimeout(() => { el.style.transition = ''; el.style.transform = ''; el.style.opacity = ''; }, 320); }
   }, { passive: true });
 })();
 function render() {
   const m = $('#main'); const scroll = window.scrollY;
   if (tab === 'list' && listUI && m.contains(listUI.wrap)) { drawListBody(); return; }
   if (tab === 'rec' && recUI && m.contains(recUI.wrap)) { recUI.draw(); return; }
+  if (tab === 'nutri') { (nutriFn || nutriHome)(); window.scrollTo(0, scroll); return; }
   m.replaceChildren(tab === 'cal' ? renderCal() : tab === 'list' ? renderList() : renderRec());
   window.scrollTo(0, scroll);
 }
@@ -466,7 +477,7 @@ function renderCal() {
       h('button', { class: !isWeek ? 'on' : '', onclick: () => setView('month') }, 'Monat')),
     h('div', { class: 'row', style: 'gap:6px' },
       isToday ? null : h('button', { class: 'btn s sm', onclick: () => { anchor = dayOnly(new Date()); monthAnchor = new Date(new Date().getFullYear(), new Date().getMonth(), 1); render(); } }, 'Heute'),
-      isWeek ? h('button', { class: 'btn s sm', onclick: () => openReport(anchor) }, 'Nährstoffe') : null)));
+      null)));
   const body = isWeek ? renderWeek() : renderMonth();
   addGestures(body, shift);
   const bar0 = wrap.querySelector('.calbar'); let bx = 0;
@@ -1250,8 +1261,9 @@ function jar(name, pct, state, sub, onclick, cov) {
     sub ? h('span', { class: 'jsub', text: sub }) : null);
 }
 function openReport(start) {
+  nutriWho = '';
   const d = reportData(start);
-  if (!d.meals.length) return openSheet('Nährstoffe', [whoSeg('', start), emptyArt('Noch keine Rezepte mit Mengen eingeplant'), grey('Sobald in dieser Woche Rezepte mit Mengen eingeplant sind, siehst du hier, was eure Gerichte an Nährstoffen liefern.')]);
+  if (!d.meals.length) return nutriOut('Nährstoffe', [whoSeg('', start), weekNav(start, s => openReport(s)), emptyArt('Noch keine Rezepte mit Mengen eingeplant'), grey('Sobald in dieser Woche Rezepte mit Mengen eingeplant sind, siehst du hier, was eure Gerichte an Nährstoffen liefern.')]);
   const meName = me(), pfMe = profiles[meName]; const nd = pfMe ? needsOf(pfMe) : avgNeeds();
   const modeSeg = h('div', { class: 'seg wide' }, ...[['week', 'Woche'], ['day', 'Pro Tag'], ['meal', 'Pro Gericht']].map(([k, t]) => h('button', { class: repMode === k ? 'on' : '', onclick: () => { repMode = k; openReport(start); $('#sheet').scrollTop = 0; } }, t)));
   const whom = pfMe ? `deinem persönlichen Bedarf (${meName})` : 'dem Bedarf einer Durchschnittsperson';
@@ -1260,8 +1272,8 @@ function openReport(start) {
   const rows = nutRows(nd, sc.val, sc.need);
   const top1 = i => { const t = Object.entries(d.src[i] || {}).sort((a, b) => b[1] - a[1])[0]; return t ? t[0] : ''; };
   const kcal = sc.val[0];
-  const content = [whoSeg('', start),
-    h('div', { class: 'rephero', style: 'margin-top:18px' },
+  const content = [whoSeg('', start), weekNav(start, s => openReport(s)),
+    h('div', { class: 'rephero', style: 'margin-top:8px' },
       countUp(h('div', { class: 'rhnum' }), kcal, fmtInt),
       h('div', { class: 'rhlbl', text: repMode === 'week' ? 'kcal pro Person in dieser Woche' : repMode === 'day' ? 'kcal pro Person und Tag' : 'kcal pro Person und Gericht' }),
       h('div', { class: 'rhmeta', text: `${d.meals.length} ${d.meals.length === 1 ? 'Gericht' : 'Gerichte'} an ${d.nDays} ${d.nDays === 1 ? 'Tag' : 'Tagen'} eingeplant` })),
@@ -1271,7 +1283,21 @@ function openReport(start) {
   if (!pfMe) content.push(h('div', { class: 'actions' }, h('button', { class: 'btn s', onclick: () => openProfileEdit(meName || personNames()[0], () => openReport(start)) }, 'Eigene Angaben machen')));
   content.push(grey('Frühstück und Snacks zählen hier nicht mit. Dafür gibt es oben euer persönliches Tagebuch. Richtwerte der DGE, gerundet.'));
   if (d.unknown.size) content.push(grey('Ohne Werte oder Menge: ' + [...d.unknown].join(', ')));
-  openSheet('Nährstoffe', content);
+  nutriOut('Nährstoffe', content, () => openReport(start));
+}
+let nutriFn = null, nutriWho = null;
+function nutriHome() { const who = nutriWho == null ? (me() || '') : nutriWho; if (who) openPersonReport(who, anchor); else openReport(anchor); }
+function nutriOut(title, content, fn) {
+  if (tab !== 'nutri') return openSheet(title, content);
+  if ($('#ov').classList.contains('on')) closeSheet();
+  nutriFn = fn || null;
+  $('#main').replaceChildren(h('div', { class: 'npage' }, title && title !== 'Nährstoffe' ? h('h2', { class: 'ntitle', text: title }) : null, ...content.filter(Boolean)));
+}
+function weekNav(start, go) {
+  const e = addDays(start, 6);
+  return h('div', { class: 'pnav' }, h('button', { class: 'ib', 'aria-label': 'Woche davor', onclick: () => { anchor = addDays(anchor, -7); go(anchor); } }, ic('chevron-left')),
+    h('div', { text: `${start.getDate()}. ${MON[start.getMonth()].slice(0, 3)}. bis ${e.getDate()}. ${MON[e.getMonth()].slice(0, 3)}.` }),
+    h('button', { class: 'ib', 'aria-label': 'Woche danach', onclick: () => { anchor = addDays(anchor, 7); go(anchor); } }, ic('chevron-right')));
 }
 function openNutrient(r, d, start, opt) {
   const scaleDiv = opt ? opt.div : repMode === 'week' ? 1 : repMode === 'day' ? 7 : Math.max(1, d.meals.length);
@@ -1299,8 +1325,9 @@ function openNutrient(r, d, start, opt) {
   if (r.i === 9) content.push(grey('Vitamin D bildet der Körper vor allem über Sonnenlicht, über das Essen kommt nur ein kleiner Teil.'));
   if (r.i === 22) content.push(grey('Jodsalz ist hier nicht mitgerechnet, darüber kommt im Alltag ein großer Teil.'));
   content.push(h('div', { class: 'actions' }, h('button', { class: 'btn grad', onclick: () => opt ? opt.back() : openReport(start) }, 'Zurück zur Übersicht')));
-  openSheet(r.name, [h('div', { class: 'nutpage ' + st }, ...content.filter(Boolean))]);
-  if (opt) $('#sheet .xclose').onclick = () => { closeSheet(); };
+  const backFn = () => opt ? opt.back() : openReport(start);
+  nutriOut(r.name, [h('button', { class: 'nback', onclick: backFn }, ic('chevron-left'), 'Übersicht'), h('div', { class: 'nutpage ' + st }, ...content.filter(Boolean))], () => openNutrient(r, d, start, opt));
+  window.scrollTo(0, 0);
 }
 function suggestFoods(i) {
   const cand = [];
