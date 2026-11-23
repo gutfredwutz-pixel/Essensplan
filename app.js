@@ -313,8 +313,16 @@ function gramsOf(name, amount) {
   if (/^(stück|stuck|stk|kopf|knolle|knollen|stange|stangen|zweig|zweige|blatt|blätter)?$/.test(u)) return PIECE[k] ? f(PIECE[k]) : null;
   return null;
 }
+let VAR = null;
+function variantOf(name) { if (!VAR) VAR = (window.VARIANTS || []).map(v => ({ ...v, rx: new RegExp(v.re) })); const k = norm(name || ''); if (!k || /vegan|veggie|vegetar|soja|tofu/.test(k)) return null; return VAR.find(v => v.rx.test(k)) || null; }
+function varVec(name, label) { const v = variantOf(name); if (!v || !label) return null; const o = v.o.find(x => x[0] === label); return o || null; }
+function varRow(name, cur, onPick) {
+  const v = variantOf(name); if (!v) return null;
+  return h('div', { class: 'varrow' }, h('span', { class: 'varl', text: v.t }), ...v.o.map(([l]) => h('button', { class: 'varb' + (cur === l ? ' on' : ''), onclick: () => onPick(l) }, l)));
+}
 function nutOf(g) {
   if (g.product && g.product.v) return g.product.v;
+  if (g.variant) { const o = varVec(g.name, g.variant); if (o) return o[1]; }
   const v = window.NUTRI && (window.NUTRI[canon(g.name)] || window.NUTRI[norm(g.name)] || window.NUTRI[norm(canonName(g.name))]);
   return v || null;
 }
@@ -458,7 +466,7 @@ function renderCal() {
       h('button', { class: !isWeek ? 'on' : '', onclick: () => setView('month') }, 'Monat')),
     h('div', { class: 'row', style: 'gap:6px' },
       isToday ? null : h('button', { class: 'btn s sm', onclick: () => { anchor = dayOnly(new Date()); monthAnchor = new Date(new Date().getFullYear(), new Date().getMonth(), 1); render(); } }, 'Heute'),
-      isWeek ? h('button', { class: 'btn r sm', onclick: () => openReport(anchor) }, 'Nährstoffe') : null)));
+      isWeek ? h('button', { class: 'btn s sm', onclick: () => openReport(anchor) }, 'Nährstoffe') : null)));
   const body = isWeek ? renderWeek() : renderMonth();
   addGestures(body, shift);
   const bar0 = wrap.querySelector('.calbar'); let bx = 0;
@@ -975,14 +983,15 @@ function openRecipe(rec, ctx = {}) {
       const sug = suggestAmt(g.name);
       const a = h('input', { class: 'inp a' + (!g.amount && g.name ? ' need' : ''), placeholder: g.name ? (sug ? 'z. B. ' + sug : 'Wie viel?') : 'Menge', value: g.amount || '' });
       if (!g.amount && g.name) missing++;
-      n.addEventListener('input', () => { g.name = n.value; delete g.product; });
+      n.addEventListener('input', () => { g.name = n.value; delete g.product; delete g.variant; });
+      n.addEventListener('change', () => { if (variantOf(g.name)) drawIng(); });
       a.addEventListener('input', () => { g.amount = a.value; a.classList.toggle('need', !a.value && !!g.name); });
       const sg = attachSuggest(n, s => { g.name = s.name; n.value = s.name; delete g.product; drawIng(); }, { max: 5 });
       const prod = g.product ? h('div', { class: 'prodline' }, h('span', { text: (g.product.brand ? g.product.brand + ' ' : '') + g.product.name }), h('button', { class: 'nx', 'aria-label': 'Produkt entfernen', onclick: () => { delete g.product; drawIng(); } }, ic('xmark'))) : null;
       return h('div', { class: 'ingwrap' },
         h('div', { class: 'ing' }, n, a,
           h('button', { class: 'ib sm ghost', 'aria-label': 'Nährwerte zuordnen', title: 'Nährwerte zuordnen', onclick: () => pickProduct(g, drawIng) }, ic('magnifying-glass-plus')),
-          h('button', { class: 'ib sm ghost', 'aria-label': 'Entfernen', onclick: () => { st.ingredients.splice(idx, 1); drawIng(); } }, ic('xmark'))), sg.box, prod);
+          h('button', { class: 'ib sm ghost', 'aria-label': 'Entfernen', onclick: () => { st.ingredients.splice(idx, 1); drawIng(); } }, ic('xmark'))), sg.box, prod, g.product ? null : varRow(g.name, g.variant, l => { g.variant = l; drawIng(); }));
     }), h('button', { class: 'btn s', style: 'margin-top:4px', onclick: () => { st.ingredients.push({ name: '', amount: '' }); drawIng(); const l = ingBox.querySelectorAll('.ing .n'); l[l.length - 1] && l[l.length - 1].focus(); } }, 'Zutat hinzufügen'));
     fillBtn.classList.toggle('hidden', !st.ingredients.some(g => g.name && !g.amount && suggestAmt(g.name)));
     needNote.classList.toggle('hidden', !missing);
@@ -1236,7 +1245,7 @@ function jar(name, pct, state, sub, onclick, cov) {
   const lvl = Math.max(4, Math.min(100, pct || 0));
   return h('button', { class: 'jar ' + state, onclick },
     fill(lvl),
-    countUp(h('span', { class: 'jpct' }), pct || 0, x => fmtInt(x) + ' %'), h('span', { class: 'jcov', text: cov || 'gedeckt' }),
+    h('span', { class: 'jpct', text: fmtInt(pct || 0) + ' %' }), h('span', { class: 'jcov', text: cov || 'gedeckt' }),
     h('span', { class: 'jname', text: name }),
     sub ? h('span', { class: 'jsub', text: sub }) : null);
 }
@@ -1274,7 +1283,7 @@ function openNutrient(r, d, start, opt) {
   const needTxt = opt ? opt.needTxt : repMode === 'week' ? 'Bedarf für 7 Tage' : repMode === 'day' ? 'Bedarf pro Tag' : 'Ziel pro Gericht';
   const content = [
     h('div', { class: 'nuthero ' + r.state },
-      h('div', { class: 'nhglow' }), h('div', { class: 'nhjar' }, fill(Math.max(4, Math.min(100, r.pct)), true), h('span', { class: 'nhc' }, countUp(h('span', { class: 'nhpct' }), r.pct, x => fmtInt(x) + ' %'), h('span', { class: 'jcov', text: 'gedeckt' }))),
+      h('div', { class: 'nhglow' }), h('div', { class: 'nhjar' }, fill(Math.max(4, Math.min(100, r.pct)), true), h('span', { class: 'nhc' }, h('span', { class: 'nhpct', text: fmtInt(r.pct) + ' %' }), h('span', { class: 'jcov', text: 'gedeckt' }))),
       h('div', { class: 'nhtxt' },
         h('div', null, h('b', { text: fmtN(r.val[r.i] ?? r.val, r.unit) }), ` ${opt ? opt.perLabel : repMode === 'week' ? 'diese Woche' : repMode === 'day' ? 'pro Tag' : 'pro Gericht'}`),
         h('div', { class: 'muted', text: `${r.limit ? 'Obergrenze' : needTxt}: ${fmtN(r.need, r.unit)}` }),

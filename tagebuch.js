@@ -113,7 +113,7 @@ function openPersonReport(name, start) {
   content.push(h('div', { class: 'seg wide', style: 'margin-top:10px' }, ...[['week', 'Woche'], ['month', 'Monat']].map(([k, t]) => h('button', { class: pRange === k ? 'on' : '', onclick: () => { pRange = k; openPersonReport(name, start); } }, t))));
   content.push(h('div', { class: 'pnav' }, h('button', { class: 'ib', 'aria-label': 'Zurück', onclick: () => move(-1) }, ic('chevron-left')), h('div', { text: label }), h('button', { class: 'ib', 'aria-label': 'Weiter', onclick: () => move(1) }, ic('chevron-right'))));
   content.push(h('div', { class: 'rephero phero ' + covState(cov) },
-    countUp(h('div', { class: 'rhnum' }), cov, x => fmtInt(x) + ' %'),
+    h('div', { class: 'rhnum', text: fmtInt(cov) + ' %' }),
     h('div', { class: 'rhlbl', text: 'deiner Nährstoffe im Schnitt gedeckt' }),
     h('div', { class: 'rhmeta', text: d.n ? `Ø ${fmtInt(avg[0])} von ${fmtInt(nd.kcal)} kcal am Tag / ${d.logged} von ${days.length} Tagen eingetragen` : 'Noch nichts eingetragen oder geplant' })));
   // Tage als kleine Gläser
@@ -146,7 +146,7 @@ function openProfileEdit(name, back) {
   const draw = () => {
     const nd = needsOf(pf);
     const segOf = (key, opts) => h('div', { class: 'seg wide' + (opts.length > 2 && opts.some(o => o[1].length > 9) ? ' sm' : '') }, ...opts.map(([v, t]) => h('button', { class: (pf[key] === v || (key === 'rate' && pf.rate == null && v === (pf.goal === 'zu' ? 0.25 : 0.5))) ? 'on' : '', onclick: () => { pf[key] = v; draw(); } }, t)));
-    const num = (key, lbl, unit, ph) => { const i = h('input', { class: 'podin', type: 'number', inputmode: 'decimal', value: pf[key] ?? '', placeholder: ph }); i.addEventListener('input', () => { pf[key] = i.value; res.replaceChildren(...resKids()); }); return h('label', { class: 'pod' }, i, h('span', { text: lbl + (unit ? ' in ' + unit : '') })); };
+    const num = (key, lbl, unit, ph, opt) => { const i = h('input', { class: 'podin', type: 'number', inputmode: 'decimal', value: pf[key] ?? '', placeholder: ph }); const pod = h('label', { class: 'pod' + (pf[key] ? '' : opt ? ' opt' : ' empty') }, i, h('span', { text: lbl + (unit ? ' in ' + unit : '') })); i.addEventListener('input', () => { pf[key] = i.value; pod.classList.toggle('empty', !i.value && !opt); pod.classList.toggle('opt', !i.value && !!opt); res.replaceChildren(...resKids()); }); return pod; };
     const resKids = () => {
       const n = needsOf(pf); const ln = (a, b) => h('div', { class: 'resl' }, h('span', { text: a }), h('b', { text: b }));
       return [h('div', { class: 'reskcal', text: fmtInt(n.kcal) + ' kcal' }), h('div', { class: 'muted', style: 'margin-bottom:10px', text: 'am Tag' }),
@@ -177,8 +177,8 @@ function openProfileEdit(name, back) {
     openSheet('Angaben von ' + name, [
       h('div', { class: 'muted', style: 'margin:-4px 4px 14px', text: 'Daraus schätzt die App deinen Bedarf. Ihr seht im Haushalt beide, was hier steht.' }),
       h('div', { class: 'fsec' }, h('h3', { text: 'Körper' }), segOf('sex', [['w', 'Weiblich'], ['m', 'Männlich']]),
-        h('div', { class: 'pods' }, num('age', 'Alter', '', '30'), num('height', 'Größe', 'cm', '175'), num('weight', 'Gewicht', 'kg', '70')),
-        h('div', { class: 'pods two' }, num('bodyFat', 'Körperfett geschätzt', '%', 'optional'), num('steps', 'Schritte am Tag', '', 'optional')),
+        h('div', { class: 'pods' }, num('age', 'Alter', '', '?'), num('height', 'Größe', 'cm', '?'), num('weight', 'Gewicht', 'kg', '?')),
+        h('div', { class: 'pods two' }, num('bodyFat', 'Körperfett geschätzt', '%', 'optional', true), num('steps', 'Schritte am Tag', '', 'optional', true)),
         h('div', { class: 'muted', style: 'margin:10px 4px 0;font-size:12.5px', text: 'Mit Körperfett rechnet die App über die Muskelmasse, das ist genauer. Schritte am besten aus der Health-App, Durchschnitt der letzten Wochen.' })),
       h('div', { class: 'fsec' }, h('h3', { text: 'Arbeit und Alltag' }), pals),
       h('div', { class: 'fsec' }, h('h3', { text: 'Sport' }), sport, segOf('sportI', [[1, 'Locker'], [2, 'Mittel'], [3, 'Intensiv']]), h('div', { style: 'height:8px' }), segOf('train', [['kraft', 'Kraft'], ['mix', 'Gemischt'], ['ausdauer', 'Ausdauer']])),
@@ -323,6 +323,7 @@ function openDiary(name, ds, back) {
       const fix = () => { const g = { name: f.name }; pickProduct(g, () => { if (g.product) { f.v = g.product.v; f.src = g.product.name; f.unknown = false; if (!f.gr) { f.gr = 100; f.amt = '100 g'; } } drawList(); drawSum(); }); };
       return h('div', { class: 'dfood' + (f.unknown ? ' unk' : '') },
         h('div', { class: 'dft' }, h('b', { text: f.name }), h('button', { class: 'dsrc', onclick: fix, text: f.unknown ? 'Nicht gefunden, tippen zum Suchen' : f.src })),
+        f.recipe || f.unknown ? null : varRow(f.name, f.variant, l => { const o = varVec(f.name, l); if (o) { f.variant = l; f.v = o[1]; f.src = o[2]; } drawList(); drawSum(); }),
         h('div', { class: 'dfr' }, a, grT, kc, h('button', { class: 'ib sm', 'aria-label': 'Entfernen', onclick: () => { e.foods.splice(k, 1); drawList(); drawSum(); } }, ic('trash'))));
     }));
   };
