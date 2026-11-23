@@ -144,15 +144,23 @@ function weekStartOf(dt) { const x = dayOnly(dt); return addDays(x, -((x.getDay(
 
 /* ---- Angaben einmalig ---- */
 function openProfileEdit(name, back) {
-  const pf = JSON.parse(JSON.stringify(profiles[name] || { sex: name === 'Frieda' ? 'w' : 'm', pal: 1.55, sportH: 2, sportI: 2, train: 'mix', goal: 'halten', diet: 'alles', smoker: 'nein', special: '', supps: [] }));
+  const dKey = 'ep_pfdraft_' + name; let draft = null; try { draft = JSON.parse(LS.get(dKey) || 'null'); } catch (e) { }
+  const pf = JSON.parse(JSON.stringify(draft || profiles[name] || { sex: name === 'Frieda' ? 'w' : 'm', pal: 1.55, sportH: 2, sportI: 2, train: 'mix', goal: 'halten', diet: 'alles', smoker: 'nein', special: '', supps: [] }));
   pf.supps = pf.supps || []; pf.train = pf.train || 'mix'; pf.diet = pf.diet || 'alles'; pf.smoker = pf.smoker || 'nein'; if (pf.special == null) pf.special = '';
+  let saveT = null;
+  const persist = () => {
+    LS.set(dKey, JSON.stringify(pf));
+    clearTimeout(saveT);
+    if (pf.age && pf.height && pf.weight && db) saveT = setTimeout(() => { db.collection('profiles').doc(name).set(pf).then(() => { profiles[name] = JSON.parse(JSON.stringify(pf)); LS.del(dKey); }).catch(() => { }); }, 700);
+  };
   const draw = () => {
+    persist();
     const nd = needsOf(pf);
     const segOf = (key, opts) => h('div', { class: 'seg wide' + (opts.some(o => o[1].length > 12) ? ' sm' : '') }, ...opts.map(([v, t]) => h('button', { class: (pf[key] === v || (key === 'rate' && pf.rate == null && v === (pf.goal === 'zu' ? 0.25 : 0.5))) ? 'on' : '', onclick: () => { pf[key] = v; draw(); } }, t)));
     const num = (key, lbl, unit, ph, opt) => {
-      const i = h('input', { class: 'fin', type: 'number', inputmode: 'decimal', value: pf[key] ?? '', placeholder: ph });
+      const i = h('input', { class: 'fin', type: 'text', inputmode: 'decimal', value: pf[key] != null && pf[key] !== '' ? String(pf[key]).replace('.', ',') : '', placeholder: ph, autocomplete: 'off' });
       const row = h('label', { class: 'frow' + (pf[key] ? '' : opt ? ' opt' : ' empty') }, h('span', { class: 'fl', text: lbl }), h('span', { class: 'fv' }, i, h('span', { class: 'fu', text: unit || '' })));
-      i.addEventListener('input', () => { pf[key] = i.value; row.classList.toggle('empty', !i.value && !opt); row.classList.toggle('opt', !i.value && !!opt); res.replaceChildren(...resKids()); });
+      i.addEventListener('input', () => { i.value = i.value.replace(/[^0-9,.]/g, '').replace('.', ','); pf[key] = i.value.replace(',', '.'); persist(); row.classList.toggle('empty', !i.value && !opt); row.classList.toggle('opt', !i.value && !!opt); res.replaceChildren(...resKids()); });
       return row;
     };
     const resKids = () => {
@@ -171,7 +179,7 @@ function openProfileEdit(name, back) {
     const sport = h('div', { class: 'stepper' }, h('button', { class: 'ib', onclick: () => { pf.sportH = Math.max(0, (+pf.sportH || 0) - 1); draw(); } }, '−'), h('div', { class: 'stv' }, h('b', { text: String(+pf.sportH || 0) }), h('span', { text: 'Std. Sport pro Woche' })), h('button', { class: 'ib', onclick: () => { pf.sportH = Math.min(25, (+pf.sportH || 0) + 1); draw(); } }, ic('plus')));
     const supps = h('div', { class: 'supps' }, ...pf.supps.map((s, k) => {
       const unit = s.i === 'multi' ? 'Tablette' : REF[s.i][2];
-      const a = h('input', { class: 'podin sm', type: 'number', inputmode: 'decimal', value: s.amt }); a.addEventListener('input', () => { s.amt = a.value; });
+      const a = h('input', { class: 'podin sm', type: 'text', inputmode: 'decimal', value: String(s.amt ?? '').replace('.', ','), autocomplete: 'off' }); a.addEventListener('input', () => { a.value = a.value.replace(/[^0-9,.]/g, '').replace('.', ','); s.amt = a.value.replace(',', '.'); persist(); });
       return h('div', { class: 'supp' }, h('div', { class: 'supph' }, h('b', { text: s.label }), h('button', { class: 'ib sm', 'aria-label': 'Entfernen', onclick: () => { pf.supps.splice(k, 1); draw(); } }, ic('trash'))),
         h('div', { class: 'row', style: 'gap:8px;align-items:center' }, a, h('span', { class: 'muted', text: unit + (s.i === 9 ? ' (1.000 IE = 25 µg)' : '') })),
         h('div', { class: 'seg wide sm' }, ...FREQ.map(([v, t]) => h('button', { class: Math.abs((+s.freq || 1) - v) < 0.01 ? 'on' : '', onclick: () => { s.freq = v; draw(); } }, t))));
@@ -179,11 +187,11 @@ function openProfileEdit(name, back) {
     const addS = h('div', { class: 'tagbox' }, ...SUPP_PRESETS.filter(p => !pf.supps.some(s => s.label === p[0])).map(([l, i, amt]) => h('button', { class: 'pill addp', onclick: () => { pf.supps.push({ label: l, i, amt, freq: 1 }); draw(); } }, '+ ' + l)));
     const save = h('button', { class: 'btn grad', onclick: async () => {
       if (!pf.age || !pf.height || !pf.weight) return toast('Alter, Größe und Gewicht fehlen noch');
-      save.disabled = true; try { await db.collection('profiles').doc(name).set(pf); profiles[name] = pf; toast('Gespeichert'); back(); } catch (e) { showErr(e); save.disabled = false; }
+      save.disabled = true; clearTimeout(saveT); try { await db.collection('profiles').doc(name).set(pf); profiles[name] = pf; LS.del(dKey); toast('Gespeichert'); back(); } catch (e) { showErr(e); save.disabled = false; }
     } }, 'Speichern');
     const sh = $('#sheet'); const sc = sh.scrollTop;
     openSheet('Angaben von ' + name, [
-      h('div', { class: 'muted', style: 'margin:-4px 4px 14px', text: 'Daraus schätzt die App deinen Bedarf. In der App siehst du nur deine eigene Auswertung.' }),
+      h('div', { class: 'muted', style: 'margin:-4px 4px 14px', text: 'Daraus schätzt die App deinen Bedarf. Alles wird sofort gespeichert, du kannst also zwischendurch in die Health-App schauen.' }),
       h('div', { class: 'fsec' }, h('h3', { text: 'Körper' }), segOf('sex', [['w', 'Weiblich'], ['m', 'Männlich']]),
         h('div', { class: 'frows' }, num('age', 'Alter', 'Jahre', '–'), num('height', 'Größe', 'cm', '–'), num('weight', 'Gewicht', 'kg', '–'), num('bodyFat', 'Körperfett, geschätzt', '%', 'optional', true), num('steps', 'Schritte pro Tag', '', 'optional', true)),
         h('div', { class: 'muted', style: 'margin:10px 4px 0;font-size:12.5px', text: 'Mit Körperfett rechnet die App über die Muskelmasse, das ist genauer. Schritte am besten als Durchschnitt aus der Health-App.' })),
