@@ -224,21 +224,31 @@ function applyTheme() { document.documentElement.classList.toggle('dark', LS.get
 applyTheme();
 function openProfile() {
   if (!household) return;
-  const m = me();
-  const copy = h('button', { class: 'btn s', onclick: () => { navigator.clipboard && navigator.clipboard.writeText(household.code).then(() => toast('Code kopiert'), () => { }); } }, 'Kopieren');
+  const m = me(), col = colorOf(m);
   const theme = LS.get('ep_theme') === 'dark' ? 'dark' : 'light';
-  const seg = h('div', { class: 'seg', style: 'display:inline-flex' },
-    h('button', { class: theme === 'light' ? 'on' : '', onclick: () => { LS.set('ep_theme', 'light'); applyTheme(); openProfile(); } }, 'Hell'),
-    h('button', { class: theme === 'dark' ? 'on' : '', onclick: () => { LS.set('ep_theme', 'dark'); applyTheme(); openProfile(); } }, 'Dunkel'));
-  openSheet('Einstellungen', [
-    h('label', { class: 'lbl', text: 'Design' }), seg,
-    h('label', { class: 'lbl', text: 'Du bist' }),
-    h('div', { class: 'row' }, h('span', { class: 'av', style: `background:${colorOf(m)}`, text: (m || '?')[0] }), h('span', { style: 'font-weight:600;flex:1', text: m || 'unbekannt' }), h('button', { class: 'btn g', onclick: () => { closeSheet(); showWho(); } }, 'Wechseln')),
-    h('label', { class: 'lbl', text: 'Jemanden einladen' }),
-    h('div', { class: 'row' }, h('div', { class: 'codebox', text: household.code }), copy),
-    h('div', { class: 'actions', style: 'margin-top:8px' }, h('button', { class: 'btn r', onclick: () => { const l = makeInvite(); (navigator.clipboard ? navigator.clipboard.writeText(l) : Promise.reject()).then(() => toast('Einladungslink kopiert'), () => toast('Kopieren nicht möglich')); } }, 'Einladungslink kopieren')),
-    h('div', { class: 'greytxt', style: 'margin-top:18px', text: 'Nährwerte: Bundeslebensmittelschlüssel (BLS) 4.0, Max Rubner-Institut. Markenprodukte: Open Food Facts.' }),
-    h('div', { class: 'actions' }, confirmBtn('Haushalt verlassen', 'Wirklich?', () => { LS.del('ep_household'); location.reload(); }, 'btn g'))]);
+  const setTheme = t => { LS.set('ep_theme', t); applyTheme(); openProfile(); };
+  const copyText = (t, msg) => (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast(msg), () => toast('Kopieren nicht möglich'));
+  const members = (people.length ? people : PRESET).map(p => h('div', { class: 'mem' }, h('span', { class: 'av', style: `background:${p.color}`, text: p.name[0] }), h('span', { text: p.name })));
+  openSheet('', [
+    h('div', { class: 'prof' },
+      h('div', { class: 'profblob', style: `--pc:${col}` }, h('span', { text: (m || '?')[0] })),
+      h('div', { class: 'profname', text: m || 'Unbekannt' }),
+      h('button', { class: 'btn g sm', onclick: () => { closeSheet(); showWho(); } }, 'Person wechseln')),
+    h('div', { class: 'setcard a' },
+      h('div', { class: 'settitle', text: 'Design' }),
+      h('div', { class: 'seg wide' },
+        h('button', { class: theme === 'light' ? 'on' : '', onclick: () => setTheme('light') }, 'Hell'),
+        h('button', { class: theme === 'dark' ? 'on' : '', onclick: () => setTheme('dark') }, 'Dunkel'))),
+    h('div', { class: 'setcard b' },
+      h('div', { class: 'settitle', text: 'Haushalt' }),
+      h('div', { class: 'members' }, members),
+      h('div', { class: 'codebox big', text: household.code }),
+      h('div', { class: 'twobtn' },
+        h('button', { class: 'btn s', onclick: () => copyText(household.code, 'Code kopiert') }, 'Code kopieren'),
+        h('button', { class: 'btn r', onclick: () => copyText(makeInvite(), 'Einladungslink kopiert') }, 'Einladungslink'))),
+    h('div', { class: 'setfoot' },
+      h('div', { class: 'greytxt', text: 'Nährwerte: Bundeslebensmittelschlüssel (BLS) 4.0, Max Rubner-Institut. Markenprodukte: Open Food Facts.' }),
+      confirmBtn('Haushalt verlassen', 'Wirklich verlassen?', () => { LS.del('ep_household'); location.reload(); }, 'btn g sm'))]);
 }
 
 /* ============ Kategorien: Supermarkt-Reihenfolge und Farben ============ */
