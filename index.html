@@ -739,6 +739,12 @@ html,body{overflow-x:clip}
 .swipe{margin-bottom:12px}
 .item{padding:14px 18px 14px 14px;gap:14px}
 .flatlist .swipe.gap{margin-top:24px}
+/* aktiver Tab links/rechts deutlich */
+.tabs .side{position:relative;color:var(--ink3);transition:color .25s}
+.tabs .side::before{content:'';position:absolute;left:50%;top:50%;width:60px;height:46px;border-radius:46% 54% 48% 52% / 52% 46% 54% 48%;background:var(--grad);transform:translate(-50%,-50%) scale(.4);opacity:0;transition:transform .3s cubic-bezier(.3,.9,.3,1.2),opacity .2s;z-index:0;box-shadow:0 8px 18px -8px rgba(91,100,255,.9)}
+.tabs .side .fa{position:relative;z-index:1}
+.tabs .side.on{color:#fff}
+.tabs .side.on::before{transform:translate(-50%,-50%) scale(1);opacity:1}
 .hidden{display:none!important}
 </style>
 </head>
