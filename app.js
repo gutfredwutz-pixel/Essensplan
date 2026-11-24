@@ -446,18 +446,29 @@ function goTab(id, dir, fromX) {
   const ghost = m.cloneNode(true); ghost.removeAttribute('id'); ghost.classList.add('ghost');
   Object.assign(ghost.style, { position: 'fixed', left: (r.left - x0) + 'px', top: r.top + 'px', width: r.width + 'px', margin: '0', pointerEvents: 'none', zIndex: '5', transition: 'none', transform: `translate3d(${x0}px,0,0)`, opacity: '1' });
   peekLayer().appendChild(ghost);
-  swap(); headIn(dir > 0 ? 1 : -1, 0.38);
+  const hg = headClone(null); hg.style.transform = `translate3d(${x0}px,0,0)`; peekLayer().appendChild(hg);
+  const hd = document.querySelector('header');
+  swap();
   const off = dir > 0 ? W : -W;
   m.style.transition = 'none'; m.style.opacity = '1'; m.style.transform = `translate3d(${off + x0}px,0,0)`;
+  hd.style.transition = 'none'; hd.style.transform = `translate3d(${off + x0}px,0,0)`;
   void m.offsetWidth;
   const ease = 'transform .42s cubic-bezier(.22,.8,.24,1)';
-  ghost.style.transition = ease + ', opacity .42s ease'; m.style.transition = ease;
-  requestAnimationFrame(() => { ghost.style.transform = `translate3d(${-off}px,0,0)`; ghost.style.opacity = '0.2'; m.style.transform = 'translate3d(0,0,0)'; });
-  setTimeout(() => { ghost.remove(); m.style.transition = ''; m.style.transform = ''; }, 460);
+  ghost.style.transition = ease; hg.style.transition = ease; m.style.transition = ease; hd.style.transition = ease;
+  requestAnimationFrame(() => { ghost.style.transform = hg.style.transform = `translate3d(${-off}px,0,0)`; m.style.transform = hd.style.transform = 'translate3d(0,0,0)'; });
+  setTimeout(() => { ghost.remove(); hg.remove(); m.style.transition = hd.style.transition = ''; m.style.transform = hd.style.transform = ''; }, 460);
 }
 /* Nachbarseiten als Vorschau, damit beim Wischen die neue Seite direkt mitkommt */
 const pageCache = {}; let nutriTarget = null;
 function peekLayer() { let l = document.getElementById('peeklayer'); if (!l) { l = h('div', { id: 'peeklayer' }); document.body.appendChild(l); } return l; }
+function headClone(id) {
+  const hd = document.querySelector('header'); const r = hd.getBoundingClientRect();
+  const c = hd.cloneNode(true); c.classList.add('hghost'); c.querySelectorAll('[id]').forEach(x => x.removeAttribute('id'));
+  if (id) { const t = c.querySelector('h1'); if (t) t.textContent = TITLES[id]; const art = c.querySelector('.hrow').firstElementChild; if (art) art.replaceChildren(svgEl(ART[id])); }
+  const ar = c.querySelector('.hrow').firstElementChild; if (ar) Object.assign(ar.style, { width: '48px', height: '48px', flex: 'none' });
+  Object.assign(c.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', margin: '0', pointerEvents: 'none', willChange: 'transform' });
+  return c;
+}
 function headMove(x, W) { const t = [$('#title'), $('#art')]; const k = Math.min(1, Math.abs(x) / (W * 0.6)); t.forEach(el => { el.style.transition = 'none'; el.style.transform = `translate3d(${x * 0.25}px,0,0)`; el.style.opacity = String(1 - k); }); }
 function headIn(dir, dur) {
   const t = [$('#title'), $('#art')];
@@ -490,7 +501,9 @@ function peekNode(id) {
   };
   const place = x => {
     const W = window.innerWidth;
-    m().style.transform = `translate3d(${x}px,0,0)`; headMove(x, W);
+    m().style.transform = `translate3d(${x}px,0,0)`; document.querySelector('header').style.transform = `translate3d(${x}px,0,0)`;
+    if (peeks.hr) peeks.hr.style.transform = `translate3d(${W + x}px,0,0)`;
+    if (peeks.hl) peeks.hl.style.transform = `translate3d(${-W + x}px,0,0)`;
     if (peeks.r) peeks.r.style.transform = `translate3d(${W + x}px,0,0)`;
     if (peeks.l) peeks.l.style.transform = `translate3d(${-W + x}px,0,0)`;
   };
@@ -505,6 +518,9 @@ function peekNode(id) {
       if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.2) {
         mode = 1; sx += dx > 0 ? 8 : -8; dx = cx - sx; m().style.transition = 'none';
         const idx = TAB_ORDER.indexOf(tab); peeks.l = mkPeek(TAB_ORDER[idx - 1]); peeks.r = mkPeek(TAB_ORDER[idx + 1]);
+        document.querySelector('header').style.transition = 'none';
+        if (TAB_ORDER[idx - 1]) { peeks.hl = headClone(TAB_ORDER[idx - 1]); peekLayer().appendChild(peeks.hl); }
+        if (TAB_ORDER[idx + 1]) { peeks.hr = headClone(TAB_ORDER[idx + 1]); peekLayer().appendChild(peeks.hr); }
       } else if (Math.abs(dy) > 10) { mode = -1; return; } else return;
     }
     if (e.cancelable) e.preventDefault();
@@ -525,23 +541,24 @@ function peekNode(id) {
       const rest = W - Math.abs(dx); const dur = Math.max(0.2, Math.min(0.38, rest / Math.max(Math.abs(vx) * 1000 * 0.9, 1400)));
       document.documentElement.style.setProperty('--tdur', dur + 's');
       const tr = `transform ${dur}s ${EASE}`;
-      el.style.transition = tr; peek.style.transition = tr;
+      const hd = document.querySelector('header'); const hp = dir > 0 ? peeks.hr : peeks.hl;
+      el.style.transition = tr; peek.style.transition = tr; hd.style.transition = tr; if (hp) hp.style.transition = tr;
       cachePage();
       document.body.dataset.tab = id;
-      el.style.transform = `translate3d(${-dir * W}px,0,0)`; peek.style.transform = 'translate3d(0,0,0)';
-      const other = dir > 0 ? peeks.l : peeks.r; if (other) other.remove();
+      el.style.transform = hd.style.transform = `translate3d(${-dir * W}px,0,0)`; peek.style.transform = 'translate3d(0,0,0)'; if (hp) hp.style.transform = 'translate3d(0,0,0)';
+      const other = dir > 0 ? peeks.l : peeks.r; if (other) other.remove(); const oh = dir > 0 ? peeks.hl : peeks.hr; if (oh) oh.remove();
       setTimeout(() => {
         const sy0 = 0;
-        el.style.transition = 'none';
-        if (tab === 'nutri' && window.resetNutriState) resetNutriState(); tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, sy0); headIn(dir, 0.22);
-        el.style.transform = '';
-        requestAnimationFrame(() => { clearPeeks(); el.style.transition = ''; busy = false; });
+        el.style.transition = 'none'; hd.style.transition = 'none';
+        if (tab === 'nutri' && window.resetNutriState) resetNutriState(); tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, sy0);
+        el.style.transform = ''; hd.style.transform = '';
+        requestAnimationFrame(() => { clearPeeks(); el.style.transition = ''; hd.style.transition = ''; busy = false; });
       }, dur * 1000 + 10);
     } else {
       const tr = 'transform .32s cubic-bezier(.2,.9,.3,1.08)';
-      el.style.transition = tr; Object.values(peeks).forEach(p => p && (p.style.transition = tr));
-      place(0); headReset();
-      setTimeout(() => { clearPeeks(); el.style.transition = ''; el.style.transform = ''; }, 340);
+      const hd = document.querySelector('header'); el.style.transition = tr; hd.style.transition = tr; Object.values(peeks).forEach(p => p && (p.style.transition = tr));
+      place(0);
+      setTimeout(() => { clearPeeks(); el.style.transition = hd.style.transition = ''; el.style.transform = hd.style.transform = ''; }, 340);
     }
   }, { passive: true });
 })();
@@ -743,7 +760,7 @@ function renderList() {
   const sg = attachSuggest(inp, s => { const p = parseEntry(inp.value); addItem((p.qty ? p.qty + ' ' : '') + s.name, s.cat); inp.value = ''; inp.focus(); }, { parse: parseEntry });
   const plus = h('button', { class: 'ib p big', 'aria-label': 'Hinzufügen', onmousedown: e => e.preventDefault(), onclick: submit }, ic('plus'));
   const body = h('div');
-  wrap.append(h('div', { class: 'addbar' }, inp, plus), sg.box, body);
+  wrap.append(h('div', { class: 'rectop listtop' }, h('div', { class: 'addbar' }, inp, plus), sg.box), body);
   listUI = { wrap, inp, body };
   drawListBody();
   return wrap;
