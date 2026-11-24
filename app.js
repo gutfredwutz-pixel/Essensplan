@@ -97,7 +97,7 @@ function colorOf(name) {
   const p = people.find(x => x.name === name) || PRESET.find(x => x.name === name);
   return p ? p.color : '#C3CAD8';
 }
-function dot(name) { return name ? h('span', { class: 'pdot', style: `background:${colorOf(name)}`, title: name }) : null; }
+function dot(name) { return name && name !== me() ? h('span', { class: 'pdot', style: `background:${colorOf(name)}`, title: name }) : null; }
 
 async function init() {
   renderTabs(); render();
@@ -446,29 +446,30 @@ function goTab(id, dir, fromX) {
   const ghost = m.cloneNode(true); ghost.removeAttribute('id'); ghost.classList.add('ghost');
   Object.assign(ghost.style, { position: 'fixed', left: (r.left - x0) + 'px', top: r.top + 'px', width: r.width + 'px', margin: '0', pointerEvents: 'none', zIndex: '5', transition: 'none', transform: `translate3d(${x0}px,0,0)`, opacity: '1' });
   peekLayer().appendChild(ghost);
-  const hg = headClone(null); hg.style.transform = `translate3d(${x0}px,0,0)`; peekLayer().appendChild(hg);
-  const hd = document.querySelector('header');
+  const hg = headClone(null); hg.style.transform = `translate3d(${x0 * HS()}px,0,0)`; 
+  const hd = $('#htrack');
   swap();
   const off = dir > 0 ? W : -W;
   m.style.transition = 'none'; m.style.opacity = '1'; m.style.transform = `translate3d(${off + x0}px,0,0)`;
-  hd.style.transition = 'none'; hd.style.transform = `translate3d(${off + x0}px,0,0)`;
+  hd.style.transition = 'none'; hd.style.transform = `translate3d(${(off + x0) * HS()}px,0,0)`;
   void m.offsetWidth;
   const ease = 'transform .42s cubic-bezier(.22,.8,.24,1)';
   ghost.style.transition = ease; hg.style.transition = ease; m.style.transition = ease; hd.style.transition = ease;
-  requestAnimationFrame(() => { ghost.style.transform = hg.style.transform = `translate3d(${-off}px,0,0)`; m.style.transform = hd.style.transform = 'translate3d(0,0,0)'; });
+  requestAnimationFrame(() => { ghost.style.transform = `translate3d(${-off}px,0,0)`; hg.style.transform = `translate3d(${-off * HS()}px,0,0)`; m.style.transform = hd.style.transform = 'translate3d(0,0,0)'; });
   setTimeout(() => { ghost.remove(); hg.remove(); m.style.transition = hd.style.transition = ''; m.style.transform = hd.style.transform = ''; }, 460);
 }
 /* Nachbarseiten als Vorschau, damit beim Wischen die neue Seite direkt mitkommt */
 const pageCache = {}; let nutriTarget = null;
 function peekLayer() { let l = document.getElementById('peeklayer'); if (!l) { l = h('div', { id: 'peeklayer' }); document.body.appendChild(l); } return l; }
 function headClone(id) {
-  const hd = document.querySelector('header'); const r = hd.getBoundingClientRect();
-  const c = hd.cloneNode(true); c.classList.add('hghost'); c.querySelectorAll('[id]').forEach(x => x.removeAttribute('id'));
-  if (id) { const t = c.querySelector('h1'); if (t) t.textContent = TITLES[id]; const art = c.querySelector('.hrow').firstElementChild; if (art) art.replaceChildren(svgEl(ART[id])); }
-  const ar = c.querySelector('.hrow').firstElementChild; if (ar) Object.assign(ar.style, { width: '48px', height: '48px', flex: 'none' });
-  Object.assign(c.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', margin: '0', pointerEvents: 'none', willChange: 'transform' });
+  const c = $('#htrack').cloneNode(true); c.removeAttribute('id'); c.classList.add('clone'); c.querySelectorAll('[id]').forEach(x => x.removeAttribute('id'));
+  const art = c.firstElementChild; if (art) Object.assign(art.style, { width: '48px', height: '48px', flex: 'none' });
+  if (id) { const t = c.querySelector('h1'); if (t) t.textContent = TITLES[id]; if (art) art.replaceChildren(svgEl(ART[id])); }
+  c.style.transition = 'none'; document.querySelector('.htitle').appendChild(c);
   return c;
 }
+const HS = () => { const t = document.querySelector('.htitle'); return t ? (t.offsetWidth + 60) / window.innerWidth : 1; };
+
 function headMove(x, W) { const t = [$('#title'), $('#art')]; const k = Math.min(1, Math.abs(x) / (W * 0.6)); t.forEach(el => { el.style.transition = 'none'; el.style.transform = `translate3d(${x * 0.25}px,0,0)`; el.style.opacity = String(1 - k); }); }
 function headIn(dir, dur) {
   const t = [$('#title'), $('#art')];
@@ -501,16 +502,16 @@ function peekNode(id) {
   };
   const place = x => {
     const W = window.innerWidth;
-    m().style.transform = `translate3d(${x}px,0,0)`; document.querySelector('header').style.transform = `translate3d(${x}px,0,0)`;
-    if (peeks.hr) peeks.hr.style.transform = `translate3d(${W + x}px,0,0)`;
-    if (peeks.hl) peeks.hl.style.transform = `translate3d(${-W + x}px,0,0)`;
+    m().style.transform = `translate3d(${x}px,0,0)`; const s = HS(); $('#htrack').style.transform = `translate3d(${x * s}px,0,0)`;
+    if (peeks.hr) peeks.hr.style.transform = `translate3d(${(W + x) * s}px,0,0)`;
+    if (peeks.hl) peeks.hl.style.transform = `translate3d(${(-W + x) * s}px,0,0)`;
     if (peeks.r) peeks.r.style.transform = `translate3d(${W + x}px,0,0)`;
     if (peeks.l) peeks.l.style.transform = `translate3d(${-W + x}px,0,0)`;
   };
   document.addEventListener('touchstart', e => {
     mode = 0; if (busy || TAB_ORDER.indexOf(tab) < 0 || $('#ov').classList.contains('on') || document.querySelector('.cook') || e.touches.length > 1) { mode = -1; return; }
     const t = e.target; if (t.closest('.swipe,input,textarea,select,[data-no-tab-swipe],.tabs,.month')) { mode = -1; return; }
-    if (Object.keys(peeks).length) { clearPeeks(); const hd = document.querySelector('header'); [m(), hd].forEach(el => { el.style.transition = ''; el.style.transform = ''; }); }
+    if (Object.keys(peeks).length) { clearPeeks(); const hd = $('#htrack'); [m(), hd].forEach(el => { el.style.transition = ''; el.style.transform = ''; }); }
     sx = e.touches[0].clientX; sy = e.touches[0].clientY; dx = 0; vx = 0; lt = performance.now(); lxp = sx;
   }, { passive: true });
   document.addEventListener('touchmove', e => {
@@ -519,9 +520,9 @@ function peekNode(id) {
       if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.2) {
         mode = 1; document.body.classList.add('swiping'); sx += dx > 0 ? 8 : -8; dx = cx - sx; m().style.transition = 'none';
         const idx = TAB_ORDER.indexOf(tab); peeks.l = mkPeek(TAB_ORDER[idx - 1]); peeks.r = mkPeek(TAB_ORDER[idx + 1]);
-        document.querySelector('header').style.transition = 'none';
-        if (TAB_ORDER[idx - 1]) { peeks.hl = headClone(TAB_ORDER[idx - 1]); peekLayer().appendChild(peeks.hl); }
-        if (TAB_ORDER[idx + 1]) { peeks.hr = headClone(TAB_ORDER[idx + 1]); peekLayer().appendChild(peeks.hr); }
+        $('#htrack').style.transition = 'none';
+        if (TAB_ORDER[idx - 1]) peeks.hl = headClone(TAB_ORDER[idx - 1]);
+        if (TAB_ORDER[idx + 1]) peeks.hr = headClone(TAB_ORDER[idx + 1]);
       } else if (Math.abs(dy) > 10) { mode = -1; return; } else return;
     }
     if (e.cancelable) e.preventDefault();
@@ -543,11 +544,11 @@ function peekNode(id) {
       const rest = W - Math.abs(dx); const dur = Math.max(0.2, Math.min(0.38, rest / Math.max(Math.abs(vx) * 1000 * 0.9, 1400)));
       document.documentElement.style.setProperty('--tdur', dur + 's');
       const tr = `transform ${dur}s ${EASE}`;
-      const hd = document.querySelector('header'); const hp = dir > 0 ? peeks.hr : peeks.hl;
+      const hd = $('#htrack'); const hp = dir > 0 ? peeks.hr : peeks.hl;
       el.style.transition = tr; peek.style.transition = tr; hd.style.transition = tr; if (hp) hp.style.transition = tr;
       cachePage();
       document.body.dataset.tab = id;
-      el.style.transform = hd.style.transform = `translate3d(${-dir * W}px,0,0)`; peek.style.transform = 'translate3d(0,0,0)'; if (hp) hp.style.transform = 'translate3d(0,0,0)';
+      el.style.transform = `translate3d(${-dir * W}px,0,0)`; hd.style.transform = `translate3d(${-dir * W * HS()}px,0,0)`; peek.style.transform = 'translate3d(0,0,0)'; if (hp) hp.style.transform = 'translate3d(0,0,0)';
       const other = dir > 0 ? peeks.l : peeks.r; if (other) other.remove(); const oh = dir > 0 ? peeks.hl : peeks.hr; if (oh) oh.remove();
       setTimeout(() => {
         const sy0 = 0;
@@ -558,14 +559,14 @@ function peekNode(id) {
       }, dur * 1000 + 10);
     } else {
       const tr = 'transform .32s cubic-bezier(.2,.9,.3,1.08)';
-      const hd = document.querySelector('header'); el.style.transition = tr; hd.style.transition = tr; Object.values(peeks).forEach(p => p && (p.style.transition = tr));
+      const hd = $('#htrack'); el.style.transition = tr; hd.style.transition = tr; Object.values(peeks).forEach(p => p && (p.style.transition = tr));
       place(0);
       setTimeout(() => { clearPeeks(); el.style.transition = hd.style.transition = ''; el.style.transform = hd.style.transform = ''; }, 340);
     }
   };
   document.addEventListener('touchend', () => endSwipe(false), { passive: true });
   document.addEventListener('touchcancel', () => { if (mode === 1) { dx = 0; vx = 0; } endSwipe(true); }, { passive: true });
-  const hardReset = () => { if (busy) return; mode = 0; document.body.classList.remove('swiping'); clearPeeks(); const hd = document.querySelector('header'); [m(), hd].forEach(el => { el.style.transition = ''; el.style.transform = ''; }); };
+  const hardReset = () => { if (busy) return; mode = 0; document.body.classList.remove('swiping'); clearPeeks(); const hd = $('#htrack'); [m(), hd].forEach(el => { el.style.transition = ''; el.style.transform = ''; }); };
   document.addEventListener('visibilitychange', hardReset);
   window.addEventListener('pageshow', hardReset);
 })();
@@ -910,8 +911,8 @@ function renderRec() {
 }
 function openRecPlus() {
   openSheet('Neu', [h('div', { class: 'choice2' },
-    h('button', { class: 'choice', onclick: () => { closeSheet(); openRecipe({ title: '', ingredients: [], steps: [], servings: '2' }); } }, h('b', { text: 'Neues Rezept' }), h('span', { text: 'Eintippen, einsprechen oder aus Video und Fotos' })),
-    h('button', { class: 'choice', onclick: () => openMealprep() }, h('b', { text: 'Mealprep' }), h('span', { text: 'Einmal kochen und auf mehrere Tage verteilen' })))]);
+    h('button', { class: 'choice', onclick: () => { closeSheet(); openRecipe({ title: '', ingredients: [], steps: [], servings: '2' }); } }, h('span', { class: 'ci' }, ic('book-open')), h('b', { text: 'Neues Rezept' }), h('span', { text: 'Eintippen, einsprechen oder aus Video und Fotos' })),
+    h('button', { class: 'choice', onclick: () => openMealprep() }, h('span', { class: 'ci' }, ic('calendar-days')), h('b', { text: 'Mealprep' }), h('span', { text: 'Einmal kochen und auf mehrere Tage verteilen' })))]);
 }
 function openMealprep(pre) {
   const st = pre || { rid: null, days: new Set(), persons: 1, meal: 'Mittag', start: dayOnly(new Date()) };
