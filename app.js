@@ -228,7 +228,7 @@ function showWho() {
   $('#ov').dataset.locked = '1';
 }
 function isDark() { const t = LS.get('ep_theme'); return t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches); }
-function barColor() { const m = document.querySelector('meta[name=theme-color]'); if (!m) return; const d = isDark(), dim = $('#ov') && $('#ov').classList.contains('on'); m.content = d ? (dim ? '#0E131F' : '#121827') : (dim ? '#C2CAD8' : '#E8F0FF'); }
+function barColor() { const m = document.querySelector('meta[name=theme-color]'); if (!m) return; const d = isDark(), dim = $('#ov') && $('#ov').classList.contains('on'); const col = d ? (dim ? '#0B0F19' : '#121827') : (dim ? '#B9C0D0' : '#E8F0FF'); m.content = col; document.documentElement.style.backgroundColor = col; }
 function applyTheme() { const d = isDark(); document.documentElement.classList.toggle('dark', d); barColor(); }
 // Hintergrund festhalten, solange ein Blatt offen ist
 let lockY = null;
