@@ -510,6 +510,7 @@ function peekNode(id) {
   document.addEventListener('touchstart', e => {
     mode = 0; if (busy || TAB_ORDER.indexOf(tab) < 0 || $('#ov').classList.contains('on') || document.querySelector('.cook') || e.touches.length > 1) { mode = -1; return; }
     const t = e.target; if (t.closest('.swipe,input,textarea,select,[data-no-tab-swipe],.tabs,.month')) { mode = -1; return; }
+    if (Object.keys(peeks).length) { clearPeeks(); const hd = document.querySelector('header'); [m(), hd].forEach(el => { el.style.transition = ''; el.style.transform = ''; }); }
     sx = e.touches[0].clientX; sy = e.touches[0].clientY; dx = 0; vx = 0; lt = performance.now(); lxp = sx;
   }, { passive: true });
   document.addEventListener('touchmove', e => {
@@ -529,7 +530,7 @@ function peekNode(id) {
     const x = edge ? Math.sign(dx) * Math.pow(Math.abs(dx), 0.75) : dx;
     cancelAnimationFrame(raf); raf = requestAnimationFrame(() => place(x));
   }, { passive: false });
-  document.addEventListener('touchend', () => {
+  const endSwipe = cancelled => {
     document.body.classList.remove('swiping');
     if (mode !== 1) return; mode = 0; cancelAnimationFrame(raf);
     const el = m(), W = window.innerWidth; const idx = TAB_ORDER.indexOf(tab);
@@ -561,7 +562,12 @@ function peekNode(id) {
       place(0);
       setTimeout(() => { clearPeeks(); el.style.transition = hd.style.transition = ''; el.style.transform = hd.style.transform = ''; }, 340);
     }
-  }, { passive: true });
+  };
+  document.addEventListener('touchend', () => endSwipe(false), { passive: true });
+  document.addEventListener('touchcancel', () => { if (mode === 1) { dx = 0; vx = 0; } endSwipe(true); }, { passive: true });
+  const hardReset = () => { if (busy) return; mode = 0; document.body.classList.remove('swiping'); clearPeeks(); const hd = document.querySelector('header'); [m(), hd].forEach(el => { el.style.transition = ''; el.style.transform = ''; }); };
+  document.addEventListener('visibilitychange', hardReset);
+  window.addEventListener('pageshow', hardReset);
 })();
 function render() {
   const m = $('#main'); const scroll = window.scrollY;
