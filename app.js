@@ -1450,7 +1450,7 @@ function openReport(start) {
 let nutriFn = null, nutriWho = null;
 function nutriHome() { openPersonReport(me() || personNames()[0], anchor); }
 function nutriOut(title, content, fn) {
-  if (tab !== 'nutri' && !nutriTarget) { topSheet = 'nutri'; nutriFn = fn || null; return openSheet(title, content); }
+  if (tab !== 'nutri' && !nutriTarget) { topSheet = 'nutri'; nutriFn = fn || null; return openSheet(title, [h('div', { class: 'npage' }, ...content.filter(Boolean))]); }
   if (!nutriTarget && $('#ov').classList.contains('on')) closeSheet();
   nutriFn = fn || null;
   (nutriTarget || $('#main')).replaceChildren(h('div', { class: 'npage' }, title && title !== 'Nährstoffe' ? h('h2', { class: 'ntitle', text: title }) : null, ...content.filter(Boolean)));
