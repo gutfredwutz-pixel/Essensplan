@@ -151,11 +151,11 @@ function openPersonReport(name, start) {
   content.push(h('div', { class: 'rephero phero2 ' + covState(cov) },
     h('div', { class: 'ph2top' },
       h('div', { class: 'ph2ring' }, ring(cov, covState(cov), 104), h('span', { class: 'ph2pct', text: fmtInt(cov) + ' %' })),
-      h('div', { class: 'ph2txt' }, h('b', { text: pRange === 'day' ? (pSel === today ? 'Heute' : `Am ${new Date(pSel).getDate()}. ${MON[new Date(pSel).getMonth()].slice(0, 3)}.`) : 'Diese Woche' }), h('span', { text: 'gedeckt, über alle Nährstoffe' }))),
-    n ? h('div', { class: 'macs' }, ...mac.map(([l, i, need, u, k]) => {
+      h('div', { class: 'ph2txt' }, h('b', { text: pRange === 'day' ? (pSel === today ? 'Heute' : `Am ${new Date(pSel).getDate()}. ${MON[new Date(pSel).getMonth()].slice(0, 3)}.`) : 'Diese Woche' }), h('span', { text: n ? 'gedeckt, über alle Nährstoffe' : 'Noch nichts eingetragen' }))),
+    h('div', { class: 'macs' + (n ? '' : ' zero') }, ...mac.map(([l, i, need, u, k]) => {
       const v = vals[i] || 0, nn = need * sc7, p = Math.min(100, v / nn * 100);
       return h('div', { class: 'mac ' + k }, h('div', { class: 'macl' }, h('span', { text: l }), h('span', { class: 'macv' }, h('b', { text: fmtInt(v) }), ` / ${fmtInt(nn)} ${u}`)), h('div', { class: 'macbar' }, h('i', { style: `width:${Math.max(2, p)}%` })));
-    })) : h('div', { class: 'muted', style: 'text-align:center;margin-top:6px', text: meta })));
+    }))));
   if (n) {
     const top1 = i => { const tt = Object.entries(src[i] || {}).sort((a, b) => b[1] - a[1])[0]; return tt ? tt[0].replace(' (Supplement)', '') : ''; };
     const dd = { src, n, unknown: new Set() };

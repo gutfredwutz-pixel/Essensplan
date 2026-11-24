@@ -1439,7 +1439,7 @@ function ring(pct, state, size) {
   const id = 'rg' + (ringN++), r = 40, C = 2 * Math.PI * r, p = Math.max(0, Math.min(100, pct || 0));
   const col = { low: ['#FFB0CF', '#E9488B'], ok: ['#9DB8FF', '#5B6BFF'], good: ['#7FE3B6', '#159A63'], high: ['#FFC98F', '#E8761E'], sun: ['#FFE07A', '#F0A21E'] }[state] || ['#9DB8FF', '#5B6BFF'];
   const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 100 100'); s.setAttribute('class', 'ringsvg'); if (size) s.style.width = s.style.height = size + 'px';
-  s.innerHTML = `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${col[0]}"/><stop offset="1" stop-color="${col[1]}"/></linearGradient></defs><circle cx="50" cy="50" r="${r}" fill="none" stroke="url(#${id})" stroke-opacity=".16" stroke-width="10"/><circle class="ringarc" cx="50" cy="50" r="${r}" fill="none" stroke="url(#${id})" stroke-width="10" stroke-linecap="round" stroke-dasharray="${(C * p / 100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 50 50)"/>`;
+  s.innerHTML = `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${col[0]}"/><stop offset="1" stop-color="${col[1]}"/></linearGradient></defs><circle cx="50" cy="50" r="${r}" fill="none" stroke="url(#${id})" stroke-opacity=".16" stroke-width="10"/>${p < 0.5 ? '' : `<circle class="ringarc" cx="50" cy="50" r="${r}" fill="none" stroke="url(#${id})" stroke-width="10" stroke-linecap="round" stroke-dasharray="${(C * p / 100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 50 50)"/>`}`;
   return s;
 }
 function jar(name, pct, state, sub, onclick, cov) {
