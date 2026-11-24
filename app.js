@@ -588,7 +588,7 @@ function renderWeek() {
   for (let i = 0; i < 7; i++) {
     const d = addDays(anchor, i), ds = ymd(d), list = planOn(ds);
     const dishes = h('div', { class: 'dishes' });
-    if (list.length) list.forEach(p => dishes.append(h('div', { class: 'chip' + (p.recipeId ? '' : ' free'), onclick: e => { e.stopPropagation(); openPlan(p); } }, dot(p.by), h('span', { class: 't', text: p.title || 'Ohne Namen' }), p.meal ? h('span', { class: 'm', text: p.meal }) : null)));
+    if (list.length) list.forEach(p => dishes.append(h('div', { class: 'chip' + (p.recipeId ? '' : ' free'), onclick: e => { e.stopPropagation(); openPlan(p); } }, dot(p.by), h('span', { class: 't', text: p.title || 'Ohne Namen' }), p.prep ? h('span', { class: 'm prep', text: 'Mealprep' }) : p.meal ? h('span', { class: 'm', text: p.meal }) : null)));
     else dishes.append(h('div', { class: 'empty', text: 'nichts geplant' }));
     w.append(h('div', { class: 'day' + (ds === today ? ' today' : ''), onclick: () => openDay(ds) },
       h('div', { class: 'dlabel' }, h('div', { class: 'wd', text: WD[(d.getDay() + 6) % 7] }), h('div', { class: 'dn', text: d.getDate() })),
@@ -838,7 +838,7 @@ const TILE_STYLE = { 'Favoriten': 'linear-gradient(135deg,#F0609C,#FFA9CB)', 'La
 function tagsOf(r) { return [...new Set([...autoTags(r), ...(r.tags || [])])]; }
 function renderRec() {
   const wrap = h('div');
-  const inp = h('input', { class: 'field', placeholder: 'Rezept oder Zutat suchen', value: recQuery, autocomplete: 'off' });
+  const inp = h('input', { class: 'field', placeholder: 'Rezept suchen', value: recQuery, autocomplete: 'off' });
   const tiles = h('div', { class: 'tiles' });
   const listEl = h('div', { class: 'reclist' });
   const head = h('div', { class: 'rechead hidden' });
@@ -853,7 +853,7 @@ function renderRec() {
     head.replaceChildren(...(recFilter ? [h('b', { text: recFilter }), h('button', { class: 'btn s sm', onclick: () => { recFilter = ''; draw(); } }, 'Alle Rezepte')] : [h('b', { text: 'Alle Rezepte' })]));
     head.classList.toggle('hidden', !recipes.length);
     tiles.classList.toggle('hidden', !tileNames.length);
-    let list = recipes.filter(r => !q || norm(r.title).includes(q) || (r.ingredients || []).some(g => norm(g.name).includes(q)));
+    let list = recipes.filter(r => !q || norm(r.title).includes(q));
     const today = ymd(new Date());
     if (recFilter === 'Favoriten') list = list.filter(r => r.fav);
     else if (recFilter === 'Lange nicht gekocht') { const lim = ymd(addDays(new Date(), -21)); list = list.filter(r => (lastCooked(r) || '0') <= lim && !plan.some(p => p.recipeId === r.id && p.date > today)).sort((a, b) => (lastCooked(a) || '0').localeCompare(lastCooked(b) || '0')); }
@@ -864,10 +864,52 @@ function renderRec() {
     if (!list.length) listEl.append(recFilter ? emptyArt('Noch keine Rezepte in dieser Kategorie') : recipes.length ? grey('Nichts gefunden') : emptyArt('Noch keine Rezepte'));
   };
   inp.addEventListener('input', draw);
-  wrap.append(h('div', { class: 'rectop' }, h('div', { class: 'addbar' }, inp, h('button', { class: 'ib p big', 'aria-label': 'Neues Rezept', onclick: () => openRecipe({ title: '', ingredients: [], steps: [], servings: '2' }) }, ic('plus'))), tiles), head, listEl);
+  wrap.append(h('div', { class: 'rectop' }, h('div', { class: 'addbar' }, inp, h('button', { class: 'ib p big', 'aria-label': 'Neu', onclick: openRecPlus }, ic('plus'))), tiles), head, listEl);
   recUI = { wrap, draw };
   draw();
   return wrap;
+}
+function openRecPlus() {
+  openSheet('Neu', [h('div', { class: 'choice2' },
+    h('button', { class: 'choice', onclick: () => { closeSheet(); openRecipe({ title: '', ingredients: [], steps: [], servings: '2' }); } }, h('b', { text: 'Neues Rezept' }), h('span', { text: 'Eintippen, einsprechen oder aus Video und Fotos' })),
+    h('button', { class: 'choice', onclick: () => openMealprep() }, h('b', { text: 'Mealprep' }), h('span', { text: 'Einmal kochen und auf mehrere Tage verteilen' })))]);
+}
+function openMealprep(pre) {
+  const st = pre || { rid: null, days: new Set(), persons: 1, meal: 'Mittag', start: dayOnly(new Date()) };
+  const recs = recipes.filter(r => (r.ingredients || []).length).sort((a, b) => a.title.localeCompare(b.title, 'de'));
+  if (!recs.length) return openSheet('Mealprep', [emptyArt('Noch keine Rezepte'), grey('Lege zuerst ein Rezept an. Danach kannst du es hier auf mehrere Tage verteilen.')]);
+  if (!st.rid) st.rid = recs[0].id;
+  const r = recipes.find(x => x.id === st.rid); const serv = Math.max(1, parseFloat(r.servings) || 2);
+  const re = () => { const sc = $('#sheet').scrollTop; openMealprep(st); $('#sheet').scrollTop = sc; };
+  const sel = h('select', { class: 'inp' }, recs.map(x => { const o = h('option', { value: x.id, text: x.title }); if (x.id === st.rid) o.selected = true; return o; }));
+  sel.addEventListener('change', () => { st.rid = sel.value; re(); });
+  const days = [...Array(14)].map((_, i) => addDays(st.start, i));
+  const dayBtns = h('div', { class: 'prepdays' }, ...days.map(d => { const k = ymd(d); return h('button', { class: 'prepday' + (st.days.has(k) ? ' on' : ''), onclick: () => { st.days.has(k) ? st.days.delete(k) : st.days.add(k); re(); } }, h('small', { text: WD[(d.getDay() + 6) % 7] }), h('b', { text: String(d.getDate()) })); }));
+  const nD = st.days.size; const per = nD ? serv / (nD * st.persons) : 0;
+  const fmtP = x => (Math.round(x * 10) / 10).toString().replace('.', ',');
+  const stepper = h('div', { class: 'stepper' }, h('button', { class: 'ib', 'aria-label': 'Weniger', onclick: () => { st.persons = Math.max(1, st.persons - 1); re(); } }, '−'), h('div', { class: 'stv' }, h('b', { text: String(st.persons) }), h('span', { text: st.persons === 1 ? 'Person isst davon' : 'Personen essen davon' })), h('button', { class: 'ib', 'aria-label': 'Mehr', onclick: () => { st.persons = Math.min(8, st.persons + 1); re(); } }, ic('plus')));
+  const meal = mealSelect(st.meal); meal.addEventListener('change', () => { st.meal = meal.value; });
+  const save = h('button', { class: 'btn grad', onclick: async () => {
+    if (!nD) return toast('Wähle mindestens einen Tag');
+    if (!db) return toast('Nicht verbunden');
+    save.disabled = true;
+    const prep = 'mp' + Date.now().toString(36); const ids = [];
+    try {
+      for (const k of [...st.days].sort()) {
+        const ref = db.collection('plan').doc(); ids.push(ref.id);
+        const body = { date: k, meal: st.meal, title: r.title, recipeId: r.id, listed: false, by: me(), created: Date.now(), prep, portion: per };
+        await queue('plan/' + ref.id, () => ref.set(body));
+      }
+      closeSheet();
+      await listForPlans([{ planId: ids[0], r }]);
+    } catch (e) { showErr(e); save.disabled = false; }
+  } }, 'Einplanen');
+  openSheet('Mealprep', [
+    h('div', { class: 'fsec' }, h('h3', { text: 'Rezept' }), sel, h('div', { class: 'muted setnote', style: 'margin:10px 4px 0;text-align:left', text: `Ergibt ${fmtP(serv)} Portionen. Die Zutaten kommen einmal auf die Einkaufsliste.` })),
+    h('div', { class: 'fsec' }, h('h3', { text: 'An welchen Tagen?' }), dayBtns),
+    h('div', { class: 'fsec' }, h('h3', { text: 'Für wen?' }), stepper, h('div', { style: 'height:6px' }), meal),
+    h('div', { class: 'rescard' }, h('div', { class: 'reskcal', text: nD ? fmtP(per) + ' Portionen' : 'Tage wählen' }), h('div', { class: 'muted', text: nD ? `pro Person und Tag, ${nD} ${nD === 1 ? 'Tag' : 'Tage'}` : 'dann siehst du, wie viel pro Tag gegessen wird' })),
+    h('div', { class: 'actions' }, save)]);
 }
 function recCard(r, i) {
   const kc = kcalText(r, 'per');
@@ -966,7 +1008,7 @@ $('#ov').addEventListener('click', e => { if (e.target.id === 'ov') dismissSheet
 function openDay(ds, focus) {
   const list = planOn(ds);
   const planned = h('div', { class: 'planned' });
-  if (list.length) list.forEach(p => { const r = recipeOf(p); const kc = r ? kcalText(r, 'total') : ''; planned.append(h('div', { class: 'chip' + (p.recipeId ? '' : ' free'), onclick: () => openPlan(p) }, dot(p.by), h('span', { class: 't', text: p.title }), p.meal ? h('span', { class: 'm', text: p.meal }) : null, kc ? h('span', { class: 'kc', text: kc }) : null)); });
+  if (list.length) list.forEach(p => { const r = recipeOf(p); const kc = r ? kcalText(r, 'total') : ''; planned.append(h('div', { class: 'chip' + (p.recipeId ? '' : ' free'), onclick: () => openPlan(p) }, dot(p.by), h('span', { class: 't', text: p.title }), p.prep ? h('span', { class: 'm prep', text: 'Mealprep' }) : p.meal ? h('span', { class: 'm', text: p.meal }) : null, kc ? h('span', { class: 'kc', text: kc }) : null)); });
   else planned.append(h('div', { class: 'empty', text: 'nichts geplant' }));
   const inp = h('input', { class: 'inp', placeholder: 'Rezept wählen oder Gericht eintippen', autocomplete: 'off', enterkeyhint: 'done' });
   const meal = mealSelect('');
@@ -1052,6 +1094,11 @@ function openPlan(p) {
 async function removePlan(p) {
   if (!db) return;
   await queue('plan/' + p.id, () => db.collection('plan').doc(p.id).delete());
+  const sib = p.prep ? plan.find(x => x.prep === p.prep && x.id !== p.id) : null;
+  if (sib) {
+    for (const i of items) { const notes = i.notes || []; if (!notes.some(n => n.dishId === p.id)) continue; queue('items/' + i.id, () => db.collection('items').doc(i.id).update({ notes: notes.map(n => n.dishId === p.id ? { ...n, dishId: sib.id } : n) })); }
+    return toast(`${p.title} an diesem Tag entfernt`);
+  }
   let removed = 0;
   for (const i of items) {
     if (i.checked) continue; const notes = i.notes || [];
@@ -1289,10 +1336,10 @@ function reportData(start) {
   const days = [...Array(7)].map((_, i) => ymd(addDays(start, i)));
   const meals = plan.filter(p => days.includes(p.date)).map(p => ({ p, r: recipeOf(p) })).filter(m => m.r && recipeNutrition(m.r).ok);
   const total = new Array(24).fill(0); const src = {}; const unknown = new Set();
-  for (const { r } of meals) {
-    const n = recipeNutrition(r); n.unknown.forEach(x => unknown.add(x));
-    for (let i = 0; i < 24; i++) total[i] += n.per[i];
-    for (const part of n.parts) for (let i = 0; i < 24; i++) { const v = (part.v[i] || 0) * part.gr / 100 / n.serv; if (v > 0) { (src[i] = src[i] || {}); src[i][part.name] = (src[i][part.name] || 0) + v; } }
+  for (const { r, p } of meals) {
+    const n = recipeNutrition(r); n.unknown.forEach(x => unknown.add(x)); const pf = p.portion || 1;
+    for (let i = 0; i < 24; i++) total[i] += n.per[i] * pf;
+    for (const part of n.parts) for (let i = 0; i < 24; i++) { const v = (part.v[i] || 0) * part.gr / 100 / n.serv * pf; if (v > 0) { (src[i] = src[i] || {}); src[i][part.name] = (src[i][part.name] || 0) + v; } }
   }
   const nDays = new Set(meals.map(m => m.p.date)).size;
   return { meals, total, src, unknown, nDays };

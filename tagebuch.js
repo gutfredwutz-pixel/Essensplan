@@ -62,7 +62,7 @@ function dayIntake(name, ds) {
   let planned = false;
   for (const p of planOn(ds)) {
     const r = recipeOf(p); if (!r) continue; const n = recipeNutrition(r); if (!n.ok) continue;
-    const fac = e && e.plans && e.plans[p.id] != null ? e.plans[p.id] : 1; planned = true; if (!fac) continue;
+    const fac = e && e.plans && e.plans[p.id] != null ? e.plans[p.id] : (p.portion || 1); planned = true; if (!fac) continue;
     for (const part of n.parts) add(part.name, part.v, part.gr / 100 / n.serv * fac);
   }
   if (e) for (const f of e.foods || []) if (f.v && f.gr) add(f.name, f.v, f.gr / 100);
