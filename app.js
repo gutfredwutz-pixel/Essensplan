@@ -458,7 +458,7 @@ function slideSwap(id, dir, fromX, outDur) {
   const st = stage(), W = window.innerWidth; const E = 'cubic-bezier(.22,.8,.24,1)';
   const swap = () => { if (tab === 'nutri' && window.resetNutriState) resetNutriState(); tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, 0); };
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) { swap(); st.style.transform = ''; return Promise.resolve(); }
-  const od = outDur || 0.2, id2 = 0.3;
+  const od = outDur || 0.15, id2 = 0.26;
   document.documentElement.style.setProperty('--tdur', (od + id2) + 's');
   document.body.dataset.tab = id;
   return new Promise(res => {
@@ -471,7 +471,7 @@ function slideSwap(id, dir, fromX, outDur) {
     }, od * 1000);
   });
 }
-function goTab(id, dir) { if (id === tab) return; cachePage(); slideSwap(id, dir > 0 ? 1 : -1, 0, 0.18); }
+function goTab(id, dir) { if (id === tab) return; cachePage(); slideSwap(id, dir > 0 ? 1 : -1, 0, 0.13); }
 function cachePage() { const m = $('#main'); if (m && m.firstChild) { const d = h('div'); d.append(...[...m.childNodes].map(n => n.cloneNode(true))); pageCache[tab] = d; } }
 function peekNode(id) {
   try {
@@ -492,7 +492,7 @@ function peekNode(id) {
   const mkPeek = id => { if (!id) return null; const node = peekNode(id); return node ? stageClone(id, node) : null; };
   const place = x => {
     const W = window.innerWidth;
-    if (peeks.cur) peeks.cur.style.transform = `translate3d(${x}px,0,0)`; else stage().style.transform = `translate3d(${x}px,0,0)`;
+    if (peeks.cur) { peeks.cur.style.transform = `translate3d(${x}px,0,0)`; peeks.cur.style.opacity = String(Math.max(0.35, 1 - Math.abs(x) / W)); } else stage().style.transform = `translate3d(${x}px,0,0)`;
     if (peeks.r) peeks.r.style.transform = `translate3d(${W + x}px,0,0)`;
     if (peeks.l) peeks.l.style.transform = `translate3d(${-W + x}px,0,0)`;
   };
@@ -520,15 +520,15 @@ function peekNode(id) {
     document.body.classList.remove('swiping');
     if (mode !== 1) return; mode = 0; cancelAnimationFrame(raf);
     const st = stage(), W = window.innerWidth; const idx = TAB_ORDER.indexOf(tab);
-    const dir = (Math.abs(vx) > 0.35 ? -Math.sign(vx) : -Math.sign(dx)) || 1;
+    const dir = (Math.abs(vx) > 0.2 ? -Math.sign(vx) : -Math.sign(dx)) || 1;
     const id = TAB_ORDER[idx + dir];
-    const go = id && (Math.abs(dx) > W * 0.22 || (Math.abs(vx) > 0.35 && Math.sign(vx) === -dir));
+    const go = id && (Math.abs(dx) > W * 0.12 || (Math.abs(vx) > 0.2 && Math.sign(vx) === -dir));
     const cur = peeks.cur;
     if (go && cur) {
       busy = true; cachePage(); document.body.dataset.tab = id;
-      const rest = W - Math.abs(dx); const od = Math.max(0.12, Math.min(0.22, rest / Math.max(Math.abs(vx) * 1000, 1600))), id2 = 0.3;
+      const rest = W - Math.abs(dx); const od = Math.max(0.09, Math.min(0.15, rest / Math.max(Math.abs(vx) * 1000, 2600))), id2 = 0.26;
       document.documentElement.style.setProperty('--tdur', (od + id2) + 's');
-      cur.style.transition = `transform ${od}s cubic-bezier(.3,.3,.6,1)`; cur.style.transform = `translate3d(${-dir * W}px,0,0)`;
+      cur.style.transition = `transform ${od}s cubic-bezier(.3,.3,.6,1), opacity ${od}s linear`; cur.style.transform = `translate3d(${-dir * W}px,0,0)`; cur.style.opacity = '0.3';
       setTimeout(() => {
         st.style.transition = 'none';
         if (tab === 'nutri' && window.resetNutriState) resetNutriState(); tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, 0);
