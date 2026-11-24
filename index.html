@@ -709,6 +709,19 @@ html.dark .frow.empty .fl{color:#C4B5FF}
 .prepday small{font-size:11px;color:var(--ink3);font-weight:600}.prepday b{font-size:16px}
 .prepday.on{background:var(--grad);color:#fff;box-shadow:0 6px 14px -8px rgba(91,100,255,.9)}.prepday.on small{color:rgba(255,255,255,.85)}
 .chip .m.prep{background:var(--grad);color:#fff}
+
+/* Kopf als eigene schwebende Leiste, Gegenstück zur unteren Leiste */
+header{padding:calc(var(--top) + 10px) 14px 14px;background:linear-gradient(var(--bg) 70%,transparent)}
+.hrow{background:var(--card);border-radius:999px;padding:8px 8px 8px 8px;box-shadow:0 10px 34px rgba(27,34,51,.12);gap:12px}
+#art{width:44px;height:44px}
+h1{font-size:23px}
+#gear,#who{width:44px;height:44px}
+#gear{background:color-mix(in srgb,#5B7FFF 9%,var(--card))}
+html.dark .hrow{box-shadow:0 10px 34px rgba(0,0,0,.45)}
+main{padding-top:6px}
+/* Rezepte: mehr Luft im Kopfbereich */
+.rectop{padding:18px 18px 20px}
+.rectop .tiles{margin-top:20px;gap:12px}
 .hidden{display:none!important}
 </style>
 </head>
