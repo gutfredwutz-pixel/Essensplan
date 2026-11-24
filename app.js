@@ -516,7 +516,7 @@ function peekNode(id) {
     if (mode === -1) return; const cx = e.touches[0].clientX; dx = cx - sx; const dy = e.touches[0].clientY - sy;
     if (mode === 0) {
       if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-        mode = 1; sx += dx > 0 ? 8 : -8; dx = cx - sx; m().style.transition = 'none';
+        mode = 1; document.body.classList.add('swiping'); sx += dx > 0 ? 8 : -8; dx = cx - sx; m().style.transition = 'none';
         const idx = TAB_ORDER.indexOf(tab); peeks.l = mkPeek(TAB_ORDER[idx - 1]); peeks.r = mkPeek(TAB_ORDER[idx + 1]);
         document.querySelector('header').style.transition = 'none';
         if (TAB_ORDER[idx - 1]) { peeks.hl = headClone(TAB_ORDER[idx - 1]); peekLayer().appendChild(peeks.hl); }
@@ -530,6 +530,7 @@ function peekNode(id) {
     cancelAnimationFrame(raf); raf = requestAnimationFrame(() => place(x));
   }, { passive: false });
   document.addEventListener('touchend', () => {
+    document.body.classList.remove('swiping');
     if (mode !== 1) return; mode = 0; cancelAnimationFrame(raf);
     const el = m(), W = window.innerWidth; const idx = TAB_ORDER.indexOf(tab);
     const dir = (Math.abs(vx) > 0.35 ? -Math.sign(vx) : -Math.sign(dx)) || 1;
@@ -952,7 +953,11 @@ function recCard(r, i) {
     h('button', { class: 'ib sm ghost heart' + (r.fav ? ' on' : ''), 'aria-label': 'Favorit', onclick: e => { e.stopPropagation(); toggleFav(r); } }, ic('heart')));
 }
 function toggleFav(r) { queue('recipes/' + r.id, () => db.collection('recipes').doc(r.id).update({ fav: !r.fav })); }
-function mealSelect(v) { return h('select', { class: 'inp' }, MEALS.map(m => { const o = h('option', { value: m, text: m || 'keine' }); if (m === v) o.selected = true; return o; })); }
+function mealSelect(v) {
+  const box = h('div', { class: 'seg wide mealseg' }); box.value = v || '';
+  const draw = () => box.replaceChildren(...MEALS.filter(Boolean).map(m => h('button', { type: 'button', class: box.value === m ? 'on' : '', onclick: () => { box.value = box.value === m ? '' : m; draw(); box.dispatchEvent(new Event('change')); } }, m)));
+  draw(); return box;
+}
 function openSchedule(r) {
   const date = h('input', { class: 'inp', type: 'date', value: ymd(new Date()) });
   const meal = mealSelect('');
@@ -1052,10 +1057,12 @@ function openDay(ds, focus) {
   };
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); add(inp.value); } });
   const sg = attachSuggest(inp, s => add(s.name, s.recipe), { source: recipeSuggestions });
-  openSheet(longDate(ds), [planned,
-    h('label', { class: 'lbl', text: 'Hinzufügen' }), inp, sg.box,
-    h('div', { class: 'row', style: 'margin-top:8px' }, h('div', { style: 'flex:1' }, meal), h('button', { class: 'btn p', onclick: () => add(inp.value) }, 'Eintragen')),
-    h('div', { class: 'actions' }, h('button', { class: 'btn r', onclick: () => openRecipe({ title: cap(inp.value), ingredients: [], steps: [], servings: '2' }, { planDate: ds, meal: meal.value }) }, 'Neues Rezept erstellen'))]);
+  openSheet(longDate(ds), [
+    list.length ? h('div', { class: 'fsec' }, h('h3', { text: 'Geplant' }), planned) : null,
+    h('div', { class: 'fsec' }, h('h3', { text: list.length ? 'Noch etwas dazu' : 'Was gibt es?' }), inp, sg.box,
+      h('div', { class: 'muted', style: 'margin:14px 4px 8px;font-size:13px', text: 'Mahlzeit, wenn du magst' }), meal,
+      h('button', { class: 'btn grad', style: 'width:100%;margin-top:16px', onclick: () => add(inp.value) }, 'Eintragen')),
+    h('button', { class: 'btn s', style: 'width:100%', onclick: () => openRecipe({ title: cap(inp.value), ingredients: [], steps: [], servings: '2' }, { planDate: ds, meal: meal.value }) }, 'Neues Rezept erstellen')]);
   if (focus) setTimeout(() => inp.focus(), 250);
 }
 
@@ -1105,7 +1112,7 @@ function openPlan(p) {
   const r = recipeOf(p);
   const date = h('input', { class: 'inp', type: 'date', value: p.date || '' });
   const meal = mealSelect(p.meal || '');
-  const content = [h('div', { class: 'row' }, h('div', { style: 'flex:1.3' }, h('label', { class: 'lbl', text: 'Datum' }), date), h('div', { style: 'flex:1' }, h('label', { class: 'lbl', text: 'Mahlzeit' }), meal))];
+  const content = [h('div', { class: 'fsec' }, h('h3', { text: 'Wann?' }), date, h('div', { style: 'height:10px' }), meal)];
   if (r) {
     content.push(nutritionLine(r));
     content.push(h('label', { class: 'lbl', text: 'Zutaten für ' + (r.servings || 2) + ' ' + ((+r.servings || 2) === 1 ? 'Person' : 'Personen') }), ingredientView(r));
