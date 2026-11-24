@@ -232,7 +232,7 @@ function applyTheme() { const d = isDark(); document.documentElement.classList.t
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme); } catch (e) { }
 function weekAnchor() { const t = dayOnly(new Date()); return LS.get('ep_weekstart') === 'mo' ? addDays(t, -((t.getDay() + 6) % 7)) : t; }
 applyTheme();
-function openSettings() { goTab('set', TAB_ORDER.indexOf('set') - TAB_ORDER.indexOf(tab)); }
+function openSettings() { openTop('set'); }
 function renderSettings() {
   const seg = (key, opts, def, after) => { const cur = LS.get(key) || def; return h('div', { class: 'seg wide' }, ...opts.map(([v, t]) => h('button', { class: cur === v ? 'on' : '', onclick: () => { LS.set(key, v); after && after(v); render(); } }, t))); };
   const card = (cls, title, ...kids) => h('div', { class: 'setcard ' + cls }, h('div', { class: 'settitle', text: title }), ...kids);
@@ -256,6 +256,7 @@ function renderSettings() {
     card('a', 'Anzeigemodus', seg('ep_theme', [['light', 'Hell'], ['dark', 'Dunkel'], ['auto', 'Wie iPhone']], 'light', applyTheme)),
     card('b', 'Meine Angaben', note(profiles[who] ? 'Körper, Alltag, Sport, Ziel und Supplemente' : 'Noch nichts eingetragen'),
       h('button', { class: 'btn grad', style: 'width:100%', onclick: () => openProfileEdit(who, () => { closeSheet(); render(); }) }, profiles[who] ? 'Bearbeiten' : 'Angaben machen')),
+    card('b', 'Haushalt', note('Mitglieder, Code und Einladungslink für neue Leute.'), h('button', { class: 'btn s', style: 'width:100%', onclick: () => openProfile() }, 'Haushalt öffnen')),
     card('a', 'Woche beginnt', seg('ep_weekstart', [['today', 'Mit heute'], ['mo', 'Am Montag']], 'today', () => { anchor = weekAnchor(); }), note('Gilt für die Essenswoche und die Nährstoffe.')),
     card('b', 'Gewürze aus Rezepten', seg('ep_spices', [['ask', 'Nachfragen'], ['all', 'Immer'], ['none', 'Nie']], 'ask'), note('Ob Gewürze beim Einplanen eines Rezepts auf die Einkaufsliste kommen.')),
     card('a', 'Nie auf die Liste', note('Salz, Pfeffer, Öl und Wasser kommen nie aus Rezepten auf die Liste. Hier könnt ihr weitere Sachen ergänzen, die ihr immer daheim habt.'),
@@ -414,22 +415,21 @@ function grey(text) { return h('div', { class: 'greytxt', text }); }
 function renderHead() {
   const a = $('#art'); a.replaceChildren(svgEl(ART[tab])); $('#title').textContent = TITLES[tab];
   const w = $('#who'); const m = me(); w.classList.toggle('hidden', !household); w.style.background = colorOf(m); w.textContent = (m || '?')[0];
-  const gr = $('#gear'); if (gr && !gr.firstChild) gr.append(ic('gear')); if (gr) gr.classList.toggle('hidden', !household);
+  const gr = $('#gear'); if (gr && !gr.firstChild) gr.append(ic('gear')); if (gr) { gr.classList.toggle('hidden', !household); gr.classList.toggle('on', tab === 'set'); } w.classList.toggle('on', tab === 'nutri');
   document.body.dataset.tab = tab;
 }
 function renderTabs() {
   const t = $('#tabs'); t.replaceChildren();
-  const go = id => () => goTab(id, TAB_ORDER.indexOf(id) - TAB_ORDER.indexOf(tab));
+  const go = id => () => goTab(id, TAB_ORDER.indexOf(tab) < 0 ? (tab === 'nutri' ? -1 : 1) : TAB_ORDER.indexOf(id) - TAB_ORDER.indexOf(tab));
   t.append(
-    h('button', { class: 'side set' + (tab === 'set' ? ' on' : ''), 'aria-label': 'Einstellungen', onclick: go('set') }, ic('gear')),
     h('button', { class: 'side' + (tab === 'list' ? ' on' : ''), 'aria-label': 'Einkaufsliste', onclick: go('list') }, ic('cart-shopping')),
     h('button', { class: 'mid' + (tab === 'cal' ? ' on' : ''), 'aria-label': 'Essenswoche', onclick: go('cal') }, h('span', { class: 'bub' }, ic('calendar-days'))),
-    h('button', { class: 'side' + (tab === 'rec' ? ' on' : ''), 'aria-label': 'Rezepte', onclick: go('rec') }, ic('book-open')),
-    h('button', { class: 'side' + (tab === 'nutri' ? ' on' : ''), 'aria-label': 'Nährstoffe', onclick: go('nutri') }, ic('jar')));
+    h('button', { class: 'side' + (tab === 'rec' ? ' on' : ''), 'aria-label': 'Rezepte', onclick: go('rec') }, ic('book-open')));
   renderHead();
 }
 let listUI = null, recUI = null;
-const TAB_ORDER = ['set', 'list', 'cal', 'rec', 'nutri'];
+const TAB_ORDER = ['list', 'cal', 'rec'];
+function openTop(id) { if (tab === id) { goTab('cal', -1); return; } goTab(id, id === 'nutri' ? 1 : -1); }
 function goTab(id, dir, fromX) {
   if (id === tab) return;
   const m = $('#main'); const W = window.innerWidth; const x0 = fromX || 0;
@@ -469,8 +469,8 @@ function peekNode(id) {
   const clearPeeks = () => { Object.values(peeks).forEach(p => p && p.remove()); peeks = {}; };
   const mkPeek = id => {
     if (!id) return null; const node = peekNode(id); if (!node) return null;
-    const r = m().getBoundingClientRect(); const p = h('div', { class: 'peek' }); p.append(node);
-    Object.assign(p.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', pointerEvents: 'none', zIndex: '5', willChange: 'transform' });
+    const r = m().getBoundingClientRect(); const cs = getComputedStyle(m()); const p = h('div', { class: 'peek' }); p.append(node);
+    Object.assign(p.style, { padding: cs.padding, boxSizing: cs.boxSizing, position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', pointerEvents: 'none', zIndex: '5', willChange: 'transform' });
     document.body.appendChild(p); return p;
   };
   const place = x => {
@@ -480,7 +480,7 @@ function peekNode(id) {
     if (peeks.l) peeks.l.style.transform = `translate3d(${-W + x}px,0,0)`;
   };
   document.addEventListener('touchstart', e => {
-    mode = 0; if (busy || $('#ov').classList.contains('on') || document.querySelector('.cook') || e.touches.length > 1) { mode = -1; return; }
+    mode = 0; if (busy || TAB_ORDER.indexOf(tab) < 0 || $('#ov').classList.contains('on') || document.querySelector('.cook') || e.touches.length > 1) { mode = -1; return; }
     const t = e.target; if (t.closest('.swipe,input,textarea,select,[data-no-tab-swipe],.tabs,.month')) { mode = -1; return; }
     sx = e.touches[0].clientX; sy = e.touches[0].clientY; dx = 0; vx = 0; lt = performance.now(); lxp = sx;
   }, { passive: true });

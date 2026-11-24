@@ -677,6 +677,21 @@ html.dark .frow.empty .fl{color:#C4B5FF}
 .rephero{background:var(--card);border-radius:34px 28px 32px 26px / 28px 34px 26px 32px;box-shadow:0 2px 12px var(--shadow);padding:18px 16px 16px;margin:14px 0 16px!important}
 .rephero::before,.phero::before{display:none!important}
 .rephero .rhnum{padding-top:0;font-size:46px}
+
+/* Runde 14: drei Tabs, Kopf mit Zahnrad und J, Nährstoffe luftiger */
+.tabs{grid-template-columns:repeat(3,76px);padding:8px 26px;gap:0;justify-content:space-between;width:min(300px,calc(100% - 56px));box-sizing:border-box}
+.tabs button{width:76px;height:58px}
+#gear.on,#who.on{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #7B5CFF}
+#gear{margin-right:4px}
+.npage{display:flex;flex-direction:column;gap:16px}
+.npage>*{margin-top:0!important;margin-bottom:0!important}
+.npage .pnav{margin-left:2px;margin-right:2px}
+.npage .dstrip{padding:8px 6px 4px;gap:8px}
+.npage .jarsec h3{margin:6px 6px 12px}
+.npage .jarsec+.jarsec{margin-top:6px!important}
+.npage .jars{gap:12px}
+.npage .jarsec+.jarsec{margin-top:22px}
+.jar{height:124px}
 .hidden{display:none!important}
 </style>
 </head>
@@ -687,8 +702,8 @@ html.dark .frow.empty .fl{color:#C4B5FF}
     <div id="art"></div>
     <h1 id="title">Essenswoche</h1>
     <span class="status" id="status"></span>
-    
-    <button class="av big hidden" id="who" aria-label="Profil" onclick="openProfile()"></button>
+    <button class="ib gearb hidden" id="gear" aria-label="Einstellungen" onclick="openTop('set')"></button>
+    <button class="av big hidden" id="who" aria-label="Ich und Nährstoffe" onclick="openTop('nutri')"></button>
   </div>
 </header>
 <main id="main"></main>
