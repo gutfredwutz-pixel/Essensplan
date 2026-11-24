@@ -234,7 +234,7 @@ function weekAnchor() { const t = dayOnly(new Date()); return LS.get('ep_weeksta
 applyTheme();
 function openSettings() { openTop('set'); }
 function renderSettings() {
-  const seg = (key, opts, def, after) => { const cur = LS.get(key) || def; return h('div', { class: 'seg wide' }, ...opts.map(([v, t]) => h('button', { class: cur === v ? 'on' : '', onclick: () => { LS.set(key, v); after && after(v); render(); } }, t))); };
+  const seg = (key, opts, def, after) => { const cur = LS.get(key) || def; return h('div', { class: 'seg wide' }, ...opts.map(([v, t]) => h('button', { class: cur === v ? 'on' : '', onclick: () => { LS.set(key, v); after && after(v); refreshSet(); } }, t))); };
   const card = (cls, title, ...kids) => h('div', { class: 'setcard ' + cls }, h('div', { class: 'settitle', text: title }), ...kids);
   const note = t => h('div', { class: 'muted setnote', text: t });
   const who = me() || personNames()[0];
@@ -242,7 +242,7 @@ function renderSettings() {
   const never = hhSet.never || [];
   const saveNever = list => db && db.collection('settings').doc('household').set({ ...hhSet, never: list }).catch(showErr);
   const nin = h('input', { class: 'inp', placeholder: 'z. B. Zucker', autocomplete: 'off', enterkeyhint: 'done' });
-  const addNever = () => { const v = cap(nin.value.trim()); if (!v || never.some(x => norm(x) === norm(v))) { nin.value = ''; return; } hhSet = { ...hhSet, never: [...never, v] }; saveNever(hhSet.never); render(); };
+  const addNever = () => { const v = cap(nin.value.trim()); if (!v || never.some(x => norm(x) === norm(v))) { nin.value = ''; return; } hhSet = { ...hhSet, never: [...never, v] }; saveNever(hhSet.never); refreshSet(); };
   nin.addEventListener('keydown', e => { if (e.key === 'Enter') addNever(); });
   // Spracherkennung
   const asrBtn = h('button', { class: 'btn s', style: 'width:100%' }, LS.get('ep_asr') ? 'Ist auf diesem Handy geladen' : 'Jetzt laden (einmalig ca. 80 MB)');
@@ -255,12 +255,12 @@ function renderSettings() {
   return h('div', { class: 'setpage' },
     card('a', 'Anzeigemodus', seg('ep_theme', [['light', 'Hell'], ['dark', 'Dunkel'], ['auto', 'Wie iPhone']], 'light', applyTheme)),
     card('b', 'Meine Angaben', note(profiles[who] ? 'Körper, Alltag, Sport, Ziel und Supplemente' : 'Noch nichts eingetragen'),
-      h('button', { class: 'btn grad', style: 'width:100%', onclick: () => openProfileEdit(who, () => { closeSheet(); render(); }) }, profiles[who] ? 'Bearbeiten' : 'Angaben machen')),
-    card('b', 'Haushalt', note('Mitglieder, Code und Einladungslink für neue Leute.'), h('button', { class: 'btn s', style: 'width:100%', onclick: () => openProfile() }, 'Haushalt öffnen')),
+      h('button', { class: 'btn grad', style: 'width:100%', onclick: () => openProfileEdit(who, () => openTop('set')) }, profiles[who] ? 'Bearbeiten' : 'Angaben machen')),
+    card('b', 'Haushalt', note('Mitglieder, Code und Einladungslink für neue Leute.'), h('button', { class: 'btn s', style: 'width:100%', onclick: () => { topSheet = null; openProfile(); } }, 'Haushalt öffnen')),
     card('a', 'Woche beginnt', seg('ep_weekstart', [['today', 'Mit heute'], ['mo', 'Am Montag']], 'today', () => { anchor = weekAnchor(); }), note('Gilt für die Essenswoche und die Nährstoffe.')),
     card('b', 'Gewürze aus Rezepten', seg('ep_spices', [['ask', 'Nachfragen'], ['all', 'Immer'], ['none', 'Nie']], 'ask'), note('Ob Gewürze beim Einplanen eines Rezepts auf die Einkaufsliste kommen.')),
     card('a', 'Nie auf die Liste', note('Salz, Pfeffer, Öl und Wasser kommen nie aus Rezepten auf die Liste. Hier könnt ihr weitere Sachen ergänzen, die ihr immer daheim habt.'),
-      never.length ? h('div', { class: 'tagbox', style: 'justify-content:center;margin-bottom:10px' }, ...never.map(x => h('button', { class: 'pill addp', onclick: () => { hhSet = { ...hhSet, never: never.filter(y => y !== x) }; saveNever(hhSet.never); render(); } }, x + '  ×'))) : null,
+      never.length ? h('div', { class: 'tagbox', style: 'justify-content:center;margin-bottom:10px' }, ...never.map(x => h('button', { class: 'pill addp', onclick: () => { hhSet = { ...hhSet, never: never.filter(y => y !== x) }; saveNever(hhSet.never); refreshSet(); } }, x + '  ×'))) : null,
       h('div', { class: 'row', style: 'gap:8px' }, nin, h('button', { class: 'ib p', 'aria-label': 'Hinzufügen', onclick: addNever }, ic('plus')))),
     card('b', 'Spracherkennung', note('Fürs Diktieren und für Videos. Am besten einmal im WLAN laden, danach geht es auch offline.'), asrBtn, asrProg),
     h('div', { class: 'setfoot' }, h('div', { class: 'greytxt', text: 'Nährwerte: Bundeslebensmittelschlüssel (BLS) 4.0, Max Rubner-Institut. Markenprodukte: Open Food Facts. Alle Werte sind Schätzungen und ersetzen keine Ernährungsberatung.' })));
@@ -415,7 +415,7 @@ function grey(text) { return h('div', { class: 'greytxt', text }); }
 function renderHead() {
   const a = $('#art'); a.replaceChildren(svgEl(ART[tab])); $('#title').textContent = TITLES[tab];
   const w = $('#who'); const m = me(); w.classList.toggle('hidden', !household); w.style.background = colorOf(m); w.textContent = (m || '?')[0];
-  const gr = $('#gear'); if (gr && !gr.firstChild) gr.append(ic('gear')); if (gr) { gr.classList.toggle('hidden', !household); gr.classList.toggle('on', tab === 'set'); } w.classList.toggle('on', tab === 'nutri');
+  const gr = $('#gear'); if (gr && !gr.firstChild) gr.append(ic('gear')); if (gr) gr.classList.toggle('hidden', !household);
   document.body.dataset.tab = tab;
 }
 function renderTabs() {
@@ -429,7 +429,13 @@ function renderTabs() {
 }
 let listUI = null, recUI = null;
 const TAB_ORDER = ['list', 'cal', 'rec'];
-function openTop(id) { if (tab === id) { goTab('cal', -1); return; } goTab(id, id === 'nutri' ? 1 : -1); }
+let topSheet = null;
+function openTop(id) {
+  topSheet = id;
+  if (id === 'set') { const sc = $('#ov').classList.contains('on') ? $('#sheet').scrollTop : 0; openSheet('Einstellungen', [renderSettings()]); $('#sheet').scrollTop = sc; }
+  else { resetNutriState(); nutriWho = null; nutriFn = null; nutriHome(); }
+}
+function refreshSet() { if (topSheet === 'set' && $('#ov').classList.contains('on')) openTop('set'); else render(); }
 function goTab(id, dir, fromX) {
   if (id === tab) return;
   const m = $('#main'); const W = window.innerWidth; const x0 = fromX || 0;
@@ -977,10 +983,10 @@ function openSheet(title, content) {
   const s = $('#sheet'); const ov = $('#ov'); const was = ov.classList.contains('on');
   s.replaceChildren(h('div', { class: 'grab' }), h('div', { class: 'shead' }, h('h2', { text: title }), h('button', { class: 'ib xclose', 'aria-label': 'Schließen', onclick: closeSheet }, ic('xmark'))), ...content.filter(Boolean));
   s.style.transition = ''; s.style.transform = ''; ov.style.background = '';
-  ov.classList.add('on'); s.scrollTop = 0; document.body.style.overflow = 'hidden';
+  s.classList.toggle('full', !!topSheet); ov.classList.add('on'); s.scrollTop = 0; document.body.style.overflow = 'hidden';
   if (!was) { s.classList.remove('rise'); void s.offsetWidth; s.classList.add('rise'); }
 }
-function closeSheet() { $('#ov').classList.remove('on'); document.body.style.overflow = ''; }
+function closeSheet() { $('#ov').classList.remove('on'); document.body.style.overflow = ''; topSheet = null; $('#sheet').classList.remove('full'); }
 function dismissSheet() {
   const s = $('#sheet'), ov = $('#ov'); if (ov.dataset.locked) return;
   s.style.transition = 'transform .26s cubic-bezier(.3,.7,.4,1)'; s.style.transform = 'translate3d(0,105%,0)'; ov.style.transition = 'background .26s'; ov.style.background = 'rgba(20,26,40,0)';
@@ -1423,9 +1429,9 @@ function openReport(start) {
   nutriOut('Nährstoffe', content, () => openReport(start));
 }
 let nutriFn = null, nutriWho = null;
-function nutriHome() { const who = nutriWho == null ? (me() || '') : nutriWho; if (who) openPersonReport(who, anchor); else openReport(anchor); }
+function nutriHome() { openPersonReport(me() || personNames()[0], anchor); }
 function nutriOut(title, content, fn) {
-  if (tab !== 'nutri' && !nutriTarget) return openSheet(title, content);
+  if (tab !== 'nutri' && !nutriTarget) { topSheet = 'nutri'; nutriFn = fn || null; return openSheet(title, content); }
   if (!nutriTarget && $('#ov').classList.contains('on')) closeSheet();
   nutriFn = fn || null;
   (nutriTarget || $('#main')).replaceChildren(h('div', { class: 'npage' }, title && title !== 'Nährstoffe' ? h('h2', { class: 'ntitle', text: title }) : null, ...content.filter(Boolean)));
@@ -1463,7 +1469,7 @@ function openNutrient(r, d, start, opt) {
   if (r.i === 22) content.push(grey('Jodsalz ist hier nicht mitgerechnet, darüber kommt im Alltag ein großer Teil.'));
   content.push(h('div', { class: 'actions' }, h('button', { class: 'btn grad', onclick: () => opt ? opt.back() : openReport(start) }, 'Zurück zur Übersicht')));
   const backFn = () => opt ? opt.back() : openReport(start);
-  nutriOut(r.name, [h('button', { class: 'nback', onclick: backFn }, ic('chevron-left'), 'Übersicht'), h('div', { class: 'nutpage ' + st }, ...content.filter(Boolean))], () => openNutrient(r, d, start, opt));
+  nutriOut(r.name, [h('div', { class: 'nutpage ' + st }, ...content.filter(Boolean))], () => openNutrient(r, d, start, opt));
   window.scrollTo(0, 0);
 }
 function suggestFoods(i) {

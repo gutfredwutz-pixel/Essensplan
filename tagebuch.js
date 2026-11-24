@@ -84,10 +84,7 @@ function coverage(tot, R) { const ks = Object.keys(R); return ks.reduce((a, i) =
 const covState = p => p >= 85 ? 'good' : p >= 60 ? 'ok' : 'low';
 
 /* ---- Auswahl oben: Wochenplan oder Person ---- */
-function whoSeg(cur, start) {
-  return h('div', { class: 'seg wide whoseg' },
-    h('button', { class: cur === '' ? 'on' : '', onclick: () => openReport(start) }, 'Wochenplan'),
-    ...[me() || personNames()[0]].map(n => h('button', { class: cur === n ? 'on' : '', onclick: () => openPersonReport(n, start) }, n)));
+function whoSeg(cur, start) { return null; 
 }
 
 /* ---- Persönliche Auswertung ---- */
