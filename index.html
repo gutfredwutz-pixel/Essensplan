@@ -767,6 +767,30 @@ body.swiping :active{transform:none!important;filter:none!important}
 #stage{position:relative;z-index:2}
 .stageclone{z-index:6}
 .stageclone header{background:linear-gradient(var(--bg) 70%,transparent)}
+
+/* Formen bleiben bei jedem Seitenwechsel gleich */
+body[data-tab] .blobs .b1{left:calc(100% - var(--bw) * .54)!important;top:16%!important;background:var(--rosa)!important;opacity:.55!important;border-radius:58% 42% 61% 39% / 47% 58% 42% 53%!important}
+body[data-tab] .blobs .b2{left:calc(var(--bw) * -.49)!important;top:calc(100% - var(--bot) - 6% - var(--bh))!important;background:var(--blue-l)!important;opacity:.8!important;border-radius:43% 57% 38% 62% / 56% 41% 59% 44%!important}
+.blobs i{transition:none!important}
+/* horizontales Wischen bleibt bei der App */
+body{touch-action:pan-y}
+/* Hohe Fenster: Kopf bleibt stehen, Inhalt scrollt darunter */
+.sheet.full{height:90vh;max-height:90vh;padding-top:0}
+
+.sheet .grab,.sheet .shead{position:sticky;z-index:3;background:var(--bg)}
+.sheet .grab{top:10px;z-index:4;margin:0 auto -5px;background:var(--ink3);box-shadow:none}
+.sheet .shead{top:0;margin:0 -16px 12px;padding:22px 20px 12px;box-shadow:0 10px 16px -14px var(--shadow)}
+.sheet.full .shead{padding-top:26px}
+/* Nährstoff-Gläser: Text bleibt innen */
+.jar{height:132px;padding:12px 18px 16px}
+.jname{font-size:11.5px;line-height:1.15;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:anywhere;max-width:100%}
+.jpct{font-size:18px!important}
+.jcov,.jsub{font-size:10px}
+.dtext{min-height:56px!important}
+.dpt{margin:0 4px 10px}
+.micwrap{margin:2px 0 16px}
+.micbtn{width:76px;height:76px}
+.dsum{margin:6px 0 4px}
 .hidden{display:none!important}
 </style>
 </head>

@@ -330,7 +330,7 @@ function openDiary(name, ds, back) {
   const pf = profiles[name]; const nd = pf ? needsOf(pf) : null;
   const dt = new Date(ds); const today = ymd(new Date()), yest = ymd(addDays(new Date(), -1));
   const dlabel = (ds === today ? 'Heute' : ds === yest ? 'Gestern' : WDL[dt.getDay()]) + `, ${dt.getDate()}. ${MON[dt.getMonth()]}`;
-  const txt = h('textarea', { class: 'inp dtext', rows: '3', placeholder: 'z. B. Müsli mit Banane, mittags zwei Brezeln, von der Lasagne nur die Hälfte' }); txt.value = e.text || '';
+  const txt = h('textarea', { class: 'inp dtext', rows: '3', placeholder: 'Oder hier eintippen' }); txt.value = e.text || ''; txt.addEventListener('blur', () => { if (txt.value.trim()) evalText(); });
   const prog = h('div', { class: 'muted hidden', style: 'margin:8px 4px 0' });
   const listBox = h('div'), planBox = h('div'), sumBox = h('div', { class: 'dsum' });
   const drawSum = () => {
@@ -339,7 +339,7 @@ function openDiary(name, ds, back) {
   };
   const drawPlans = () => {
     const ps = planOn(ds);
-    planBox.replaceChildren(h('h3', { text: 'Aus dem Wochenplan' }), ...(ps.length ? ps.map(p => h('div', { class: 'dplan' }, h('div', { class: 'dpt', text: p.title + (recipeOf(p) ? '' : ' (ohne Rezept, zählt nicht mit)') }), h('div', { class: 'muted', style: 'margin:-4px 4px 8px;font-size:12.5px', text: 'Wie viele Portionen hast du davon gegessen?' }),
+    planBox.replaceChildren(h('h3', { text: 'Aus dem Plan' }), ...(ps.length ? ps.map(p => h('div', { class: 'dplan' }, h('div', { class: 'dpt', text: p.title + (recipeOf(p) ? '' : ' (ohne Rezept, zählt nicht mit)') }),
       h('div', { class: 'seg wide sm' }, ...[[0, '0'], [0.25, '¼'], [0.5, '½'], [0.75, '¾'], [1, '1'], [1.5, '1½']].map(([v, t]) => h('button', { class: Math.abs((e.plans[p.id] ?? 1) - v) < 0.01 ? 'on' : '', onclick: () => { e.plans[p.id] = v; drawPlans(); drawSum(); } }, t))))) : [h('div', { class: 'muted', style: 'margin:0 4px', text: 'Für diesen Tag ist nichts geplant.' })]));
   };
   const drawList = () => {
@@ -391,9 +391,9 @@ function openDiary(name, ds, back) {
   drawPlans(); drawList(); drawSum();
   const go = n => openDiary(name, ymd(addDays(dt, n)), back);
   openSheet('Was hast du gegessen?', [
-    h('div', { class: 'pnav' }, h('button', { class: 'ib', 'aria-label': 'Tag davor', onclick: () => go(-1) }, ic('chevron-left')), h('div', null, h('span', { class: 'pdot', style: `background:${colorOf(name)}` }), ` ${name} / ${dlabel}`), h('button', { class: 'ib', 'aria-label': 'Tag danach', onclick: () => go(1) }, ic('chevron-right'))),
+    h('div', { class: 'pnav' }, h('button', { class: 'ib', 'aria-label': 'Tag davor', onclick: () => go(-1) }, ic('chevron-left')), h('div', { text: dlabel }), h('button', { class: 'ib', 'aria-label': 'Tag danach', onclick: () => go(1) }, ic('chevron-right'))),
     h('div', { class: 'fsec' }, planBox),
-    h('div', { class: 'fsec dictate' }, h('h3', { text: 'Was gab es sonst?' }), h('div', { class: 'micwrap' }, mic, micLbl), txt, prog, h('div', { class: 'row', style: 'justify-content:flex-end;margin-top:8px' }, h('button', { class: 'btn s', onclick: evalText }, 'Auswerten'))),
+    h('div', { class: 'fsec dictate' }, h('h3', { text: 'Was gab es sonst?' }), h('div', { class: 'micwrap' }, mic, micLbl), txt, prog),
     listBox,
     sumBox,
     old ? h('div', { class: 'muted', style: 'margin:6px 4px', text: 'Bisher diktiert: ' + (old.text || 'nichts') }) : null,
