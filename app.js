@@ -450,6 +450,11 @@ function stageClone(id, node) {
     const art = c.querySelector('[data-cid=art]'); if (art) art.replaceChildren(svgEl(ART[id]));
     const mm = c.querySelector('[data-cid=main]'); if (mm && node) mm.replaceChildren(node);
   }
+  if (!id) { // nur das Sichtbare mitnehmen, damit das Wischen auch auf vollen Seiten flüssig bleibt
+    const H = window.innerHeight + 60, orig = [...st.querySelectorAll('#main > * > *, #main > *')], cl = [...c.querySelectorAll('[data-cid=main] > * > *, [data-cid=main] > *')];
+    orig.forEach((o, i) => { const b = o.getBoundingClientRect(); if ((b.top > H || b.bottom < -60) && cl[i]) cl[i].style.visibility = 'hidden'; });
+    orig.forEach((o, i) => { const b = o.getBoundingClientRect(); if (b.top > H && cl[i] && cl[i].parentNode) cl[i].remove(); });
+  }
   Object.assign(c.style, { position: 'fixed', left: '0', top: (id ? 0 : r.top) + 'px', width: r.width + 'px', margin: '0', pointerEvents: 'none', willChange: 'transform', transition: 'none' });
   c.querySelectorAll('header').forEach(hd => { hd.style.position = 'relative'; });
   peekLayer().appendChild(c); return c;
@@ -1415,11 +1420,17 @@ function countUp(el, to, fmt) {
   const step = t => { const p = Math.min(1, (t - t0) / D); el.textContent = fmt(to * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); };
   requestAnimationFrame(step); return el;
 }
+let ringN = 0;
+function ring(pct, state, size) {
+  const id = 'rg' + (ringN++), r = 40, C = 2 * Math.PI * r, p = Math.max(0, Math.min(100, pct || 0));
+  const col = { low: ['#FFB0CF', '#E9488B'], ok: ['#9DB8FF', '#5B6BFF'], good: ['#7FE3B6', '#159A63'], high: ['#FFC98F', '#E8761E'], sun: ['#FFE07A', '#F0A21E'] }[state] || ['#9DB8FF', '#5B6BFF'];
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 100 100'); s.setAttribute('class', 'ringsvg'); if (size) s.style.width = s.style.height = size + 'px';
+  s.innerHTML = `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${col[0]}"/><stop offset="1" stop-color="${col[1]}"/></linearGradient></defs><circle cx="50" cy="50" r="${r}" fill="none" stroke="url(#${id})" stroke-opacity=".16" stroke-width="10"/><circle class="ringarc" cx="50" cy="50" r="${r}" fill="none" stroke="url(#${id})" stroke-width="10" stroke-linecap="round" stroke-dasharray="${(C * p / 100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 50 50)"/>`;
+  return s;
+}
 function jar(name, pct, state, sub, onclick, cov) {
-  const lvl = Math.max(4, Math.min(100, pct || 0));
-  return h('button', { class: 'jar ' + state, onclick },
-    fill(lvl),
-    h('span', { class: 'jpct', text: fmtInt(pct || 0) + ' %' }), h('span', { class: 'jcov', text: cov || 'gedeckt' }),
+  return h('button', { class: 'jar ring ' + state, onclick },
+    h('span', { class: 'rwrap' }, ring(pct, state), h('span', { class: 'jpct', text: fmtInt(pct || 0) + ' %' })),
     h('span', { class: 'jname', text: name }),
     sub ? h('span', { class: 'jsub', text: sub }) : null);
 }
@@ -1472,7 +1483,7 @@ function openNutrient(r, d, start, opt) {
   const needTxt = opt ? opt.needTxt : repMode === 'week' ? 'Bedarf für 7 Tage' : repMode === 'day' ? 'Bedarf pro Tag' : 'Ziel pro Gericht';
   const content = [
     h('div', { class: 'nuthero ' + r.state },
-      h('div', { class: 'nhglow' }), h('div', { class: 'nhjar' }, fill(Math.max(4, Math.min(100, r.pct)), true), h('span', { class: 'nhc' }, h('span', { class: 'nhpct', text: fmtInt(r.pct) + ' %' }), h('span', { class: 'jcov', text: 'gedeckt' }))),
+      h('div', { class: 'nhring' }, ring(r.pct, r.state, 120), h('span', { class: 'nhpct', text: fmtInt(r.pct) + ' %' })),
       h('div', { class: 'nhtxt' },
         h('div', null, h('b', { text: fmtN(r.val[r.i] ?? r.val, r.unit) }), ` ${opt ? opt.perLabel : repMode === 'week' ? 'diese Woche' : repMode === 'day' ? 'pro Tag' : 'pro Gericht'}`),
         

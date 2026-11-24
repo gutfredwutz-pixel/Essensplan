@@ -825,6 +825,33 @@ html.dark .ov{background:rgba(0,0,0,.35)}
 .weekcard .dj.sel{box-shadow:0 0 0 3px var(--card),0 0 0 5px #7B5CFF}
 .weekcard .djl{font-size:12.5px}
 .weekcard .dj .wave{display:none}
+
+/* Runde 15: Kreise, Glas, Farben */
+html{background:linear-gradient(170deg,#E8F0FF 0%,#EEF2FF 40%,#F4EEFF 100%) fixed}
+html.dark{background:linear-gradient(170deg,#121827 0%,#151A2B 50%,#1B1729 100%) fixed}
+:root{--glass:rgba(255,255,255,.62);--glassb:rgba(255,255,255,.75)}
+html.dark{--glass:rgba(34,40,58,.6);--glassb:rgba(255,255,255,.08)}
+header{background:none!important}
+.hrow,.tabs{background:var(--glass)!important;-webkit-backdrop-filter:blur(22px) saturate(1.6);backdrop-filter:blur(22px) saturate(1.6);box-shadow:inset 0 0 0 1px var(--glassb),0 10px 30px -12px rgba(60,70,140,.28)!important}
+.day,.rectop,.weekcard,.rephero,.fsec,.setcard,.infocard,.rcard,.donebox,.pcta,.calbar+.row .seg{background:var(--glass)!important;box-shadow:inset 0 0 0 1px var(--glassb),0 8px 24px -14px rgba(60,70,140,.3)!important}
+.day.today{background:linear-gradient(var(--glass),var(--glass)) padding-box,linear-gradient(120deg,#4C74FF,#9A6BFF 55%,#FF8FC0) border-box!important;box-shadow:0 0 22px -4px rgba(130,110,255,.45)!important}
+.sheet{background:linear-gradient(175deg,#EEF3FF,#F5F1FF)!important}
+html.dark .sheet{background:linear-gradient(175deg,#161C2C,#1A1729)!important}
+.ov{background:rgba(30,40,80,.16)}
+/* Liste: Rand in der Kategoriefarbe */
+.item{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--cfg,#8891A5) 45%,transparent)}
+/* Nährstoff-Kreise */
+.jar.ring{height:auto!important;padding:0 2px 4px!important;background:none!important;box-shadow:none!important;border-radius:0!important;overflow:visible;display:flex;flex-direction:column;align-items:center;gap:6px;animation:none}
+.jar.ring .rwrap{position:relative;width:84px;height:84px;display:flex;align-items:center;justify-content:center;border-radius:48% 52% 50% 50% / 52% 48% 52% 48%;background:var(--glass);box-shadow:inset 0 0 0 1px var(--glassb),0 8px 18px -10px rgba(60,70,140,.35)}
+.ringsvg{position:absolute;inset:0;width:100%;height:100%}
+.jar.ring .jpct{font-size:17px!important;font-weight:800;position:relative}
+.jar.ring .jname{font-size:13px;font-weight:700;line-height:1.2;text-align:center}
+.jar.ring .jsub{font-size:11px;color:var(--ink3);margin-top:-3px}
+.npage .jars{gap:22px 10px}
+.nhring{position:relative;width:120px;height:120px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--glass);box-shadow:inset 0 0 0 1px var(--glassb),0 12px 26px -12px rgba(60,70,140,.4)}
+.nhring .nhpct{position:relative;font-size:26px;font-weight:800}
+.nhglow{display:none}
+.legend .lg i{border-radius:50%}
 .hidden{display:none!important}
 </style>
 </head>
