@@ -126,7 +126,7 @@ function openPersonReport(name, start) {
   days.forEach(ds => {
     const x = wk.per[ds]; const c = x.counted ? coverage(x.tot, nd.R) : 0; const dt = new Date(ds);
     const sel = pRange === 'day' && ds === pSel;
-    strip.append(h('button', { class: 'dj ' + (x.counted ? covState(c) : 'none') + (x.logged ? ' logged' : '') + (ds === today ? ' today' : '') + (sel ? ' sel' : ''), onclick: () => { pSel = ds; pRange = 'day'; re(); } },
+    strip.append(h('button', { class: 'dj wd' + ((dt.getDay() + 6) % 7) + ' ' + (x.counted ? covState(c) : 'none') + (x.logged ? ' logged' : '') + (ds === today ? ' today' : '') + (sel ? ' sel' : ''), onclick: () => { pSel = ds; pRange = 'day'; re(); } },
       x.counted ? fill(Math.max(6, Math.min(100, c))) : null,
       h('span', { class: 'djl', text: WD[(dt.getDay() + 6) % 7] })));
   });

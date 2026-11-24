@@ -448,7 +448,7 @@ function tabInd(i, prog, anim) {
   const j = Math.max(0, Math.min(bs.length - 1, i + Math.sign(prog))), p = Math.min(1, Math.abs(prog));
   const x = cx(i) + (cx(j) - cx(i)) * p;
   ind.style.transition = anim ? 'transform .34s cubic-bezier(.3,.8,.3,1.1), opacity .2s' : 'none';
-  ind.style.opacity = '1'; ind.style.transform = `translate3d(${x - 26}px,-50%,0)`;
+  ind.style.opacity = '1'; ind.style.transform = `translate3d(${Math.round(x - 26)}px,-50%,0)`;
   bs.forEach((b, k) => b.classList.toggle('near', k === (p > 0.5 ? j : i)));
 }
 let listUI = null, recUI = null;
@@ -657,7 +657,7 @@ function renderMonth() {
   const end = addDays(monday(last), 6);
   for (let d = start; d <= end; d = addDays(d, 1)) {
     const ds = ymd(d), list = planOn(ds), dd = d;
-    const cell = h('div', { class: 'mc' + (d.getMonth() !== monthAnchor.getMonth() ? ' out' : '') + (ds === today ? ' today' : '') + (list.length ? ' has' : ''), onclick: () => { anchor = dayOnly(dd); view = 'week'; LS.set('ep_view', 'week'); render(); } }, h('div', { class: 'n', text: d.getDate() }));
+    const cell = h('div', { class: 'mc mday wd' + ((d.getDay() + 6) % 7) + (d.getMonth() !== monthAnchor.getMonth() ? ' out' : '') + (ds === today ? ' today' : '') + (list.length ? ' has' : ''), onclick: () => { anchor = dayOnly(dd); view = 'week'; LS.set('ep_view', 'week'); render(); } }, h('div', { class: 'n', text: d.getDate() }));
     list.slice(0, 2).forEach(x => cell.append(h('div', { class: 'd', text: x.title || '…' })));
     if (list.length > 2) cell.append(h('div', { class: 'more', text: '+' + (list.length - 2) }));
     g.append(cell);
@@ -1917,7 +1917,7 @@ function glideSeg(seg, anim) {
   let ind = seg.querySelector(':scope > .segi'); if (!ind) { ind = document.createElement('span'); ind.className = 'segi'; seg.prepend(ind); }
   const on = bs.find(b => b.classList.contains('on')); const key = bs.map(b => b.textContent).join('|');
   if (!on || !on.offsetWidth) { if (!on) ind.style.opacity = '0'; else requestAnimationFrame(() => glideSeg(seg, anim)); return; }
-  const to = [on.offsetLeft, on.offsetWidth];
+  const to = [Math.round(on.offsetLeft), Math.round(on.offsetWidth)];
   const from = segMem.get(key);
   if (!ind._placed && from && anim !== false) { ind.style.transition = 'none'; ind.style.width = from[1] + 'px'; ind.style.transform = `translateX(${from[0]}px)`; void ind.offsetWidth; }
   ind.style.transition = ind._placed || (from && anim !== false) ? 'transform .32s cubic-bezier(.3,.8,.3,1.08), width .32s cubic-bezier(.3,.8,.3,1.08), opacity .2s' : 'none';
