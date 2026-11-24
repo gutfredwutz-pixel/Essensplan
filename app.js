@@ -864,7 +864,7 @@ function renderRec() {
     if (!list.length) listEl.append(recFilter ? emptyArt('Noch keine Rezepte in dieser Kategorie') : recipes.length ? grey('Nichts gefunden') : emptyArt('Noch keine Rezepte'));
   };
   inp.addEventListener('input', draw);
-  wrap.append(h('div', { class: 'addbar' }, inp, h('button', { class: 'ib p big', 'aria-label': 'Neues Rezept', onclick: () => openRecipe({ title: '', ingredients: [], steps: [], servings: '2' }) }, ic('plus'))), tiles, head, listEl);
+  wrap.append(h('div', { class: 'rectop' }, h('div', { class: 'addbar' }, inp, h('button', { class: 'ib p big', 'aria-label': 'Neues Rezept', onclick: () => openRecipe({ title: '', ingredients: [], steps: [], servings: '2' }) }, ic('plus'))), tiles), head, listEl);
   recUI = { wrap, draw };
   draw();
   return wrap;
