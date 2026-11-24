@@ -228,7 +228,7 @@ function showWho() {
   $('#ov').dataset.locked = '1';
 }
 function isDark() { const t = LS.get('ep_theme'); return t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches); }
-function applyTheme() { const d = isDark(); document.documentElement.classList.toggle('dark', d); const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = d ? '#12151D' : '#F5F7FC'; }
+function applyTheme() { const d = isDark(); document.documentElement.classList.toggle('dark', d); const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = d ? '#121827' : '#E8F0FF'; }
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme); } catch (e) { }
 function weekAnchor() { const t = dayOnly(new Date()); return LS.get('ep_weekstart') === 'mo' ? addDays(t, -((t.getDay() + 6) % 7)) : t; }
 applyTheme();

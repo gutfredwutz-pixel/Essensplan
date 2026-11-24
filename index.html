@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#F5F7FC">
+<meta name="theme-color" content="#E8F0FF">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -827,8 +827,8 @@ html.dark .ov{background:rgba(0,0,0,.35)}
 .weekcard .dj .wave{display:none}
 
 /* Runde 15: Kreise, Glas, Farben */
-html{background:linear-gradient(170deg,#E8F0FF 0%,#EEF2FF 40%,#F4EEFF 100%) fixed}
-html.dark{background:linear-gradient(170deg,#121827 0%,#151A2B 50%,#1B1729 100%) fixed}
+html{background:#E8F0FF linear-gradient(180deg,#E8F0FF 0%,#E8F0FF 6%,#EEF1FF 45%,#F3ECFF 100%) fixed}
+html.dark{background:#121827 linear-gradient(180deg,#121827 0%,#121827 6%,#151A2B 50%,#1B1729 100%) fixed}
 :root{--glass:rgba(255,255,255,.62);--glassb:rgba(255,255,255,.75)}
 html.dark{--glass:rgba(34,40,58,.6);--glassb:rgba(255,255,255,.08)}
 header{background:none!important}
@@ -852,6 +852,15 @@ html.dark .sheet{background:linear-gradient(175deg,#161C2C,#1A1729)!important}
 .nhring .nhpct{position:relative;font-size:26px;font-weight:800}
 .nhglow{display:none}
 .legend .lg i{border-radius:50%}
+/* mehr Farbe */
+body{background:transparent!important}
+.blobs .b1,.blobs .b2{filter:saturate(1.35)}
+.day .dlabel{background:linear-gradient(135deg,#DCE6FF,#E9DEFF)!important}
+html.dark .day .dlabel{background:linear-gradient(135deg,#25305A,#2E2750)!important}
+.day.today .dlabel{background:var(--grad)!important;color:#fff}
+.day.today .dlabel .wd{color:rgba(255,255,255,.85)}
+.btn.s{background:linear-gradient(135deg,color-mix(in srgb,#5B7FFF 16%,var(--glass)),color-mix(in srgb,#B06BFF 16%,var(--glass)))!important;box-shadow:inset 0 0 0 1px var(--glassb)}
+.chip,.pill{box-shadow:inset 0 0 0 1px var(--glassb)}
 .hidden{display:none!important}
 </style>
 </head>
