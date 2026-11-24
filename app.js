@@ -445,8 +445,8 @@ function goTab(id, dir, fromX) {
   const r = m.getBoundingClientRect();
   const ghost = m.cloneNode(true); ghost.removeAttribute('id'); ghost.classList.add('ghost');
   Object.assign(ghost.style, { position: 'fixed', left: (r.left - x0) + 'px', top: r.top + 'px', width: r.width + 'px', margin: '0', pointerEvents: 'none', zIndex: '5', transition: 'none', transform: `translate3d(${x0}px,0,0)`, opacity: '1' });
-  document.body.appendChild(ghost);
-  swap();
+  peekLayer().appendChild(ghost);
+  swap(); headIn(dir > 0 ? 1 : -1, 0.38);
   const off = dir > 0 ? W : -W;
   m.style.transition = 'none'; m.style.opacity = '1'; m.style.transform = `translate3d(${off + x0}px,0,0)`;
   void m.offsetWidth;
@@ -457,6 +457,15 @@ function goTab(id, dir, fromX) {
 }
 /* Nachbarseiten als Vorschau, damit beim Wischen die neue Seite direkt mitkommt */
 const pageCache = {}; let nutriTarget = null;
+function peekLayer() { let l = document.getElementById('peeklayer'); if (!l) { l = h('div', { id: 'peeklayer' }); document.body.appendChild(l); } return l; }
+function headMove(x, W) { const t = [$('#title'), $('#art')]; const k = Math.min(1, Math.abs(x) / (W * 0.6)); t.forEach(el => { el.style.transition = 'none'; el.style.transform = `translate3d(${x * 0.25}px,0,0)`; el.style.opacity = String(1 - k); }); }
+function headIn(dir, dur) {
+  const t = [$('#title'), $('#art')];
+  t.forEach(el => { el.style.transition = 'none'; el.style.transform = `translate3d(${dir * 40}px,0,0)`; el.style.opacity = '0'; });
+  void t[0].offsetWidth;
+  t.forEach(el => { el.style.transition = `transform ${dur}s cubic-bezier(.22,.8,.24,1), opacity ${dur}s ease`; el.style.transform = ''; el.style.opacity = ''; });
+}
+function headReset() { [$('#title'), $('#art')].forEach(el => { el.style.transition = 'transform .3s, opacity .3s'; el.style.transform = ''; el.style.opacity = ''; }); }
 function cachePage() { const m = $('#main'); if (m && m.firstChild) { const d = h('div'); d.append(...[...m.childNodes].map(n => n.cloneNode(true))); pageCache[tab] = d; } }
 function peekNode(id) {
   try {
@@ -477,11 +486,11 @@ function peekNode(id) {
     if (!id) return null; const node = peekNode(id); if (!node) return null;
     const r = m().getBoundingClientRect(); const cs = getComputedStyle(m()); const p = h('div', { class: 'peek' }); p.append(node);
     Object.assign(p.style, { padding: cs.padding, boxSizing: cs.boxSizing, position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', pointerEvents: 'none', zIndex: '5', willChange: 'transform' });
-    document.body.appendChild(p); return p;
+    peekLayer().appendChild(p); return p;
   };
   const place = x => {
     const W = window.innerWidth;
-    m().style.transform = `translate3d(${x}px,0,0)`;
+    m().style.transform = `translate3d(${x}px,0,0)`; headMove(x, W);
     if (peeks.r) peeks.r.style.transform = `translate3d(${W + x}px,0,0)`;
     if (peeks.l) peeks.l.style.transform = `translate3d(${-W + x}px,0,0)`;
   };
@@ -524,14 +533,14 @@ function peekNode(id) {
       setTimeout(() => {
         const sy0 = 0;
         el.style.transition = 'none';
-        if (tab === 'nutri' && window.resetNutriState) resetNutriState(); tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, sy0);
+        if (tab === 'nutri' && window.resetNutriState) resetNutriState(); tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, sy0); headIn(dir, 0.22);
         el.style.transform = '';
         requestAnimationFrame(() => { clearPeeks(); el.style.transition = ''; busy = false; });
       }, dur * 1000 + 10);
     } else {
       const tr = 'transform .32s cubic-bezier(.2,.9,.3,1.08)';
       el.style.transition = tr; Object.values(peeks).forEach(p => p && (p.style.transition = tr));
-      place(0);
+      place(0); headReset();
       setTimeout(() => { clearPeeks(); el.style.transition = ''; el.style.transform = ''; }, 340);
     }
   }, { passive: true });
