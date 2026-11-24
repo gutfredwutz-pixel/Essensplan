@@ -488,11 +488,11 @@ function peekNode(id) {
   let sx = 0, sy = 0, mode = 0, dx = 0, raf = 0, peeks = {}, vx = 0, lt = 0, lxp = 0, busy = false;
   const EASE = 'cubic-bezier(.22,.8,.24,1)';
   const clearPeeks = () => { Object.values(peeks).forEach(p => p && p.remove()); peeks = {}; };
-  const resetStage = () => { const st = stage(); st.style.transition = ''; st.style.transform = ''; };
+  const resetStage = () => { const st = stage(); st.style.transition = ''; st.style.transform = ''; st.style.visibility = ''; };
   const mkPeek = id => { if (!id) return null; const node = peekNode(id); return node ? stageClone(id, node) : null; };
   const place = x => {
     const W = window.innerWidth;
-    stage().style.transform = `translate3d(${x}px,0,0)`;
+    if (peeks.cur) peeks.cur.style.transform = `translate3d(${x}px,0,0)`; else stage().style.transform = `translate3d(${x}px,0,0)`;
     if (peeks.r) peeks.r.style.transform = `translate3d(${W + x}px,0,0)`;
     if (peeks.l) peeks.l.style.transform = `translate3d(${-W + x}px,0,0)`;
   };
@@ -507,6 +507,7 @@ function peekNode(id) {
     if (mode === 0) {
       if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.2) {
         mode = 1; document.body.classList.add('swiping'); sx += dx > 0 ? 8 : -8; dx = cx - sx; stage().style.transition = 'none';
+        peeks.cur = stageClone(null); peeks.cur.style.transform = 'translate3d(0,0,0)'; stage().style.visibility = 'hidden';
       } else if (Math.abs(dy) > 10) { mode = -1; return; } else return;
     }
     if (e.cancelable) e.preventDefault();
@@ -522,15 +523,24 @@ function peekNode(id) {
     const dir = (Math.abs(vx) > 0.35 ? -Math.sign(vx) : -Math.sign(dx)) || 1;
     const id = TAB_ORDER[idx + dir];
     const go = id && (Math.abs(dx) > W * 0.22 || (Math.abs(vx) > 0.35 && Math.sign(vx) === -dir));
-    if (go) {
-      busy = true; cachePage();
-      const rest = W - Math.abs(dx); const od = Math.max(0.12, Math.min(0.22, rest / Math.max(Math.abs(vx) * 1000, 1600)));
-      slideSwap(id, dir, st.style.transform ? parseFloat(st.style.transform.split('(')[1]) || dx : dx, od).then(() => { busy = false; });
+    const cur = peeks.cur;
+    if (go && cur) {
+      busy = true; cachePage(); document.body.dataset.tab = id;
+      const rest = W - Math.abs(dx); const od = Math.max(0.12, Math.min(0.22, rest / Math.max(Math.abs(vx) * 1000, 1600))), id2 = 0.3;
+      document.documentElement.style.setProperty('--tdur', (od + id2) + 's');
+      cur.style.transition = `transform ${od}s cubic-bezier(.3,.3,.6,1)`; cur.style.transform = `translate3d(${-dir * W}px,0,0)`;
+      setTimeout(() => {
+        st.style.transition = 'none';
+        if (tab === 'nutri' && window.resetNutriState) resetNutriState(); tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, 0);
+        st.style.transform = `translate3d(${dir * W}px,0,0)`; st.style.visibility = ''; clearPeeks(); void st.offsetWidth;
+        st.style.transition = `transform ${id2}s ${EASE}`; st.style.transform = 'translate3d(0,0,0)';
+        setTimeout(() => { resetStage(); busy = false; }, id2 * 1000 + 20);
+      }, od * 1000);
     } else {
-      const tr = 'transform .32s cubic-bezier(.2,.9,.3,1.08)';
-      st.style.transition = tr; Object.values(peeks).forEach(p => p && (p.style.transition = tr));
+      const tr = 'transform .3s cubic-bezier(.2,.9,.3,1.08)';
+      Object.values(peeks).forEach(p => p && (p.style.transition = tr));
       place(0);
-      setTimeout(() => { clearPeeks(); resetStage(); }, 340);
+      setTimeout(() => { clearPeeks(); resetStage(); }, 320);
     }
   };
   document.addEventListener('touchend', endSwipe, { passive: true });
