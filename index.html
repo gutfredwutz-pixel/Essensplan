@@ -890,9 +890,7 @@ html.dark .jar.ring .rwrap,html.dark .nhring{background:radial-gradient(circle a
 :root{--drop:0 1px 2px rgba(40,50,110,.07),0 8px 18px -10px rgba(60,70,150,.32)}
 html.dark{--drop:0 1px 2px rgba(0,0,0,.35),0 10px 20px -12px rgba(0,0,0,.6)}
 /* Beim Wischen kein Live-Blur in der bewegten Seite, das kostet pro Bild am meisten */
-body.moving #stage .hrow,.stageclone .hrow,.stageclone [data-cid] .hrow{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:rgba(238,243,255,.94)!important}
-html.dark body.moving #stage .hrow,html.dark .stageclone .hrow{background:rgba(30,34,52,.95)!important}
-body.moving #stage,.stageclone{will-change:transform;contain:layout paint}
+body.moving #stage,.stageclone{will-change:transform}
 /* Listeneintrag: eine klare Kante statt mehrerer Schatten */
 .item{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--cfg,#8891A5) 50%,transparent),inset 0 1px 0 rgba(255,255,255,.9),0 4px 10px -6px rgba(60,70,150,.28)!important;background:color-mix(in srgb,var(--cfg,#8891A5) 10%,var(--card))!important}
 html.dark .item{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--cfg,#8891A5) 55%,transparent),0 4px 10px -6px rgba(0,0,0,.5)!important;background:color-mix(in srgb,var(--cfg,#8891A5) 14%,var(--card))!important}
@@ -986,12 +984,44 @@ html.dark .mb.k b{color:#9AA4FF}html.dark .mb.p b{color:#FF8DBE}html.dark .mb.c 
 .ing2 .in{font-weight:550;font-size:16px}
 .ing2 .ia{padding:0;background:none;box-shadow:none;color:var(--ink);font-weight:750;font-size:15px;text-align:right;white-space:nowrap}
 #sheet{overscroll-behavior:contain}
+
+/* Runde 20: Blatt-Hintergrund als eigene Ebene, nur Deckkraft animieren */
+.ov,html.dark .ov{background:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;animation:none!important}
+.ov::before{content:"";position:absolute;inset:0;background:rgba(30,40,80,.16);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);opacity:var(--ovo,1);transition:opacity .26s ease;will-change:opacity;animation:ovfade .3s ease}
+html.dark .ov::before{background:rgba(0,0,0,.35)}
+.ov.out::before{opacity:0}
+@keyframes ovfade{from{opacity:0}}
+.ov>#sheet{position:relative;z-index:1}
+#sheet{will-change:transform;contain:layout paint}
+
+
+/* Runde 21: kein Titelbalken mehr, großer Titel frei auf der Seite, Knöpfe als Liquid Glass */
+header,.stageclone header{position:relative!important;top:auto!important;background:none!important;padding:calc(var(--top) + 8px) 20px 4px!important}
+.hrow{background:none!important;box-shadow:none!important;border-radius:0!important;padding:6px 0!important;overflow:visible!important;gap:12px!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+:is(#title,[data-cid=title]){font-size:clamp(24px,7.8vw,32px)!important;font-weight:800;letter-spacing:-.025em;padding-left:2px}
+:is(#art,[data-cid=art]){display:none!important}
+:is(#gear,[data-cid=gear]),:is(#who,[data-cid=who]){width:46px!important;height:46px!important;border:0;position:relative;
+  -webkit-backdrop-filter:blur(10px) saturate(1.8);backdrop-filter:blur(10px) saturate(1.8)}
+:is(#gear,[data-cid=gear]){background:linear-gradient(150deg,rgba(255,255,255,.75),rgba(255,255,255,.22))!important;color:#4A55A8;
+  box-shadow:inset 0 1.5px 1px rgba(255,255,255,1),inset 0 -1px 1px rgba(255,255,255,.5),inset 0 0 0 1px rgba(255,255,255,.55),inset 0 -6px 12px rgba(120,130,220,.12),0 8px 20px -8px rgba(60,70,150,.45)!important}
+:is(#who,[data-cid=who]){background-image:radial-gradient(circle at 32% 24%,rgba(255,255,255,.6),rgba(255,255,255,0) 52%),linear-gradient(180deg,rgba(255,255,255,.12),rgba(0,0,0,.12))!important;
+  box-shadow:inset 0 1.5px 1px rgba(255,255,255,.8),inset 0 0 0 1px rgba(255,255,255,.35),inset 0 -5px 10px rgba(0,0,0,.15),0 8px 20px -8px rgba(60,70,180,.6)!important}
+html.dark :is(#gear,[data-cid=gear]){background:linear-gradient(150deg,rgba(255,255,255,.18),rgba(255,255,255,.05))!important;color:#C9D2FF;box-shadow:inset 0 1px 1px rgba(255,255,255,.35),inset 0 0 0 1px rgba(255,255,255,.12),0 8px 20px -8px rgba(0,0,0,.7)!important}
+/* Untere Leiste als Liquid Glass */
+.tabs{background:linear-gradient(160deg,rgba(255,255,255,.62),rgba(255,255,255,.2))!important;-webkit-backdrop-filter:blur(18px) saturate(1.9)!important;backdrop-filter:blur(18px) saturate(1.9)!important;
+  box-shadow:inset 0 1.5px 1px rgba(255,255,255,1),inset 0 -1px 1px rgba(255,255,255,.5),inset 0 0 0 1px rgba(255,255,255,.5),inset 0 -10px 20px rgba(120,130,220,.1),0 16px 34px -14px rgba(60,70,150,.45)!important}
+html.dark .tabs{background:linear-gradient(160deg,rgba(255,255,255,.14),rgba(255,255,255,.04))!important;box-shadow:inset 0 1px 1px rgba(255,255,255,.3),inset 0 0 0 1px rgba(255,255,255,.1),0 16px 34px -14px rgba(0,0,0,.7)!important}
+/* Verlauf unten ohne Weichzeichner: der wird beim Wischen sonst jedes Bild neu berechnet */
+.tabfade{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+/* Inhalt läuft weich unter die Statusleiste statt hart abgeschnitten */
+.topfade{position:fixed;left:0;right:0;top:0;height:calc(var(--top) + 18px);z-index:6;pointer-events:none;background:linear-gradient(#E8F0FF 0%,#E8F0FF calc(var(--top) * .4),rgba(232,240,255,0))}
+html.dark .topfade{background:linear-gradient(#121827 0%,#121827 calc(var(--top) * .4),rgba(18,24,39,0))}
 .hidden{display:none!important}
 </style>
 </head>
 <body data-tab="cal">
 <div class="blobs"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i></div>
-<div id="stage">
+<div class="topfade"></div><div id="stage">
 <header>
   <div class="hrow">
     <div id="art"></div>

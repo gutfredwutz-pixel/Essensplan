@@ -228,7 +228,7 @@ function showWho() {
   $('#ov').dataset.locked = '1';
 }
 function isDark() { const t = LS.get('ep_theme'); return t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches); }
-function barColor() { const m = document.querySelector('meta[name=theme-color]'); if (!m) return; const d = isDark(), dim = $('#ov') && $('#ov').classList.contains('on'); const col = d ? (dim ? '#11151F' : '#121827') : (dim ? '#C4CFE4' : '#E8F0FF'); m.content = col; document.documentElement.style.backgroundColor = col; }
+function barColor(off) { const m = document.querySelector('meta[name=theme-color]'); if (!m) return; const d = isDark(), dim = !off && $('#ov') && $('#ov').classList.contains('on'); const col = d ? (dim ? '#11151F' : '#121827') : (dim ? '#C4CFE4' : '#E8F0FF'); m.content = col; document.documentElement.style.backgroundColor = col; }
 function applyTheme() { const d = isDark(); document.documentElement.classList.toggle('dark', d); barColor(); }
 // Hintergrund festhalten, solange ein Blatt offen ist
 let lockY = null;
@@ -546,10 +546,13 @@ function peekNode(id) {
       cur.style.transition = `transform ${od}s cubic-bezier(.3,.3,.6,1)`; cur.style.transform = `translate3d(${-dir * W}px,0,0)`; moveBg(-dir * W, `transform ${od}s cubic-bezier(.3,.3,.6,1)`);
       setTimeout(() => {
         st.style.transition = 'none';
-        if (tab === 'nutri' && window.resetNutriState) resetNutriState(); tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, 0);
+        if (tab === 'nutri' && window.resetNutriState) resetNutriState(); tab = id; listUI = null; recUI = null; nutriFn = null;
+        const pre = pageCache[id]; let late = false;
+        if (pre) { $('#main').replaceChildren(...[...pre.childNodes].map(n => n.cloneNode(true))); renderHead(); late = true; } else render();
+        renderTabs(); window.scrollTo(0, 0);
         st.style.transform = `translate3d(${dir * W}px,0,0)`; moveBg(dir * W); st.style.visibility = ''; clearPeeks(); void st.offsetWidth;
         st.style.transition = `transform ${id2}s ${EASE}`; st.style.transform = 'translate3d(0,0,0)'; moveBg(0, `transform ${id2}s ${EASE}`);
-        setTimeout(() => { resetStage(); busy = false; }, id2 * 1000 + 20);
+        setTimeout(() => { resetStage(); if (late) { listUI = null; recUI = null; render(); } busy = false; }, id2 * 1000 + 20);
       }, od * 1000);
     } else {
       const tr = 'transform .3s cubic-bezier(.2,.9,.3,1.08)';
@@ -1017,15 +1020,16 @@ function openSheet(title, content) {
   sheetBack = null;
   const s = $('#sheet'); const ov = $('#ov'); const was = ov.classList.contains('on');
   s.replaceChildren(h('div', { class: 'grab' }), h('div', { class: 'shead' }, h('h2', { text: title }), h('button', { class: 'ib xclose', 'aria-label': 'Schließen', onclick: closeSheet }, ic('xmark'))), ...content.filter(Boolean));
-  s.style.transition = ''; s.style.transform = ''; ov.style.background = '';
+  s.style.transition = ''; s.style.transform = ''; ov.style.removeProperty('--ovo'); ov.classList.remove('out');
   s.classList.toggle('full', !!topSheet); ov.classList.add('on'); s.scrollTop = 0; lockBody(true); barColor();
   if (!was) { s.classList.remove('rise'); void s.offsetWidth; s.classList.add('rise'); }
 }
 function closeSheet() { sheetBack = null; $('#ov').classList.remove('on'); lockBody(false); barColor(); topSheet = null; $('#sheet').classList.remove('full'); }
 function dismissSheet() {
   const s = $('#sheet'), ov = $('#ov'); if (ov.dataset.locked) return;
-  s.style.transition = 'transform .26s cubic-bezier(.3,.7,.4,1)'; s.style.transform = 'translate3d(0,105%,0)'; ov.style.transition = 'background .26s'; ov.style.background = 'rgba(20,26,40,0)';
-  setTimeout(() => { const b = s.querySelector('.xclose'); s.style.transition = ''; s.style.transform = ''; ov.style.background = ''; ov.style.transition = ''; if (b) b.click(); else closeSheet(); }, 260);
+  ov.dataset.locked = '1'; barColor(true);
+  s.style.transition = 'transform .26s cubic-bezier(.3,.7,.4,1)'; s.style.transform = 'translate3d(0,105%,0)'; ov.style.removeProperty('--ovo'); ov.classList.add('out');
+  setTimeout(() => { delete ov.dataset.locked; ov.classList.remove('out'); s.style.transition = ''; s.style.transform = ''; const b = s.querySelector('.xclose'); if (b) b.click(); else closeSheet(); }, 270);
 }
 $('#ov').addEventListener('click', e => { if (e.target.id === 'ov') dismissSheet(); });
 $('#ov').addEventListener('touchmove', e => { if (!e.target.closest('#sheet')) e.preventDefault(); }, { passive: false });
@@ -1043,9 +1047,9 @@ $('#ov').addEventListener('touchmove', e => { if (!e.target.closest('#sheet')) e
     e.preventDefault();
     if (on === 'h') { const p = pg(); cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { if (p) { p.style.transition = 'none'; p.style.transform = `translate3d(${Math.max(0, dx)}px,0,0)`; p.style.opacity = String(Math.max(0.3, 1 - dx / 400)); } }); return; }
     s.style.transition = 'none';
-    cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { const d = Math.max(0, dy); s.style.transform = `translate3d(0,${d}px,0)`; $('#ov').style.background = sheetBack ? '' : `rgba(20,26,40,${0.35 * Math.max(0, 1 - d / 500)})`; });
+    cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { const d = Math.max(0, dy); s.style.transform = `translate3d(0,${d}px,0)`; if (!sheetBack) $('#ov').style.setProperty('--ovo', Math.max(0, 1 - d / 600).toFixed(3)); });
   }, { passive: false });
-  const settle = () => { s.style.transition = 'transform .3s cubic-bezier(.2,.9,.3,1.15)'; s.style.transform = ''; $('#ov').style.background = ''; };
+  const settle = () => { s.style.transition = 'transform .3s cubic-bezier(.2,.9,.3,1.15)'; s.style.transform = ''; $('#ov').style.removeProperty('--ovo'); };
   s.addEventListener('touchend', () => {
     const mode = on; on = false; cancelAnimationFrame(raf);
     if (mode === 'h') { const p = pg(); const v = dx / Math.max(1, Date.now() - t0); if (dx > 70 || (v > 0.4 && dx > 30)) { const b = sheetBack; b(); } else if (p) { p.style.transition = 'transform .25s, opacity .25s'; p.style.transform = ''; p.style.opacity = ''; } return; }
