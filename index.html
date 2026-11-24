@@ -886,6 +886,31 @@ html.dark .jar.ring .rwrap,html.dark .nhring{background:radial-gradient(circle a
 .ringarc{filter:drop-shadow(0 2px 3px rgba(60,60,160,.3))}
 /* Abhakkreis wie ein Knopf */
 .cb{box-shadow:inset 0 2px 4px rgba(40,50,110,.18),0 1px 0 rgba(255,255,255,.9)}
+
+/* Runde 17: flüssiger, saubere Ränder, Zurück und Quellen */
+:root{--drop:0 1px 2px rgba(40,50,110,.07),0 8px 18px -10px rgba(60,70,150,.32)}
+html.dark{--drop:0 1px 2px rgba(0,0,0,.35),0 10px 20px -12px rgba(0,0,0,.6)}
+/* Beim Wischen kein Live-Blur in der bewegten Seite, das kostet pro Bild am meisten */
+body.moving #stage .hrow,.stageclone .hrow,.stageclone [data-cid] .hrow{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:rgba(238,243,255,.94)!important}
+html.dark body.moving #stage .hrow,html.dark .stageclone .hrow{background:rgba(30,34,52,.95)!important}
+body.moving #stage,.stageclone{will-change:transform;contain:layout paint}
+/* Listeneintrag: eine klare Kante statt mehrerer Schatten */
+.item{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--cfg,#8891A5) 50%,transparent),inset 0 1px 0 rgba(255,255,255,.9),0 4px 10px -6px rgba(60,70,150,.28)!important;background:color-mix(in srgb,var(--cfg,#8891A5) 10%,var(--card))!important}
+html.dark .item{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--cfg,#8891A5) 55%,transparent),0 4px 10px -6px rgba(0,0,0,.5)!important;background:color-mix(in srgb,var(--cfg,#8891A5) 14%,var(--card))!important}
+.donebox .item{box-shadow:inset 0 0 0 1px var(--glassb)!important;background:var(--card)!important}
+.item .cb{box-shadow:inset 0 1.5px 3px rgba(40,50,110,.16)}
+/* Zurück oben in der Nährstoff-Detailansicht */
+.backlink{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;border:0;background:var(--glass);color:var(--ink);font:600 15px/1 inherit;font-family:inherit;padding:10px 16px 10px 12px;border-radius:999px;box-shadow:var(--hi),inset 0 0 0 1px var(--glassb),0 4px 10px -6px rgba(60,70,150,.3);margin-bottom:-6px}
+.backlink svg{width:14px;height:14px}
+/* Gute Quellen: antippbar */
+.gsrcs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gsrc{display:flex;flex-direction:column;align-items:flex-start;gap:2px;position:relative;text-align:left;border:0;border-radius:20px;padding:12px 44px 12px 14px;background:var(--glass);color:var(--ink);font-family:inherit;box-shadow:var(--hi),inset 0 0 0 1px var(--glassb),0 4px 10px -6px rgba(60,70,150,.3);min-height:52px;justify-content:center}
+.gsrc .gn{font-weight:650;font-size:14.5px;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:anywhere}
+.gsrc .gw{font-size:12px;color:var(--muted)}
+.gsrc .gp{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;background-image:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,0) 55%),var(--grad);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 4px 8px -4px rgba(91,90,255,.7)}
+.gsrc .gp svg{width:12px;height:12px}
+.gsrc.on .gp{background:#22B07D}
+.gsrc:active{box-shadow:inset 0 3px 8px rgba(40,50,120,.22),inset 0 0 0 1px var(--glassb)}
 .hidden{display:none!important}
 </style>
 </head>

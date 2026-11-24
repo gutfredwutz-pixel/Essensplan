@@ -467,13 +467,14 @@ function slideSwap(id, dir, fromX, outDur) {
   const od = outDur || 0.15, id2 = 0.26;
   document.documentElement.style.setProperty('--tdur', (od + id2) + 's');
   document.body.dataset.tab = id;
+  document.body.classList.add('moving');
   return new Promise(res => {
     st.style.transition = 'none'; st.style.transform = `translate3d(${fromX || 0}px,0,0)`; void st.offsetWidth;
     st.style.transition = `transform ${od}s cubic-bezier(.4,0,.8,.6)`; st.style.transform = `translate3d(${-dir * W}px,0,0)`; moveBg(-dir * W, `transform ${od}s cubic-bezier(.4,0,.8,.6)`);
     setTimeout(() => {
       st.style.transition = 'none'; swap(); st.style.transform = `translate3d(${dir * W}px,0,0)`; moveBg(dir * W); void st.offsetWidth;
       st.style.transition = `transform ${id2}s ${E}`; st.style.transform = 'translate3d(0,0,0)'; moveBg(0, `transform ${id2}s ${E}`);
-      setTimeout(() => { st.style.transition = ''; st.style.transform = ''; moveBg(null); res(); }, id2 * 1000 + 20);
+      setTimeout(() => { st.style.transition = ''; st.style.transform = ''; moveBg(null); document.body.classList.remove('moving'); res(); }, id2 * 1000 + 20);
     }, od * 1000);
   });
 }
@@ -494,7 +495,7 @@ function peekNode(id) {
   let sx = 0, sy = 0, mode = 0, dx = 0, raf = 0, peeks = {}, vx = 0, lt = 0, lxp = 0, busy = false;
   const EASE = 'cubic-bezier(.22,.8,.24,1)';
   const clearPeeks = () => { Object.values(peeks).forEach(p => p && p.remove()); peeks = {}; };
-  const resetStage = () => { const st = stage(); st.style.transition = ''; st.style.transform = ''; st.style.visibility = ''; moveBg(null); };
+  const resetStage = () => { document.body.classList.remove('moving'); const st = stage(); st.style.transition = ''; st.style.transform = ''; st.style.visibility = ''; moveBg(null); };
   const mkPeek = id => { if (!id) return null; const node = peekNode(id); return node ? stageClone(id, node) : null; };
   const place = x => {
     const W = window.innerWidth;
@@ -512,7 +513,7 @@ function peekNode(id) {
     if (mode === -1) return; const cx = e.touches[0].clientX; dx = cx - sx; const dy = e.touches[0].clientY - sy;
     if (mode === 0) {
       if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-        mode = 1; document.body.classList.add('swiping'); sx += dx > 0 ? 8 : -8; dx = cx - sx; stage().style.transition = 'none';
+        mode = 1; document.body.classList.add('swiping', 'moving'); sx += dx > 0 ? 8 : -8; dx = cx - sx; stage().style.transition = 'none';
         peeks.cur = stageClone(null); peeks.cur.style.transform = 'translate3d(0,0,0)'; stage().style.visibility = 'hidden';
       } else if (Math.abs(dy) > 10) { mode = -1; return; } else return;
     }
@@ -1001,15 +1002,16 @@ function openRecipeView(r) {
 }
 
 /* ============ Sheet ============ */
-let sheetStack = [];
+let sheetStack = []; let sheetBack = null;
 function openSheet(title, content) {
+  sheetBack = null;
   const s = $('#sheet'); const ov = $('#ov'); const was = ov.classList.contains('on');
   s.replaceChildren(h('div', { class: 'grab' }), h('div', { class: 'shead' }, h('h2', { text: title }), h('button', { class: 'ib xclose', 'aria-label': 'Schließen', onclick: closeSheet }, ic('xmark'))), ...content.filter(Boolean));
   s.style.transition = ''; s.style.transform = ''; ov.style.background = '';
   s.classList.toggle('full', !!topSheet); ov.classList.add('on'); s.scrollTop = 0; document.body.style.overflow = 'hidden';
   if (!was) { s.classList.remove('rise'); void s.offsetWidth; s.classList.add('rise'); }
 }
-function closeSheet() { $('#ov').classList.remove('on'); document.body.style.overflow = ''; topSheet = null; $('#sheet').classList.remove('full'); }
+function closeSheet() { sheetBack = null; $('#ov').classList.remove('on'); document.body.style.overflow = ''; topSheet = null; $('#sheet').classList.remove('full'); }
 function dismissSheet() {
   const s = $('#sheet'), ov = $('#ov'); if (ov.dataset.locked) return;
   s.style.transition = 'transform .26s cubic-bezier(.3,.7,.4,1)'; s.style.transform = 'translate3d(0,105%,0)'; ov.style.transition = 'background .26s'; ov.style.background = 'rgba(20,26,40,0)';
@@ -1017,19 +1019,29 @@ function dismissSheet() {
 }
 $('#ov').addEventListener('click', e => { if (e.target.id === 'ov') dismissSheet(); });
 (() => {
-  const s = $('#sheet'); let y0 = 0, dy = 0, on = false, t0 = 0, raf = 0;
-  s.addEventListener('touchstart', e => { on = false; if ($('#ov').dataset.locked || e.touches.length > 1) return; const fromGrab = e.target.closest('.grab,.shead'); if (s.scrollTop > 0 && !fromGrab) return; y0 = e.touches[0].clientY; dy = 0; t0 = Date.now(); on = 'maybe'; }, { passive: true });
+  const s = $('#sheet'); let y0 = 0, x0 = 0, dy = 0, dx = 0, on = false, t0 = 0, raf = 0, top0 = false;
+  const pg = () => s.querySelector('.npage');
+  s.addEventListener('touchstart', e => { on = false; if ($('#ov').dataset.locked || e.touches.length > 1) return; const fromGrab = e.target.closest('.grab,.shead'); top0 = s.scrollTop <= 0 || !!fromGrab; if (!top0 && !sheetBack) return; y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; dy = 0; dx = 0; t0 = Date.now(); on = 'maybe'; }, { passive: true });
   s.addEventListener('touchmove', e => {
-    if (!on) return; dy = e.touches[0].clientY - y0;
-    if (on === 'maybe') { if (dy > 6) on = true; else if (dy < -4) { on = false; return; } else return; }
-    e.preventDefault(); s.style.transition = 'none';
-    cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { const d = Math.max(0, dy); s.style.transform = `translate3d(0,${d}px,0)`; $('#ov').style.background = `rgba(20,26,40,${0.35 * Math.max(0, 1 - d / 500)})`; });
+    if (!on) return; dy = e.touches[0].clientY - y0; dx = e.touches[0].clientX - x0;
+    if (on === 'maybe') {
+      if (sheetBack && dx > 10 && dx > Math.abs(dy) * 1.3) on = 'h';
+      else if (top0 && dy > 6 && dy > Math.abs(dx)) on = true;
+      else if (Math.abs(dy) > 6 || dx < -6) { on = false; return; } else return;
+    }
+    e.preventDefault();
+    if (on === 'h') { const p = pg(); cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { if (p) { p.style.transition = 'none'; p.style.transform = `translate3d(${Math.max(0, dx)}px,0,0)`; p.style.opacity = String(Math.max(0.3, 1 - dx / 400)); } }); return; }
+    s.style.transition = 'none';
+    cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { const d = Math.max(0, dy); s.style.transform = `translate3d(0,${d}px,0)`; $('#ov').style.background = sheetBack ? '' : `rgba(20,26,40,${0.35 * Math.max(0, 1 - d / 500)})`; });
   }, { passive: false });
+  const settle = () => { s.style.transition = 'transform .3s cubic-bezier(.2,.9,.3,1.15)'; s.style.transform = ''; $('#ov').style.background = ''; };
   s.addEventListener('touchend', () => {
-    if (on !== true) { on = false; return; } on = false; cancelAnimationFrame(raf);
+    const mode = on; on = false; cancelAnimationFrame(raf);
+    if (mode === 'h') { const p = pg(); const v = dx / Math.max(1, Date.now() - t0); if (dx > 70 || (v > 0.4 && dx > 30)) { const b = sheetBack; b(); } else if (p) { p.style.transition = 'transform .25s, opacity .25s'; p.style.transform = ''; p.style.opacity = ''; } return; }
+    if (mode !== true) return;
     const v = dy / Math.max(1, Date.now() - t0);
-    if (dy > 120 || (v > 0.5 && dy > 40)) dismissSheet();
-    else { s.style.transition = 'transform .3s cubic-bezier(.2,.9,.3,1.15)'; s.style.transform = ''; $('#ov').style.background = ''; }
+    if (dy > 120 || (v > 0.5 && dy > 40)) { if (sheetBack) { settle(); sheetBack(); } else dismissSheet(); }
+    else settle();
   }, { passive: true });
 })();
 
@@ -1494,15 +1506,45 @@ function openNutrient(r, d, start, opt) {
     h('div', { class: 'srclist' }, srcs.map(([name, v], k) => h('div', { class: 'src' }, h('span', { class: 'sname', text: name }), h('span', { class: 'sbar' }, h('i', { style: `width:${Math.max(3, Math.round(v / maxSrc * 100))}%;animation-delay:${120 + k * 70}ms` })), h('span', { class: 'sval', text: fmtN(v / scaleDiv, r.unit) }))))));
   else content.push(h('div', { class: 'infocard' }, h('h3', { text: 'Woher es bei euch kommt' }), grey('Aus euren eingeplanten Gerichten kommt davon praktisch nichts.')));
   if (srcs.length && tiny > 0) content[content.length - 1].append(h('div', { class: 'muted', style: 'margin-top:8px;font-size:13px', text: `Dazu Spuren aus ${tiny} ${tiny === 1 ? 'weiterer Zutat' : 'weiteren Zutaten'}` }));
-  if (!r.limit && r.state !== 'good' && r.state !== 'high' && sug.length) content.push(h('div', { class: 'infocard' }, h('h3', { text: 'Davon steckt viel in' }), h('div', { class: 'tagbox' }, sug.map(x => h('span', { class: 'pill', text: x })))));
+  const good = GOOD_SRC[r.i] || sug.map(x => [x, '']);
+  if (!r.limit && good.length) {
+    const onList = n => items.some(it => !it.checked && canon(it.name) === canon(n));
+    const pills = good.map(([n, why]) => { const b = h('button', { class: 'gsrc' + (onList(n) ? ' on' : '') }, h('span', { class: 'gn', text: n }), why ? h('span', { class: 'gw', text: why }) : null, h('span', { class: 'gp' }, ic(onList(n) ? 'check' : 'plus')));
+      b.onclick = () => { if (b.classList.contains('on')) return toast(n + ' steht schon auf der Liste'); addItem(n); b.classList.add('on'); b.querySelector('.gp').replaceChildren(ic('check')); toast(n + ' steht jetzt auf der Liste'); }; return b; });
+    content.push(h('div', { class: 'infocard' }, h('h3', { text: 'Gute Quellen' }), h('div', { class: 'muted', style: 'margin:-4px 0 12px;font-size:13px', text: 'Antippen setzt es auf die Einkaufsliste.' }), h('div', { class: 'gsrcs' }, pills)));
+  }
   if (!r.limit && have.length) content.push(h('div', { class: 'infocard' }, h('h3', { text: 'Schon auf eurer Liste' }), h('div', { class: 'tagbox' }, have.map(x => h('span', { class: 'pill t', text: x })))));
   if (r.i === 9) content.push(grey('Vitamin D bildet der Körper vor allem über Sonnenlicht, über das Essen kommt nur ein kleiner Teil.'));
   if (r.i === 22) content.push(grey('Jodsalz ist hier nicht mitgerechnet, darüber kommt im Alltag ein großer Teil.'));
-  content.push(h('div', { class: 'actions' }, h('button', { class: 'btn grad', onclick: () => opt ? opt.back() : openReport(start) }, 'Zurück zur Übersicht')));
-  const backFn = () => opt ? opt.back() : openReport(start);
+  const sh = $('#sheet'), keep = sh.scrollTop;
+  const backFn = () => { sheetBack = null; opt ? opt.back() : openReport(start); requestAnimationFrame(() => { sh.scrollTop = keep; const p = sh.querySelector('.npage'); if (p) { p.style.opacity = '0'; p.style.transform = 'translate3d(-24px,0,0)'; requestAnimationFrame(() => { p.style.transition = 'transform .22s ease-out, opacity .22s'; p.style.opacity = ''; p.style.transform = ''; }); } }); };
+  content.unshift(h('button', { class: 'backlink', onclick: backFn }, ic('chevron-left'), h('span', { text: 'Übersicht' })));
   nutriOut(r.name, [h('div', { class: 'nutpage ' + st }, ...content.filter(Boolean))], () => openNutrient(r, d, start, opt));
+  sheetBack = backFn;
   window.scrollTo(0, 0);
 }
+const GOOD_SRC = {
+  1: [['Magerquark', '12 g in 100 g'], ['Skyr', '11 g in 100 g'], ['Linsen', 'mit viel Ballaststoff'], ['Hähnchenbrust', 'mager'], ['Eier', 'vielseitig'], ['Tofu', 'pflanzlich'], ['Hüttenkäse', 'leicht']],
+  2: [['Olivenöl', 'gute Fette'], ['Walnüsse', 'mit Omega-3'], ['Avocado', 'ungesättigt'], ['Leinsamen', 'mit Omega-3'], ['Lachs', 'mit Omega-3']],
+  3: [['Haferflocken', 'sättigt lange'], ['Vollkornbrot', 'mit Ballaststoff'], ['Kartoffeln', 'mit Kalium'], ['Naturreis', 'Vollkorn'], ['Vollkornnudeln', 'Vollkorn'], ['Bananen', 'schnelle Energie']],
+  4: [['Haferflocken', ''], ['Leinsamen', ''], ['Linsen', ''], ['Kichererbsen', ''], ['Vollkornbrot', ''], ['Himbeeren', ''], ['Brokkoli', '']],
+  8: [['Karotten', 'als Betacarotin'], ['Süßkartoffeln', ''], ['Spinat', ''], ['Grünkohl', ''], ['Kürbis', ''], ['Paprika rot', '']],
+  9: [['Lachs', 'beste Quelle'], ['Hering', ''], ['Makrele', ''], ['Eier', 'im Eigelb'], ['Champignons', '']],
+  10: [['Rapsöl', 'beste Quelle'], ['Mandeln', ''], ['Haselnüsse', ''], ['Sonnenblumenkerne', ''], ['Avocado', '']],
+  11: [['Haferflocken', ''], ['Erbsen', ''], ['Sonnenblumenkerne', ''], ['Vollkornbrot', ''], ['Linsen', ''], ['Schweinefilet', 'mager']],
+  12: [['Milch', ''], ['Joghurt', ''], ['Champignons', ''], ['Mandeln', ''], ['Eier', ''], ['Brokkoli', '']],
+  13: [['Kichererbsen', ''], ['Lachs', ''], ['Hähnchenbrust', ''], ['Bananen', ''], ['Walnüsse', ''], ['Kartoffeln', '']],
+  14: [['Spinat', ''], ['Feldsalat', ''], ['Brokkoli', ''], ['Kichererbsen', ''], ['Linsen', ''], ['Rosenkohl', '']],
+  15: [['Lachs', ''], ['Eier', ''], ['Rindfleisch', 'mager'], ['Joghurt', ''], ['Emmentaler', ''], ['Hering', '']],
+  16: [['Paprika rot', 'mehr als Orangen'], ['Brokkoli', ''], ['Kiwis', ''], ['Orangen', ''], ['Erdbeeren', ''], ['Rosenkohl', '']],
+  17: [['Kartoffeln', ''], ['Bananen', ''], ['Spinat', ''], ['Weiße Bohnen', ''], ['Avocado', ''], ['Aprikosen getrocknet', '']],
+  18: [['Milch', ''], ['Joghurt', ''], ['Emmentaler', 'sehr viel'], ['Grünkohl', ''], ['Brokkoli', ''], ['Sesam', '']],
+  19: [['Haferflocken', ''], ['Kürbiskerne', 'sehr viel'], ['Mandeln', ''], ['Vollkornbrot', ''], ['Spinat', ''], ['Bananen', '']],
+  20: [['Linsen', 'mit Vitamin C essen'], ['Haferflocken', ''], ['Rindfleisch', 'gut aufnehmbar'], ['Kürbiskerne', ''], ['Hirse', ''], ['Spinat', '']],
+  21: [['Rindfleisch', ''], ['Haferflocken', ''], ['Kürbiskerne', ''], ['Linsen', ''], ['Emmentaler', ''], ['Cashews', '']],
+  22: [['Seelachs', 'beste Quelle'], ['Kabeljau', ''], ['Jodsalz', ''], ['Milch', ''], ['Joghurt', ''], ['Eier', '']],
+  23: [['Lachs', 'EPA und DHA'], ['Hering', ''], ['Makrele', ''], ['Leinöl', 'pflanzlich'], ['Walnüsse', ''], ['Leinsamen', '']],
+};
 function suggestFoods(i) {
   const cand = [];
   for (const b of BASE) {

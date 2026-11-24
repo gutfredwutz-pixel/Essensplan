@@ -33,12 +33,16 @@ function needsOf(pf) {
   if (sp >= 2) pk = { kraft: 1.6, ausdauer: 1.2, mix: 1.4 }[pf.train || 'mix'];
   if (pf.goal === 'ab' && sp >= 2) pk = Math.min(2.0, pk + 0.2);
   if (f && pf.special) pk = Math.max(pk, 1.0);
-  R[1][0] = Math.round(w * pk);
+  const pAuto = Math.round(w * pk);
+  const own = k => { const v = +String(pf[k] ?? '').replace(',', '.'); return v > 0 ? Math.round(v) : 0; };
+  const P = own('protG') || pAuto; R[1][0] = P; pk = Math.round(P / w * 10) / 10;
   R[23][0] = Math.round(kcal * 0.005 / 9 * 10) / 10;
-  const fat = Math.round(kcal * 0.3 / 9), carb = Math.max(100, Math.round((kcal - R[1][0] * 4 - fat * 9) / 4));
+  const oC = own('carbG'), oF = own('fatG');
+  const fat = oF || (oC ? Math.max(40, Math.round((kcal - P * 4 - oC * 4) / 9)) : Math.round(kcal * 0.3 / 9));
+  const carb = oC || Math.max(80, Math.round((kcal - P * 4 - fat * 9) / 4));
   const M = { 0: [Math.round(kcal), 'Kalorien', 'kcal'], 2: [fat, 'Fett', 'g'], 3: [carb, 'Kohlenhydrate', 'g'] };
   const L = { 7: [6, 'Salz', 'g'], 5: [Math.round(kcal * 0.1 / 4), 'Zucker', 'g'], 6: [Math.round(kcal * 0.1 / 9), 'Gesättigte Fette', 'g'] };
-  return { kcal, R, L, M, bmr, pal, tdee, goalAdj, extra, bmi: w / Math.pow(hg / 100, 2), bfUsed: bf > 3 && bf < 60, pk };
+  return { kcal, R, L, M, bmr, pal, tdee, goalAdj, extra, bmi: w / Math.pow(hg / 100, 2), bfUsed: bf > 3 && bf < 60, pk, pAuto, ownMacros: !!(own('protG') || oC || oF) };
 }
 function avgNeeds() {
   return { kcal: 2150, R: JSON.parse(JSON.stringify(REF)), L: JSON.parse(JSON.stringify(LIMITS)), M: { 0: [2150, 'Kalorien', 'kcal'], 2: [72, 'Fett', 'g'], 3: [270, 'Kohlenhydrate', 'g'] } };
@@ -212,6 +216,9 @@ function openProfileEdit(name, back) {
       h('div', { class: 'fsec' }, h('h3', { text: 'Sport' }), sport, segOf('sportI', [[1, 'Locker'], [2, 'Mittel'], [3, 'Intensiv']]), h('div', { style: 'height:8px' }), segOf('train', [['kraft', 'Kraft'], ['mix', 'Gemischt'], ['ausdauer', 'Ausdauer']])),
       h('div', { class: 'fsec' }, h('h3', { text: 'Ziel' }), segOf('goal', [['halten', 'Halten'], ['ab', 'Abnehmen'], ['zu', 'Zunehmen']]),
         pf.goal === 'ab' || pf.goal === 'zu' ? h('div', { style: 'margin-top:8px' }, segOf('rate', pf.goal === 'ab' ? [[0.25, '¼ kg pro Woche'], [0.5, '½ kg pro Woche'], [0.75, '¾ kg pro Woche']] : [[0.25, '¼ kg pro Woche'], [0.5, '½ kg pro Woche']])) : null),
+      h('div', { class: 'fsec' }, h('h3', { text: 'Eigene Ziele' }),
+        h('div', { class: 'frows' }, num('protG', 'Eiweiß', 'g am Tag', 'auto ' + fmtInt(nd.pAuto), true), num('carbG', 'Kohlenhydrate', 'g am Tag', 'auto', true), num('fatG', 'Fett', 'g am Tag', 'auto', true)),
+        h('div', { class: 'muted', style: 'margin:10px 4px 0;font-size:12.5px', text: 'Leer lassen heißt automatisch. Was du nicht festlegst, rechnet die App aus den restlichen Kalorien.' })),
       h('div', { class: 'fsec' }, h('h3', { text: 'Ernährung' }), segOf('diet', [['alles', 'Alles'], ['vegetarisch', 'Vegetarisch'], ['vegan', 'Vegan']]),
         pf.diet === 'vegan' ? h('div', { class: 'muted', style: 'margin:8px 4px 0;font-size:12.5px', text: 'Vitamin B12 kommt vegan fast nur über Supplemente oder angereicherte Produkte. Trag es unten ein, wenn du es nimmst.' }) : null),
       h('div', { class: 'fsec' }, h('h3', { text: 'Sonst noch' }), h('div', { class: 'muted', style: 'margin:0 4px 6px', text: 'Rauchen' }), segOf('smoker', [['nein', 'Nein'], ['ja', 'Ja']]),
