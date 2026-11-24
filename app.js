@@ -616,7 +616,7 @@ function renderWeek() {
     const dishes = h('div', { class: 'dishes' });
     if (list.length) list.forEach(p => dishes.append(h('div', { class: 'chip' + (p.recipeId ? '' : ' free'), onclick: e => { e.stopPropagation(); openPlan(p); } }, dot(p.by), h('span', { class: 't', text: p.title || 'Ohne Namen' }), p.prep ? h('span', { class: 'm prep', text: 'Mealprep' }) : p.meal ? h('span', { class: 'm', text: p.meal }) : null)));
     else dishes.append(h('div', { class: 'empty', text: 'nichts geplant' }));
-    w.append(h('div', { class: 'day' + (ds === today ? ' today' : ''), onclick: () => openDay(ds) },
+    w.append(h('div', { class: 'day wd' + ((d.getDay() + 6) % 7) + (ds === today ? ' today' : ''), onclick: () => openDay(ds) },
       h('div', { class: 'dlabel' }, h('div', { class: 'wd', text: WD[(d.getDay() + 6) % 7] }), h('div', { class: 'dn', text: d.getDate() })),
       dishes,
       h('button', { class: 'ib sm p', 'aria-label': 'Gericht hinzufügen', onclick: e => { e.stopPropagation(); openDay(ds, true); } }, ic('plus'))));
@@ -987,9 +987,9 @@ function openRecipeView(r) {
   const tags = tagsOf(r);
   openSheet(r.title, [
     banner,
-    h('div', { class: 'row', style: 'flex-wrap:wrap;gap:6px;margin:2px 4px 4px' },
-      h('span', { class: 'pill', text: `für ${r.servings || 2} ${(+r.servings || 2) === 1 ? 'Person' : 'Personen'}` }),
-      ...tags.map(t => h('span', { class: 'pill t', text: t })),
+    h('div', { class: 'rtagrow' },
+      h('div', { class: 'rtags' }, h('span', { class: 'pill', text: `für ${r.servings || 2} ${(+r.servings || 2) === 1 ? 'Person' : 'Personen'}` }),
+        ...tags.map(t => h('span', { class: 'pill t', text: t }))),
       h('button', { class: 'ib sm ghost heart' + (r.fav ? ' on' : ''), 'aria-label': 'Favorit', onclick: e => { toggleFav(r); e.currentTarget.classList.toggle('on'); } }, ic('heart'))),
     nutritionLine(r),
     h('label', { class: 'lbl', text: 'Zutaten' }), ingredientView(r),
