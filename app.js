@@ -228,7 +228,15 @@ function showWho() {
   $('#ov').dataset.locked = '1';
 }
 function isDark() { const t = LS.get('ep_theme'); return t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches); }
-function applyTheme() { const d = isDark(); document.documentElement.classList.toggle('dark', d); const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = d ? '#121827' : '#E8F0FF'; }
+function barColor() { const m = document.querySelector('meta[name=theme-color]'); if (!m) return; const d = isDark(), dim = $('#ov') && $('#ov').classList.contains('on'); m.content = d ? (dim ? '#0E131F' : '#121827') : (dim ? '#C2CAD8' : '#E8F0FF'); }
+function applyTheme() { const d = isDark(); document.documentElement.classList.toggle('dark', d); barColor(); }
+// Hintergrund festhalten, solange ein Blatt offen ist
+let lockY = null;
+function lockBody(on) {
+  const b = document.body;
+  if (on && lockY == null) { lockY = window.scrollY; Object.assign(b.style, { position: 'fixed', top: -lockY + 'px', left: '0', right: '0', overflow: 'hidden' }); }
+  else if (!on && lockY != null) { Object.assign(b.style, { position: '', top: '', left: '', right: '', overflow: '' }); window.scrollTo(0, lockY); lockY = null; }
+}
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme); } catch (e) { }
 function weekAnchor() { const t = dayOnly(new Date()); return LS.get('ep_weekstart') === 'mo' ? addDays(t, -((t.getDay() + 6) % 7)) : t; }
 applyTheme();
@@ -1010,16 +1018,17 @@ function openSheet(title, content) {
   const s = $('#sheet'); const ov = $('#ov'); const was = ov.classList.contains('on');
   s.replaceChildren(h('div', { class: 'grab' }), h('div', { class: 'shead' }, h('h2', { text: title }), h('button', { class: 'ib xclose', 'aria-label': 'Schließen', onclick: closeSheet }, ic('xmark'))), ...content.filter(Boolean));
   s.style.transition = ''; s.style.transform = ''; ov.style.background = '';
-  s.classList.toggle('full', !!topSheet); ov.classList.add('on'); s.scrollTop = 0; document.body.style.overflow = 'hidden';
+  s.classList.toggle('full', !!topSheet); ov.classList.add('on'); s.scrollTop = 0; lockBody(true); barColor();
   if (!was) { s.classList.remove('rise'); void s.offsetWidth; s.classList.add('rise'); }
 }
-function closeSheet() { sheetBack = null; $('#ov').classList.remove('on'); document.body.style.overflow = ''; topSheet = null; $('#sheet').classList.remove('full'); }
+function closeSheet() { sheetBack = null; $('#ov').classList.remove('on'); lockBody(false); barColor(); topSheet = null; $('#sheet').classList.remove('full'); }
 function dismissSheet() {
   const s = $('#sheet'), ov = $('#ov'); if (ov.dataset.locked) return;
   s.style.transition = 'transform .26s cubic-bezier(.3,.7,.4,1)'; s.style.transform = 'translate3d(0,105%,0)'; ov.style.transition = 'background .26s'; ov.style.background = 'rgba(20,26,40,0)';
   setTimeout(() => { const b = s.querySelector('.xclose'); s.style.transition = ''; s.style.transform = ''; ov.style.background = ''; ov.style.transition = ''; if (b) b.click(); else closeSheet(); }, 260);
 }
 $('#ov').addEventListener('click', e => { if (e.target.id === 'ov') dismissSheet(); });
+$('#ov').addEventListener('touchmove', e => { if (!e.target.closest('#sheet')) e.preventDefault(); }, { passive: false });
 (() => {
   const s = $('#sheet'); let y0 = 0, x0 = 0, dy = 0, dx = 0, on = false, t0 = 0, raf = 0, top0 = false;
   const pg = () => s.querySelector('.npage');
@@ -1297,7 +1306,7 @@ function pickProduct(g, done) {
   });
   // Das Rezept-Sheet merken, um danach dorthin zurückzukehren
   const saved = [...$('#sheet').childNodes]; const savedScroll = $('#sheet').scrollTop;
-  reopen = () => { $('#sheet').replaceChildren(...saved); $('#ov').classList.add('on'); document.body.style.overflow = 'hidden'; $('#sheet').scrollTop = savedScroll; done(); };
+  reopen = () => { $('#sheet').replaceChildren(...saved); $('#ov').classList.add('on'); lockBody(true); barColor(); $('#sheet').scrollTop = savedScroll; done(); };
   q.addEventListener('keydown', e => { if (e.key === 'Enter') searchBls(); });
   openSheet('Nährwerte für ' + (g.name || 'Zutat'), [q, h('div', { class: 'row', style: 'margin-top:8px;gap:8px' }, h('button', { class: 'btn s', onclick: searchBls }, 'Im BLS suchen'), offBtn),
     h('div', { class: 'muted', style: 'margin:8px 6px 0', text: 'BLS: geprüfte Durchschnittswerte. Markenprodukte: Herstellerangaben von Open Food Facts.' }), res,
