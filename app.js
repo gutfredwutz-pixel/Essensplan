@@ -436,48 +436,39 @@ function openTop(id) {
   else { resetNutriState(); nutriWho = null; nutriFn = null; nutriHome(); }
 }
 function refreshSet() { if (topSheet === 'set' && $('#ov').classList.contains('on')) openTop('set'); else render(); }
-function goTab(id, dir, fromX) {
-  if (id === tab) return;
-  const m = $('#main'); const W = window.innerWidth; const x0 = fromX || 0;
-  const swap = () => { if (tab === 'nutri' && window.resetNutriState) resetNutriState(); tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, 0); };
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { swap(); return; }
-  document.querySelectorAll('.ghost').forEach(g => g.remove()); cachePage(); document.documentElement.style.setProperty('--tdur', '.42s');
-  const r = m.getBoundingClientRect();
-  const ghost = m.cloneNode(true); ghost.removeAttribute('id'); ghost.classList.add('ghost');
-  Object.assign(ghost.style, { position: 'fixed', left: (r.left - x0) + 'px', top: r.top + 'px', width: r.width + 'px', margin: '0', pointerEvents: 'none', zIndex: '5', transition: 'none', transform: `translate3d(${x0}px,0,0)`, opacity: '1' });
-  peekLayer().appendChild(ghost);
-  const hg = headClone(null); hg.style.transform = `translate3d(${x0 * HS()}px,0,0)`; 
-  const hd = $('#htrack');
-  swap();
-  const off = dir > 0 ? W : -W;
-  m.style.transition = 'none'; m.style.opacity = '1'; m.style.transform = `translate3d(${off + x0}px,0,0)`;
-  hd.style.transition = 'none'; hd.style.transform = `translate3d(${(off + x0) * HS()}px,0,0)`;
-  void m.offsetWidth;
-  const ease = 'transform .42s cubic-bezier(.22,.8,.24,1)';
-  ghost.style.transition = ease; hg.style.transition = ease; m.style.transition = ease; hd.style.transition = ease;
-  requestAnimationFrame(() => { ghost.style.transform = `translate3d(${-off}px,0,0)`; hg.style.transform = `translate3d(${-off * HS()}px,0,0)`; m.style.transform = hd.style.transform = 'translate3d(0,0,0)'; });
-  setTimeout(() => { ghost.remove(); hg.remove(); m.style.transition = hd.style.transition = ''; m.style.transform = hd.style.transform = ''; }, 460);
-}
-/* Nachbarseiten als Vorschau, damit beim Wischen die neue Seite direkt mitkommt */
+/* Seitenwechsel: Kopfleiste und Inhalt bilden zusammen eine Bühne (#stage), die als Ganzes gleitet */
 const pageCache = {}; let nutriTarget = null;
 function peekLayer() { let l = document.getElementById('peeklayer'); if (!l) { l = h('div', { id: 'peeklayer' }); document.body.appendChild(l); } return l; }
-function headClone(id) {
-  const c = $('#htrack').cloneNode(true); c.removeAttribute('id'); c.classList.add('clone'); c.querySelectorAll('[id]').forEach(x => x.removeAttribute('id'));
-  const art = c.firstElementChild; if (art) Object.assign(art.style, { width: '48px', height: '48px', flex: 'none' });
-  if (id) { const t = c.querySelector('h1'); if (t) t.textContent = TITLES[id]; if (art) art.replaceChildren(svgEl(ART[id])); }
-  c.style.transition = 'none'; document.querySelector('.htitle').appendChild(c);
-  return c;
+const stage = () => $('#stage');
+function stageClone(id, node) {
+  const st = stage(); const r = st.getBoundingClientRect();
+  const c = st.cloneNode(true); c.removeAttribute('id'); c.classList.add('stageclone');
+  c.querySelectorAll('[id]').forEach(x => { x.dataset.cid = x.id; x.removeAttribute('id'); });
+  if (id) {
+    const t = c.querySelector('[data-cid=title]'); if (t) t.textContent = TITLES[id];
+    const art = c.querySelector('[data-cid=art]'); if (art) art.replaceChildren(svgEl(ART[id]));
+    const mm = c.querySelector('[data-cid=main]'); if (mm && node) mm.replaceChildren(node);
+  }
+  Object.assign(c.style, { position: 'fixed', left: '0', top: (id ? 0 : r.top) + 'px', width: r.width + 'px', margin: '0', pointerEvents: 'none', willChange: 'transform', transition: 'none' });
+  c.querySelectorAll('header').forEach(hd => { hd.style.position = 'relative'; });
+  peekLayer().appendChild(c); return c;
 }
-const HS = () => { const t = document.querySelector('.htitle'); return t ? (t.offsetWidth + 60) / window.innerWidth : 1; };
-
-function headMove(x, W) { const t = [$('#title'), $('#art')]; const k = Math.min(1, Math.abs(x) / (W * 0.6)); t.forEach(el => { el.style.transition = 'none'; el.style.transform = `translate3d(${x * 0.25}px,0,0)`; el.style.opacity = String(1 - k); }); }
-function headIn(dir, dur) {
-  const t = [$('#title'), $('#art')];
-  t.forEach(el => { el.style.transition = 'none'; el.style.transform = `translate3d(${dir * 40}px,0,0)`; el.style.opacity = '0'; });
-  void t[0].offsetWidth;
-  t.forEach(el => { el.style.transition = `transform ${dur}s cubic-bezier(.22,.8,.24,1), opacity ${dur}s ease`; el.style.transform = ''; el.style.opacity = ''; });
+function goTab(id, dir, fromX) {
+  if (id === tab) return;
+  const W = window.innerWidth; const st = stage();
+  const swap = () => { if (tab === 'nutri' && window.resetNutriState) resetNutriState(); tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, 0); };
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { swap(); return; }
+  document.querySelectorAll('.stageclone').forEach(g => g.remove()); cachePage(); document.documentElement.style.setProperty('--tdur', '.4s');
+  const ghost = stageClone(null); ghost.style.transform = 'translate3d(0,0,0)';
+  swap();
+  const off = dir > 0 ? W : -W;
+  st.style.transition = 'none'; st.style.transform = `translate3d(${off}px,0,0)`;
+  void st.offsetWidth;
+  const ease = 'transform .4s cubic-bezier(.22,.8,.24,1)';
+  ghost.style.transition = ease; st.style.transition = ease;
+  requestAnimationFrame(() => { ghost.style.transform = `translate3d(${-off}px,0,0)`; st.style.transform = 'translate3d(0,0,0)'; });
+  setTimeout(() => { ghost.remove(); st.style.transition = ''; st.style.transform = ''; }, 440);
 }
-function headReset() { [$('#title'), $('#art')].forEach(el => { el.style.transition = 'transform .3s, opacity .3s'; el.style.transform = ''; el.style.opacity = ''; }); }
 function cachePage() { const m = $('#main'); if (m && m.firstChild) { const d = h('div'); d.append(...[...m.childNodes].map(n => n.cloneNode(true))); pageCache[tab] = d; } }
 function peekNode(id) {
   try {
@@ -491,38 +482,30 @@ function peekNode(id) {
   } catch (err) { console.warn(err); return pageCache[id] ? pageCache[id].cloneNode(true) : null; }
 }
 (() => {
-  let sx = 0, sy = 0, mode = 0, dx = 0, raf = 0, peeks = {}, vx = 0, lt = 0, lxp = 0, busy = false; const m = () => $('#main');
+  let sx = 0, sy = 0, mode = 0, dx = 0, raf = 0, peeks = {}, vx = 0, lt = 0, lxp = 0, busy = false;
   const EASE = 'cubic-bezier(.22,.8,.24,1)';
   const clearPeeks = () => { Object.values(peeks).forEach(p => p && p.remove()); peeks = {}; };
-  const mkPeek = id => {
-    if (!id) return null; const node = peekNode(id); if (!node) return null;
-    const r = m().getBoundingClientRect(); const cs = getComputedStyle(m()); const p = h('div', { class: 'peek' }); p.append(node);
-    Object.assign(p.style, { padding: cs.padding, boxSizing: cs.boxSizing, position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', pointerEvents: 'none', zIndex: '5', willChange: 'transform' });
-    peekLayer().appendChild(p); return p;
-  };
+  const resetStage = () => { const st = stage(); st.style.transition = ''; st.style.transform = ''; };
+  const mkPeek = id => { if (!id) return null; const node = peekNode(id); return node ? stageClone(id, node) : null; };
   const place = x => {
     const W = window.innerWidth;
-    m().style.transform = `translate3d(${x}px,0,0)`; const s = HS(); $('#htrack').style.transform = `translate3d(${x * s}px,0,0)`;
-    if (peeks.hr) peeks.hr.style.transform = `translate3d(${(W + x) * s}px,0,0)`;
-    if (peeks.hl) peeks.hl.style.transform = `translate3d(${(-W + x) * s}px,0,0)`;
+    stage().style.transform = `translate3d(${x}px,0,0)`;
     if (peeks.r) peeks.r.style.transform = `translate3d(${W + x}px,0,0)`;
     if (peeks.l) peeks.l.style.transform = `translate3d(${-W + x}px,0,0)`;
   };
   document.addEventListener('touchstart', e => {
     mode = 0; if (busy || TAB_ORDER.indexOf(tab) < 0 || $('#ov').classList.contains('on') || document.querySelector('.cook') || e.touches.length > 1) { mode = -1; return; }
     const t = e.target; if (t.closest('.swipe,input,textarea,select,[data-no-tab-swipe],.tabs,.month')) { mode = -1; return; }
-    if (Object.keys(peeks).length) { clearPeeks(); const hd = $('#htrack'); [m(), hd].forEach(el => { el.style.transition = ''; el.style.transform = ''; }); }
+    if (Object.keys(peeks).length) { clearPeeks(); resetStage(); }
     sx = e.touches[0].clientX; sy = e.touches[0].clientY; dx = 0; vx = 0; lt = performance.now(); lxp = sx;
   }, { passive: true });
   document.addEventListener('touchmove', e => {
     if (mode === -1) return; const cx = e.touches[0].clientX; dx = cx - sx; const dy = e.touches[0].clientY - sy;
     if (mode === 0) {
       if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-        mode = 1; document.body.classList.add('swiping'); sx += dx > 0 ? 8 : -8; dx = cx - sx; m().style.transition = 'none';
+        mode = 1; document.body.classList.add('swiping'); sx += dx > 0 ? 8 : -8; dx = cx - sx; stage().style.transition = 'none';
         const idx = TAB_ORDER.indexOf(tab); peeks.l = mkPeek(TAB_ORDER[idx - 1]); peeks.r = mkPeek(TAB_ORDER[idx + 1]);
-        $('#htrack').style.transition = 'none';
-        if (TAB_ORDER[idx - 1]) peeks.hl = headClone(TAB_ORDER[idx - 1]);
-        if (TAB_ORDER[idx + 1]) peeks.hr = headClone(TAB_ORDER[idx + 1]);
+        if (window.scrollY > 0) Object.values(peeks).forEach(p => p && (p.style.top = '0px'));
       } else if (Math.abs(dy) > 10) { mode = -1; return; } else return;
     }
     if (e.cancelable) e.preventDefault();
@@ -531,42 +514,39 @@ function peekNode(id) {
     const x = edge ? Math.sign(dx) * Math.pow(Math.abs(dx), 0.75) : dx;
     cancelAnimationFrame(raf); raf = requestAnimationFrame(() => place(x));
   }, { passive: false });
-  const endSwipe = cancelled => {
+  const endSwipe = () => {
     document.body.classList.remove('swiping');
     if (mode !== 1) return; mode = 0; cancelAnimationFrame(raf);
-    const el = m(), W = window.innerWidth; const idx = TAB_ORDER.indexOf(tab);
+    const st = stage(), W = window.innerWidth; const idx = TAB_ORDER.indexOf(tab);
     const dir = (Math.abs(vx) > 0.35 ? -Math.sign(vx) : -Math.sign(dx)) || 1;
-    const n = idx + dir; const id = TAB_ORDER[n];
+    const id = TAB_ORDER[idx + dir];
     const go = id && (Math.abs(dx) > W * 0.22 || (Math.abs(vx) > 0.35 && Math.sign(vx) === -dir));
     const peek = dir > 0 ? peeks.r : peeks.l;
     if (go && peek && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
       busy = true;
-      const rest = W - Math.abs(dx); const dur = Math.max(0.2, Math.min(0.38, rest / Math.max(Math.abs(vx) * 1000 * 0.9, 1400)));
+      const rest = W - Math.abs(dx); const dur = Math.max(0.2, Math.min(0.36, rest / Math.max(Math.abs(vx) * 1000 * 0.9, 1400)));
       document.documentElement.style.setProperty('--tdur', dur + 's');
       const tr = `transform ${dur}s ${EASE}`;
-      const hd = $('#htrack'); const hp = dir > 0 ? peeks.hr : peeks.hl;
-      el.style.transition = tr; peek.style.transition = tr; hd.style.transition = tr; if (hp) hp.style.transition = tr;
-      cachePage();
-      document.body.dataset.tab = id;
-      el.style.transform = `translate3d(${-dir * W}px,0,0)`; hd.style.transform = `translate3d(${-dir * W * HS()}px,0,0)`; peek.style.transform = 'translate3d(0,0,0)'; if (hp) hp.style.transform = 'translate3d(0,0,0)';
-      const other = dir > 0 ? peeks.l : peeks.r; if (other) other.remove(); const oh = dir > 0 ? peeks.hl : peeks.hr; if (oh) oh.remove();
+      st.style.transition = tr; peek.style.transition = tr;
+      cachePage(); document.body.dataset.tab = id;
+      st.style.transform = `translate3d(${-dir * W}px,0,0)`; peek.style.transform = 'translate3d(0,0,0)';
+      const other = dir > 0 ? peeks.l : peeks.r; if (other) other.remove();
       setTimeout(() => {
-        const sy0 = 0;
-        el.style.transition = 'none'; hd.style.transition = 'none';
-        if (tab === 'nutri' && window.resetNutriState) resetNutriState(); tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, sy0);
-        el.style.transform = ''; hd.style.transform = '';
-        requestAnimationFrame(() => { clearPeeks(); el.style.transition = ''; hd.style.transition = ''; busy = false; });
+        st.style.transition = 'none';
+        if (tab === 'nutri' && window.resetNutriState) resetNutriState(); tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, 0);
+        st.style.transform = '';
+        requestAnimationFrame(() => { clearPeeks(); st.style.transition = ''; busy = false; });
       }, dur * 1000 + 10);
     } else {
       const tr = 'transform .32s cubic-bezier(.2,.9,.3,1.08)';
-      const hd = $('#htrack'); el.style.transition = tr; hd.style.transition = tr; Object.values(peeks).forEach(p => p && (p.style.transition = tr));
+      st.style.transition = tr; Object.values(peeks).forEach(p => p && (p.style.transition = tr));
       place(0);
-      setTimeout(() => { clearPeeks(); el.style.transition = hd.style.transition = ''; el.style.transform = hd.style.transform = ''; }, 340);
+      setTimeout(() => { clearPeeks(); resetStage(); }, 340);
     }
   };
-  document.addEventListener('touchend', () => endSwipe(false), { passive: true });
-  document.addEventListener('touchcancel', () => { if (mode === 1) { dx = 0; vx = 0; } endSwipe(true); }, { passive: true });
-  const hardReset = () => { if (busy) return; mode = 0; document.body.classList.remove('swiping'); clearPeeks(); const hd = $('#htrack'); [m(), hd].forEach(el => { el.style.transition = ''; el.style.transform = ''; }); };
+  document.addEventListener('touchend', endSwipe, { passive: true });
+  document.addEventListener('touchcancel', () => { if (mode === 1) { dx = 0; vx = 0; } endSwipe(); }, { passive: true });
+  const hardReset = () => { if (busy) return; mode = 0; document.body.classList.remove('swiping'); clearPeeks(); resetStage(); };
   document.addEventListener('visibilitychange', hardReset);
   window.addEventListener('pageshow', hardReset);
 })();

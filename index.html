@@ -49,8 +49,8 @@ body[data-tab=rec] .blobs .b2{left:calc(100% - var(--bw) * .51);top:calc(100% - 
 
 header{position:sticky;top:0;z-index:5;padding:calc(var(--top) + 14px) 18px 12px;background:linear-gradient(var(--bg) 78%,var(--bg0))}
 .hrow{display:flex;align-items:center;gap:12px}
-#art{width:48px;height:48px;flex:none}
-#art svg{width:100%;height:100%;display:block}
+:is(#art,[data-cid=art]){width:48px;height:48px;flex:none}
+:is(#art,[data-cid=art]) svg{width:100%;height:100%;display:block}
 h1{font-size:26px;font-weight:800;margin:0;letter-spacing:-.025em;flex:1}
 .status{font-size:12px;color:var(--ink3)}
 main{padding:2px 14px calc(var(--bot) + 140px);max-width:760px;margin:0 auto}
@@ -378,11 +378,11 @@ body{background:transparent}
 .rechead .btn{margin-left:auto}
 
 /* Runde 6: Seiten wischen, Im Wagen, Nährstoffe */
-#main{transition:transform .25s ease,opacity .25s ease;will-change:transform}
+:is(#main,[data-cid=main]){transition:transform .25s ease,opacity .25s ease;will-change:transform}
 @keyframes inl{from{transform:translateX(40px);opacity:.3}to{transform:none;opacity:1}}
 @keyframes inr{from{transform:translateX(-40px);opacity:.3}to{transform:none;opacity:1}}
-#main.slide-l{animation:inl .28s ease}#main.slide-r{animation:inr .28s ease}
-@media (prefers-reduced-motion:reduce){#main.slide-l,#main.slide-r{animation:none}}
+:is(#main,[data-cid=main]).slide-l{animation:inl .28s ease}:is(#main,[data-cid=main]).slide-r{animation:inr .28s ease}
+@media (prefers-reduced-motion:reduce){:is(#main,[data-cid=main]).slide-l,:is(#main,[data-cid=main]).slide-r{animation:none}}
 .donebox{background:var(--card);border-radius:34px 26px 32px 24px / 26px 34px 24px 32px;padding:14px 14px 16px;margin-top:26px;box-shadow:0 2px 12px var(--shadow)}
 .donehead{justify-content:space-between;margin:0 4px 10px}
 .donechips{display:flex;flex-wrap:wrap;gap:8px}
@@ -425,7 +425,7 @@ body{background:transparent}
 
 /* Runde 7: Effekte, Sheet-Griff, Feedback */
 html{-webkit-tap-highlight-color:transparent}
-#main{touch-action:pan-y;transition:none;will-change:auto}
+:is(#main,[data-cid=main]){touch-action:pan-y;transition:none;will-change:auto}
 button,.chip,.tile,.schip,.pill,.day,.mday{transition:transform .14s cubic-bezier(.3,.7,.4,1.4),filter .14s}
 button:active,.chip:active,.tile:active,.schip:active,.day:active,.mday:active{transform:scale(.94);filter:brightness(.96)}
 .tabs button:active{transform:scale(.88)}
@@ -681,8 +681,8 @@ html.dark .frow.empty .fl{color:#C4B5FF}
 /* Runde 14: drei Tabs, Kopf mit Zahnrad und J, Nährstoffe luftiger */
 .tabs{grid-template-columns:repeat(3,76px);padding:8px 26px;gap:0;justify-content:space-between;width:min(300px,calc(100% - 56px));box-sizing:border-box}
 .tabs button{width:76px;height:58px}
-#gear.on,#who.on{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #7B5CFF}
-#gear{margin-right:4px}
+:is(#gear,[data-cid=gear]).on,:is(#who,[data-cid=who]).on{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #7B5CFF}
+:is(#gear,[data-cid=gear]){margin-right:4px}
 .npage{display:flex;flex-direction:column;gap:16px}
 .npage>*{margin-top:0!important;margin-bottom:0!important}
 .npage .pnav{margin-left:2px;margin-right:2px}
@@ -713,10 +713,10 @@ html.dark .frow.empty .fl{color:#C4B5FF}
 /* Kopf als eigene schwebende Leiste, Gegenstück zur unteren Leiste */
 header{padding:calc(var(--top) + 10px) 14px 14px;background:linear-gradient(var(--bg) 70%,transparent)}
 .hrow{background:var(--card);border-radius:999px;padding:8px 8px 8px 8px;box-shadow:0 10px 34px rgba(27,34,51,.12);gap:12px}
-#art{width:44px;height:44px}
+:is(#art,[data-cid=art]){width:44px;height:44px}
 h1{font-size:23px}
-#gear,#who{width:44px;height:44px}
-#gear{background:color-mix(in srgb,#5B7FFF 9%,var(--card))}
+:is(#gear,[data-cid=gear]),:is(#who,[data-cid=who]){width:44px;height:44px}
+:is(#gear,[data-cid=gear]){background:color-mix(in srgb,#5B7FFF 9%,var(--card))}
 html.dark .hrow{box-shadow:0 10px 34px rgba(0,0,0,.45)}
 main{padding-top:6px}
 /* Rezepte: mehr Luft im Kopfbereich */
@@ -725,11 +725,11 @@ main{padding-top:6px}
 .sheet.full{height:94vh;max-height:94vh}
 .sheet.full .npage{padding-bottom:20px}
 .hrow{padding:12px 12px 12px 12px;border-radius:40px 34px 38px 32px / 34px 40px 32px 38px}
-#art{width:48px;height:48px}
+:is(#art,[data-cid=art]){width:48px;height:48px}
 .hrow{gap:10px;overflow:hidden}
 h1{font-size:clamp(19px,5.8vw,25px);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#status:empty{display:none}
-#gear,#who{width:48px;height:48px;flex:none}
+:is(#status,[data-cid=status]):empty{display:none}
+:is(#gear,[data-cid=gear]),:is(#who,[data-cid=who]){width:48px;height:48px;flex:none}
 html,body{overflow-x:clip}
 #peeklayer{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:5}
 #peeklayer>*{z-index:auto!important}
@@ -764,20 +764,26 @@ body.swiping :active{transform:none!important;filter:none!important}
 .choice .ci{width:56px;height:56px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px -8px rgba(91,100,255,.9)}
 .choice .ci .fa{width:24px;height:24px;fill:#fff;color:#fff}
 .choice b{font-size:16px}.choice span{font-size:12.5px;line-height:1.35}
+#stage{position:relative;z-index:2}
+.stageclone{z-index:6}
+.stageclone header{background:linear-gradient(var(--bg) 70%,transparent)}
 .hidden{display:none!important}
 </style>
 </head>
 <body data-tab="cal">
 <div class="blobs"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i></div>
+<div id="stage">
 <header>
   <div class="hrow">
-    <div class="htitle"><div class="htrack" id="htrack"><div id="art"></div><h1 id="title">Essenswoche</h1></div></div>
+    <div id="art"></div>
+    <h1 id="title">Essenswoche</h1>
     <span class="status" id="status"></span>
     <button class="ib gearb hidden" id="gear" aria-label="Einstellungen" onclick="openTop('set')"></button>
     <button class="av big hidden" id="who" aria-label="Ich und Nährstoffe" onclick="openTop('nutri')"></button>
   </div>
 </header>
 <main id="main"></main>
+</div>
 <div class="tabfade"></div>
 <nav class="tabs" id="tabs"></nav>
 <div class="ov" id="ov"><div class="sheet" id="sheet"></div></div>
