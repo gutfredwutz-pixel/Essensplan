@@ -977,6 +977,14 @@ html.dark .mb.k b{color:#9AA4FF}html.dark .mb.p b{color:#FF8DBE}html.dark .mb.c 
 /* Drücken: leicht kleiner und heller, nicht eingedrückt */
 .btn:active,.ib:active,.seg button:active,.day:active,.chip:active,.rcard:active,.tile:active,.gsrc:active,.rheart:active,.dj:active,.backlink:active{transform:scale(.96)!important;filter:brightness(1.06)}
 .btn,.ib,.seg button,.day,.chip,.rcard,.tile,.gsrc,.rheart,.dj,.backlink{transition:transform .16s cubic-bezier(.3,.7,.4,1.4),filter .16s}
+
+/* Zutaten: ruhige Liste statt einzelner Kapseln */
+.ingview2{display:flex;flex-direction:column;gap:0;margin:0 -2px}
+.ing2{display:grid;grid-template-columns:12px 1fr auto;align-items:center;gap:14px;padding:13px 6px;border-radius:0;background:none!important;box-shadow:none!important;border-bottom:1px solid color-mix(in srgb,var(--ink3) 16%,transparent)}
+.ing2:last-child{border-bottom:0}
+.idot{width:10px;height:10px;box-shadow:none}
+.ing2 .in{font-weight:550;font-size:16px}
+.ing2 .ia{padding:0;background:none;box-shadow:none;color:var(--ink);font-weight:750;font-size:15px;text-align:right;white-space:nowrap}
 .hidden{display:none!important}
 </style>
 </head>
