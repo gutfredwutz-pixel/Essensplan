@@ -453,22 +453,25 @@ function stageClone(id, node) {
   c.querySelectorAll('header').forEach(hd => { hd.style.position = 'relative'; });
   peekLayer().appendChild(c); return c;
 }
-function goTab(id, dir, fromX) {
-  if (id === tab) return;
-  const W = window.innerWidth; const st = stage();
+// erst raus, dann die neue Seite von der anderen Seite rein
+function slideSwap(id, dir, fromX, outDur) {
+  const st = stage(), W = window.innerWidth; const E = 'cubic-bezier(.22,.8,.24,1)';
   const swap = () => { if (tab === 'nutri' && window.resetNutriState) resetNutriState(); tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, 0); };
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { swap(); return; }
-  document.querySelectorAll('.stageclone').forEach(g => g.remove()); cachePage(); document.documentElement.style.setProperty('--tdur', '.4s');
-  const ghost = stageClone(null); ghost.style.transform = 'translate3d(0,0,0)';
-  swap();
-  const off = dir > 0 ? W : -W;
-  st.style.transition = 'none'; st.style.transform = `translate3d(${off}px,0,0)`;
-  void st.offsetWidth;
-  const ease = 'transform .4s cubic-bezier(.22,.8,.24,1)';
-  ghost.style.transition = ease; st.style.transition = ease;
-  requestAnimationFrame(() => { ghost.style.transform = `translate3d(${-off}px,0,0)`; st.style.transform = 'translate3d(0,0,0)'; });
-  setTimeout(() => { ghost.remove(); st.style.transition = ''; st.style.transform = ''; }, 440);
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { swap(); st.style.transform = ''; return Promise.resolve(); }
+  const od = outDur || 0.2, id2 = 0.3;
+  document.documentElement.style.setProperty('--tdur', (od + id2) + 's');
+  document.body.dataset.tab = id;
+  return new Promise(res => {
+    st.style.transition = 'none'; st.style.transform = `translate3d(${fromX || 0}px,0,0)`; void st.offsetWidth;
+    st.style.transition = `transform ${od}s cubic-bezier(.4,0,.8,.6)`; st.style.transform = `translate3d(${-dir * W}px,0,0)`;
+    setTimeout(() => {
+      st.style.transition = 'none'; swap(); st.style.transform = `translate3d(${dir * W}px,0,0)`; void st.offsetWidth;
+      st.style.transition = `transform ${id2}s ${E}`; st.style.transform = 'translate3d(0,0,0)';
+      setTimeout(() => { st.style.transition = ''; st.style.transform = ''; res(); }, id2 * 1000 + 20);
+    }, od * 1000);
+  });
 }
+function goTab(id, dir) { if (id === tab) return; cachePage(); slideSwap(id, dir > 0 ? 1 : -1, 0, 0.18); }
 function cachePage() { const m = $('#main'); if (m && m.firstChild) { const d = h('div'); d.append(...[...m.childNodes].map(n => n.cloneNode(true))); pageCache[tab] = d; } }
 function peekNode(id) {
   try {
@@ -504,8 +507,6 @@ function peekNode(id) {
     if (mode === 0) {
       if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.2) {
         mode = 1; document.body.classList.add('swiping'); sx += dx > 0 ? 8 : -8; dx = cx - sx; stage().style.transition = 'none';
-        const idx = TAB_ORDER.indexOf(tab); peeks.l = mkPeek(TAB_ORDER[idx - 1]); peeks.r = mkPeek(TAB_ORDER[idx + 1]);
-        if (window.scrollY > 0) Object.values(peeks).forEach(p => p && (p.style.top = '0px'));
       } else if (Math.abs(dy) > 10) { mode = -1; return; } else return;
     }
     if (e.cancelable) e.preventDefault();
@@ -521,22 +522,10 @@ function peekNode(id) {
     const dir = (Math.abs(vx) > 0.35 ? -Math.sign(vx) : -Math.sign(dx)) || 1;
     const id = TAB_ORDER[idx + dir];
     const go = id && (Math.abs(dx) > W * 0.22 || (Math.abs(vx) > 0.35 && Math.sign(vx) === -dir));
-    const peek = dir > 0 ? peeks.r : peeks.l;
-    if (go && peek && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      busy = true;
-      const rest = W - Math.abs(dx); const dur = Math.max(0.2, Math.min(0.36, rest / Math.max(Math.abs(vx) * 1000 * 0.9, 1400)));
-      document.documentElement.style.setProperty('--tdur', dur + 's');
-      const tr = `transform ${dur}s ${EASE}`;
-      st.style.transition = tr; peek.style.transition = tr;
-      cachePage(); document.body.dataset.tab = id;
-      st.style.transform = `translate3d(${-dir * W}px,0,0)`; peek.style.transform = 'translate3d(0,0,0)';
-      const other = dir > 0 ? peeks.l : peeks.r; if (other) other.remove();
-      setTimeout(() => {
-        st.style.transition = 'none';
-        if (tab === 'nutri' && window.resetNutriState) resetNutriState(); tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, 0);
-        st.style.transform = '';
-        requestAnimationFrame(() => { clearPeeks(); st.style.transition = ''; busy = false; });
-      }, dur * 1000 + 10);
+    if (go) {
+      busy = true; cachePage();
+      const rest = W - Math.abs(dx); const od = Math.max(0.12, Math.min(0.22, rest / Math.max(Math.abs(vx) * 1000, 1600)));
+      slideSwap(id, dir, st.style.transform ? parseFloat(st.style.transform.split('(')[1]) || dx : dx, od).then(() => { busy = false; });
     } else {
       const tr = 'transform .32s cubic-bezier(.2,.9,.3,1.08)';
       st.style.transition = tr; Object.values(peeks).forEach(p => p && (p.style.transition = tr));
