@@ -962,7 +962,7 @@ function openSchedule(r) {
 function ingredientView(r) {
   const ings = (r.ingredients || []).filter(g => g.name);
   if (!ings.length) return grey('Keine Zutaten hinterlegt');
-  return h('div', { class: 'ingview' }, ings.map(g => h('div', null, h('span', { text: g.name }), h('span', { class: 'a', text: g.amount || '' }))));
+  return h('div', { class: 'ingview2' }, ings.map(g => { const [, c] = catStyle(catOf(g.name)); const row = h('div', { class: 'ing2' }, h('span', { class: 'idot' }), h('span', { class: 'in', text: g.name }), g.amount ? h('span', { class: 'ia', text: g.amount.replace(/(\d)([a-zA-Z])/, '$1 $2') }) : null); row.style.setProperty('--ic', c); return row; }));
 }
 function stepsView(r) {
   const st = (r.steps || []).filter(s => s.trim());
@@ -972,9 +972,10 @@ function stepsView(r) {
 function nutritionLine(r) {
   const n = recipeNutrition(r); if (!n.ok) return null;
   const pre = n.unknown.length ? 'ca. ' : '';
-  return h('div', { class: 'nutri' },
-    h('div', null, h('b', { text: `${pre}${fmtInt(n.tot[0])} kcal` }), h('span', { text: ' insgesamt' })),
-    h('div', null, h('b', { text: `${fmtInt(n.per[0])} kcal` }), h('span', { text: ` pro Person / ${fmtInt(n.per[1])} g Eiweiß / ${fmtInt(n.per[2])} g Fett / ${fmtInt(n.per[3])} g Kohlenhydrate` })),
+  const b = (v, u, l, k) => h('div', { class: 'mb ' + k }, h('div', { class: 'mbc' }, h('b', { text: fmtInt(v) }), h('span', { text: u })), h('div', { class: 'mbl', text: l }));
+  return h('div', { class: 'nutri2' },
+    h('div', { class: 'mbs' }, b(n.per[0], 'kcal', 'Energie', 'k'), b(n.per[1], 'g', 'Eiweiß', 'p'), b(n.per[3], 'g', 'Kohlenh.', 'c'), b(n.per[2], 'g', 'Fett', 'f')),
+    h('div', { class: 'n2foot', text: `pro Person / ${pre}${fmtInt(n.tot[0])} kcal für alle ${r.servings || 2} Portionen` }),
     n.unknown.length ? grey('Ohne Werte: ' + n.unknown.join(', ')) : null);
 }
 async function photoOf(r) {
@@ -987,13 +988,14 @@ function openRecipeView(r) {
   const tags = tagsOf(r);
   openSheet(r.title, [
     banner,
-    h('div', { class: 'rtagrow' },
-      h('div', { class: 'rtags' }, h('span', { class: 'pill', text: `für ${r.servings || 2} ${(+r.servings || 2) === 1 ? 'Person' : 'Personen'}` }),
-        ...tags.map(t => h('span', { class: 'pill t', text: t }))),
-      h('button', { class: 'ib sm ghost heart' + (r.fav ? ' on' : ''), 'aria-label': 'Favorit', onclick: e => { toggleFav(r); e.currentTarget.classList.toggle('on'); } }, ic('heart'))),
-    nutritionLine(r),
-    h('label', { class: 'lbl', text: 'Zutaten' }), ingredientView(r),
-    h('label', { class: 'lbl', text: 'Zubereitung' }), stepsView(r),
+    h('div', { class: 'rhero2' },
+      h('div', { class: 'rtagrow' },
+        h('div', { class: 'rtags' }, h('span', { class: 'rchip', text: `für ${r.servings || 2} ${(+r.servings || 2) === 1 ? 'Person' : 'Personen'}` }),
+          ...tags.map(t => h('span', { class: 'rchip', text: t }))),
+        h('button', { class: 'rheart' + (r.fav ? ' on' : ''), 'aria-label': 'Favorit', onclick: e => { toggleFav(r); e.currentTarget.classList.toggle('on'); } }, ic('heart'))),
+      nutritionLine(r)),
+    h('div', { class: 'fsec' }, h('h3', { text: 'Zutaten' }), ingredientView(r)),
+    h('div', { class: 'fsec' }, h('h3', { text: 'Zubereitung' }), stepsView(r)),
     r.source ? h('label', { class: 'lbl', text: 'Link' }) : null, r.source ? h('a', { class: 'link', href: r.source, target: '_blank', rel: 'noopener', text: r.source }) : null,
     h('div', { class: 'actions' },
       (r.steps || []).length ? h('button', { class: 'btn r', onclick: () => cookMode(r) }, 'Kochen') : null,

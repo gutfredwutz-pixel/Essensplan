@@ -877,7 +877,6 @@ html.dark{--hi:inset 0 1px 0 rgba(255,255,255,.12);--lo:inset 0 -2px 6px rgba(0,
 .tabs .mid:not(.on) .bub{box-shadow:inset 0 1.5px 0 rgba(255,255,255,.6),0 8px 16px -10px rgba(91,90,255,.5)!important}
 /* Gedrückt: reinsinken statt nur kleiner */
 button:active,.chip:active,.day:active{filter:none}
-.btn:active,.ib:active,.seg button:active,.day:active,.chip:active,.rcard:active,.tile:active{box-shadow:inset 0 3px 8px rgba(40,50,120,.25),inset 0 0 0 1px var(--glassb)!important}
 /* Kategorie-Kacheln plastischer */
 .tile{box-shadow:inset 0 1.5px 0 rgba(255,255,255,.45),inset 0 -6px 14px rgba(0,0,0,.12),0 12px 22px -12px rgba(40,40,90,.45)!important}
 /* Nährstoff-Kreise mit Wölbung */
@@ -910,7 +909,6 @@ html.dark .item{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--cfg,#8891A5
 .gsrc .gp{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;background-image:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,0) 55%),var(--grad);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 4px 8px -4px rgba(91,90,255,.7)}
 .gsrc .gp svg{width:12px;height:12px}
 .gsrc.on .gp{background:#22B07D}
-.gsrc:active{box-shadow:inset 0 3px 8px rgba(40,50,120,.22),inset 0 0 0 1px var(--glassb)}
 
 /* Runde 18: Tage mit eigener Farbe, Herz, Nährstoff-Kopf */
 .day.wd0{--dh:#4F7BFF}.day.wd1{--dh:#6B5BFF}.day.wd2{--dh:#9A5BF0}.day.wd3{--dh:#D05ACB}.day.wd4{--dh:#EE6A9A}.day.wd5{--dh:#F28A5C}.day.wd6{--dh:#2FB3C6}
@@ -943,6 +941,41 @@ html.dark .ph2ring{background:radial-gradient(circle at 35% 28%,rgba(255,255,255
 .mac.p i{background:linear-gradient(90deg,#EE6A9A,#D05ACB)}
 .mac.c i{background:linear-gradient(90deg,#F2A65C,#F28A5C)}
 .mac.f i{background:linear-gradient(90deg,#2FC6B0,#2FB3C6)}
+
+/* Runde 19: Rezeptansicht, heutiger Tag, Drück-Feedback */
+.rhero2{position:relative;overflow:hidden;border-radius:34px;padding:18px 16px 16px;margin:4px 0 22px;color:#fff;background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0) 45%),linear-gradient(135deg,#4F7BFF 0%,#6B5BFF 45%,#C463E0 100%);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.45),inset 0 -6px 14px rgba(40,20,120,.2),0 18px 34px -16px rgba(91,90,255,.75)}
+.rhero2::after{content:"";position:absolute;right:-50px;top:-60px;width:190px;height:190px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.28),rgba(255,255,255,0) 70%);pointer-events:none}
+.rhero2 .rtagrow{margin:0 0 16px;align-items:center}
+.rchip{font-size:13.5px;font-weight:650;padding:7px 13px;border-radius:99px;background:rgba(255,255,255,.2);box-shadow:inset 0 0 0 1px rgba(255,255,255,.35),inset 0 1px 0 rgba(255,255,255,.4);color:#fff}
+.rheart{flex:none;width:42px;height:42px;border-radius:50%;border:0;display:grid;place-items:center;background:rgba(255,255,255,.22);box-shadow:inset 0 0 0 1px rgba(255,255,255,.4),inset 0 1px 0 rgba(255,255,255,.5);color:#fff;transition:transform .15s}
+.rheart svg{width:18px;height:18px}
+.rheart.on{background:#fff;color:#F0609B}
+.nutri2{position:relative;z-index:1}
+.mbs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.mb{display:flex;flex-direction:column;align-items:center;gap:6px}
+.mbc{width:100%;aspect-ratio:1;max-width:72px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 35% 28%,#fff,rgba(255,255,255,.86) 65%);box-shadow:inset 0 -3px 8px rgba(60,40,140,.15),0 8px 16px -8px rgba(30,20,90,.55)}
+.mbc b{font-size:19px;font-weight:800;line-height:1.05}
+.mbc span{font-size:11px;font-weight:700;color:var(--ink3)}
+.mb.k b{color:#4F5BFF}.mb.p b{color:#D9488C}.mb.c b{color:#E07A3A}.mb.f b{color:#1E9FB0}
+.mbl{font-size:12.5px;font-weight:650;color:rgba(255,255,255,.95)}
+.n2foot{margin-top:12px;text-align:center;font-size:12.5px;color:rgba(255,255,255,.85)}
+.rhero2 .greytxt,.rhero2 .muted{color:rgba(255,255,255,.8)!important}
+html.dark .mbc{background:radial-gradient(circle at 35% 28%,#3A3F66,#262A45 65%)}
+html.dark .mb.k b{color:#9AA4FF}html.dark .mb.p b{color:#FF8DBE}html.dark .mb.c b{color:#FFB07A}html.dark .mb.f b{color:#6FD8E6}
+.ingview2{display:flex;flex-direction:column;gap:8px}
+.ing2{display:flex;align-items:center;gap:12px;padding:10px 10px 10px 14px;border-radius:99px;background:color-mix(in srgb,var(--ic) 10%,var(--card));box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--ic) 35%,transparent)}
+.idot{width:12px;height:12px;border-radius:50%;flex:none;background:var(--ic);box-shadow:0 0 0 4px color-mix(in srgb,var(--ic) 22%,transparent)}
+.ing2 .in{flex:1;font-weight:600;font-size:15.5px}
+.ing2 .ia{font-weight:700;font-size:13.5px;padding:6px 12px;border-radius:99px;background:var(--card);color:color-mix(in srgb,var(--ic) 70%,var(--ink));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ic) 30%,transparent)}
+.stepview .k{background-image:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,0) 55%),var(--grad)!important;color:#fff!important;box-shadow:0 6px 12px -6px rgba(91,90,255,.8)}
+/* heutiger Tag in der Wochenleiste: gefüllt statt unterstrichen */
+.weekcard .dj.today{background-image:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,0) 55%),var(--grad)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 6px 14px -6px rgba(91,90,255,.85)!important}
+.weekcard .dj.today .djl{color:#fff!important;text-decoration:none}
+.weekcard .dj.today .jfill{display:none}
+.weekcard .dj.today.sel{box-shadow:0 0 0 3px var(--card),0 0 0 5px #7B5CFF,0 6px 14px -6px rgba(91,90,255,.85)!important}
+/* Drücken: leicht kleiner und heller, nicht eingedrückt */
+.btn:active,.ib:active,.seg button:active,.day:active,.chip:active,.rcard:active,.tile:active,.gsrc:active,.rheart:active,.dj:active,.backlink:active{transform:scale(.96)!important;filter:brightness(1.06)}
+.btn,.ib,.seg button,.day,.chip,.rcard,.tile,.gsrc,.rheart,.dj,.backlink{transition:transform .16s cubic-bezier(.3,.7,.4,1.4),filter .16s}
 .hidden{display:none!important}
 </style>
 </head>
