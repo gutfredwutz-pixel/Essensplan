@@ -440,7 +440,7 @@ function refreshSet() { if (topSheet === 'set' && $('#ov').classList.contains('o
 const pageCache = {}; let nutriTarget = null;
 function peekLayer() { let l = document.getElementById('peeklayer'); if (!l) { l = h('div', { id: 'peeklayer' }); document.body.appendChild(l); } return l; }
 const stage = () => $('#stage');
-function moveBg(x, tr) { const b = document.querySelector('.blobs'); if (!b) return; b.style.transition = tr || 'none'; b.style.transform = x == null ? '' : `translate3d(${x}px,0,0)`; }
+function moveBg(x, tr) { return; const b = document.querySelector('.blobs'); if (!b) return; b.style.transition = tr || 'none'; b.style.transform = x == null ? '' : `translate3d(${x}px,0,0)`; }
 function stageClone(id, node) {
   const st = stage(); const r = st.getBoundingClientRect();
   const c = st.cloneNode(true); c.removeAttribute('id'); c.classList.add('stageclone');
