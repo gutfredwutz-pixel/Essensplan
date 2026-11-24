@@ -772,6 +772,8 @@ body.swiping :active{transform:none!important;filter:none!important}
 body[data-tab] .blobs .b1{left:calc(100% - var(--bw) * .54)!important;top:16%!important;background:var(--rosa)!important;opacity:.55!important;border-radius:58% 42% 61% 39% / 47% 58% 42% 53%!important}
 body[data-tab] .blobs .b2{left:calc(var(--bw) * -.49)!important;top:calc(100% - var(--bot) - 6% - var(--bh))!important;background:var(--blue-l)!important;opacity:.8!important;border-radius:43% 57% 38% 62% / 56% 41% 59% 44%!important}
 .blobs i{transition:none!important}
+.blobs{will-change:transform}
+.stageclone{opacity:1}
 /* horizontales Wischen bleibt bei der App */
 body{touch-action:pan-y}
 /* Hohe Fenster: Kopf bleibt stehen, Inhalt scrollt darunter */
@@ -813,6 +815,16 @@ html.dark .ov{background:rgba(0,0,0,.35)}
 .npage .dstrip{gap:12px}
 .nutpage .infocard{margin-bottom:18px;padding:18px 20px}
 .nutpage .nuthero{margin-bottom:22px}
+/* Woche als eigene Karte mit runden, gleich verteilten Tagen */
+.weekcard{background:var(--card);border-radius:34px;box-shadow:0 2px 12px var(--shadow);padding:16px 16px 20px}
+.weekcard .pnav{margin:0 0 16px!important}
+.weekcard .pnav .ib{width:40px;height:40px}
+.weekcard .dstrip{display:flex!important;flex-direction:row!important;justify-content:space-between;gap:0!important;padding:0!important}
+.weekcard .dj{width:38px;height:38px;aspect-ratio:auto;border-radius:50%!important;flex:none;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--ink3) 30%,transparent)}
+.weekcard .dj.logged{box-shadow:inset 0 0 0 2px var(--j2)}
+.weekcard .dj.sel{box-shadow:0 0 0 3px var(--card),0 0 0 5px #7B5CFF}
+.weekcard .djl{font-size:12.5px}
+.weekcard .dj .wave{display:none}
 .hidden{display:none!important}
 </style>
 </head>

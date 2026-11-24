@@ -440,6 +440,7 @@ function refreshSet() { if (topSheet === 'set' && $('#ov').classList.contains('o
 const pageCache = {}; let nutriTarget = null;
 function peekLayer() { let l = document.getElementById('peeklayer'); if (!l) { l = h('div', { id: 'peeklayer' }); document.body.appendChild(l); } return l; }
 const stage = () => $('#stage');
+function moveBg(x, tr) { const b = document.querySelector('.blobs'); if (!b) return; b.style.transition = tr || 'none'; b.style.transform = x == null ? '' : `translate3d(${x}px,0,0)`; }
 function stageClone(id, node) {
   const st = stage(); const r = st.getBoundingClientRect();
   const c = st.cloneNode(true); c.removeAttribute('id'); c.classList.add('stageclone');
@@ -463,11 +464,11 @@ function slideSwap(id, dir, fromX, outDur) {
   document.body.dataset.tab = id;
   return new Promise(res => {
     st.style.transition = 'none'; st.style.transform = `translate3d(${fromX || 0}px,0,0)`; void st.offsetWidth;
-    st.style.transition = `transform ${od}s cubic-bezier(.4,0,.8,.6)`; st.style.transform = `translate3d(${-dir * W}px,0,0)`;
+    st.style.transition = `transform ${od}s cubic-bezier(.4,0,.8,.6)`; st.style.transform = `translate3d(${-dir * W}px,0,0)`; moveBg(-dir * W, `transform ${od}s cubic-bezier(.4,0,.8,.6)`);
     setTimeout(() => {
-      st.style.transition = 'none'; swap(); st.style.transform = `translate3d(${dir * W}px,0,0)`; void st.offsetWidth;
-      st.style.transition = `transform ${id2}s ${E}`; st.style.transform = 'translate3d(0,0,0)';
-      setTimeout(() => { st.style.transition = ''; st.style.transform = ''; res(); }, id2 * 1000 + 20);
+      st.style.transition = 'none'; swap(); st.style.transform = `translate3d(${dir * W}px,0,0)`; moveBg(dir * W); void st.offsetWidth;
+      st.style.transition = `transform ${id2}s ${E}`; st.style.transform = 'translate3d(0,0,0)'; moveBg(0, `transform ${id2}s ${E}`);
+      setTimeout(() => { st.style.transition = ''; st.style.transform = ''; moveBg(null); res(); }, id2 * 1000 + 20);
     }, od * 1000);
   });
 }
@@ -488,11 +489,11 @@ function peekNode(id) {
   let sx = 0, sy = 0, mode = 0, dx = 0, raf = 0, peeks = {}, vx = 0, lt = 0, lxp = 0, busy = false;
   const EASE = 'cubic-bezier(.22,.8,.24,1)';
   const clearPeeks = () => { Object.values(peeks).forEach(p => p && p.remove()); peeks = {}; };
-  const resetStage = () => { const st = stage(); st.style.transition = ''; st.style.transform = ''; st.style.visibility = ''; };
+  const resetStage = () => { const st = stage(); st.style.transition = ''; st.style.transform = ''; st.style.visibility = ''; moveBg(null); };
   const mkPeek = id => { if (!id) return null; const node = peekNode(id); return node ? stageClone(id, node) : null; };
   const place = x => {
     const W = window.innerWidth;
-    if (peeks.cur) { peeks.cur.style.transform = `translate3d(${x}px,0,0)`; peeks.cur.style.opacity = String(Math.max(0.35, 1 - Math.abs(x) / W)); } else stage().style.transform = `translate3d(${x}px,0,0)`;
+    if (peeks.cur) { if (mode === 1) moveBg(x); peeks.cur.style.transform = `translate3d(${x}px,0,0)`; } else stage().style.transform = `translate3d(${x}px,0,0)`;
     if (peeks.r) peeks.r.style.transform = `translate3d(${W + x}px,0,0)`;
     if (peeks.l) peeks.l.style.transform = `translate3d(${-W + x}px,0,0)`;
   };
@@ -528,17 +529,17 @@ function peekNode(id) {
       busy = true; cachePage(); document.body.dataset.tab = id;
       const rest = W - Math.abs(dx); const od = Math.max(0.09, Math.min(0.15, rest / Math.max(Math.abs(vx) * 1000, 2600))), id2 = 0.26;
       document.documentElement.style.setProperty('--tdur', (od + id2) + 's');
-      cur.style.transition = `transform ${od}s cubic-bezier(.3,.3,.6,1), opacity ${od}s linear`; cur.style.transform = `translate3d(${-dir * W}px,0,0)`; cur.style.opacity = '0.3';
+      cur.style.transition = `transform ${od}s cubic-bezier(.3,.3,.6,1)`; cur.style.transform = `translate3d(${-dir * W}px,0,0)`; moveBg(-dir * W, `transform ${od}s cubic-bezier(.3,.3,.6,1)`);
       setTimeout(() => {
         st.style.transition = 'none';
         if (tab === 'nutri' && window.resetNutriState) resetNutriState(); tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, 0);
-        st.style.transform = `translate3d(${dir * W}px,0,0)`; st.style.visibility = ''; clearPeeks(); void st.offsetWidth;
-        st.style.transition = `transform ${id2}s ${EASE}`; st.style.transform = 'translate3d(0,0,0)';
+        st.style.transform = `translate3d(${dir * W}px,0,0)`; moveBg(dir * W); st.style.visibility = ''; clearPeeks(); void st.offsetWidth;
+        st.style.transition = `transform ${id2}s ${EASE}`; st.style.transform = 'translate3d(0,0,0)'; moveBg(0, `transform ${id2}s ${EASE}`);
         setTimeout(() => { resetStage(); busy = false; }, id2 * 1000 + 20);
       }, od * 1000);
     } else {
       const tr = 'transform .3s cubic-bezier(.2,.9,.3,1.08)';
-      Object.values(peeks).forEach(p => p && (p.style.transition = tr));
+      Object.values(peeks).forEach(p => p && (p.style.transition = tr)); moveBg(0, tr);
       place(0);
       setTimeout(() => { clearPeeks(); resetStage(); }, 320);
     }

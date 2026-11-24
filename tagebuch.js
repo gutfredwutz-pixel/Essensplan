@@ -114,7 +114,7 @@ function openPersonReport(name, start) {
   content.push(h('button', { class: 'btn grad big quick', onclick: () => openDiary(name, pSel, re) }, ic('microphone'), `${selName} eintragen`));
   content.push(h('div', { class: 'seg wide', style: 'margin-top:14px' }, ...[['day', 'Tag'], ['week', 'Woche']].map(([k, tt]) => h('button', { class: pRange === k ? 'on' : '', onclick: () => { pRange = k; re(); } }, tt))));
   const move = dir => { pSel = ymd(addDays(selD, 7 * dir)); re(); };
-  content.push(h('div', { class: 'pnav' }, h('button', { class: 'ib', 'aria-label': 'Woche davor', onclick: () => move(-1) }, ic('chevron-left')),
+  const wnav = (h('div', { class: 'pnav' }, h('button', { class: 'ib', 'aria-label': 'Woche davor', onclick: () => move(-1) }, ic('chevron-left')),
     h('div', { text: `${ws.getDate()}. ${MON[ws.getMonth()].slice(0, 3)}. bis ${we.getDate()}. ${MON[we.getMonth()].slice(0, 3)}.` }),
     h('button', { class: 'ib', 'aria-label': 'Woche danach', onclick: () => move(1) }, ic('chevron-right'))));
   // Tage der Woche
@@ -126,7 +126,7 @@ function openPersonReport(name, start) {
       x.counted ? fill(Math.max(6, Math.min(100, c))) : null,
       h('span', { class: 'djl', text: WD[(dt.getDay() + 6) % 7] })));
   });
-  content.push(strip);
+  content.push(h('div', { class: 'weekcard' }, wnav, strip));
   // Werte: ein Tag oder Durchschnitt der Woche
   let vals, src, n, scale, sub, meta, opt;
   if (pRange === 'day') {
