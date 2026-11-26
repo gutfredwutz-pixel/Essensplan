@@ -1,0 +1,42 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{margin:0;display:flex;gap:32px;padding:32px;background:#2A2B2E;font-family:Inter,sans-serif;-webkit-font-smoothing:antialiased}
+.cap{font:600 15px Inter;color:#C9CBD1;margin:0 0 10px 6px}
+.ph{width:390px;height:844px;border-radius:48px;overflow:hidden;position:relative;background:#0B0B0C;color:#F2F2F4;--ln:#26262A;--ac:#8FB8A8;--mu:#8E8E96}
+.sb{height:54px;display:flex;justify-content:space-between;align-items:center;padding:0 32px;font-weight:600;font-size:15px}
+.in{padding:14px 20px 0}.d{font-size:15px;color:var(--mu)}h1{font-size:32px;font-weight:700;letter-spacing:-.025em;margin:2px 0 26px}
+.h{display:flex;justify-content:space-between;align-items:baseline;margin:0 4px 8px;font-size:18px;font-weight:650}.h span{font-size:14px;font-weight:500;color:var(--mu)}
+.g{border-top:1px solid var(--ln);border-bottom:1px solid var(--ln);padding:0 4px;margin-bottom:24px}
+.r{display:flex;gap:14px;align-items:center;padding:12px 0;font-size:15.5px}.r+.r{border-top:1px solid var(--ln)}
+.ck{width:20px;height:20px;border-radius:50%;border:1.5px solid #5A5A63;flex:none}.ck.x{background:var(--ac);border-color:var(--ac)}
+.done{color:#6A6A72;text-decoration:line-through}
+.n{margin-left:auto;color:var(--mu);font-size:14px}
+.tl{height:8px;border-radius:4px;background:var(--ln);position:relative;margin:12px 0 6px}.tl i{position:absolute;left:16.7%;right:16.7%;top:0;bottom:0;border-radius:4px;background:var(--ac)}
+.ax{position:relative;height:16px;font-size:12.5px;color:var(--mu)}.ax span{position:absolute;transform:translateX(-50%)}
+.tabs{position:absolute;left:0;right:0;bottom:0;height:84px;padding-bottom:22px;background:#0B0B0C;border-top:1px solid var(--ln);display:flex;justify-content:space-around;align-items:center;font-size:12px;font-weight:600;color:#7A7A83}
+.tabs .on{color:var(--ac)}
+.wk{display:flex;gap:6px;margin-left:auto}.wk i{width:10px;height:10px;border-radius:50%;background:var(--ln)}.wk i.y{background:var(--ac)}
+.bars{display:flex;align-items:flex-end;gap:10px;height:90px;padding:12px 0 4px}.bars div{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11.5px;color:var(--mu)}.bars b{width:100%;border-radius:3px;background:var(--ac);display:block}
+.seg{display:flex;gap:22px;font-size:15px;color:var(--mu);margin:0 4px 22px}.seg .on{color:#F2F2F4;border-bottom:2px solid var(--ac);padding-bottom:4px}
+.big{font-size:30px;font-weight:700;letter-spacing:-.03em}
+.add{color:var(--mu)}
+</style></head><body>
+<script>
+const tabs=o=>`<div class="tabs">${['Start','Essen','To-dos','Statistik','Neues'].map(t=>`<span class="${t==o?'on':''}">${t}</span>`).join('')}</div>`;
+const wk=a=>`<span class="wk">${a.map(x=>`<i class="${x?'y':''}"></i>`).join('')}</span>`;
+const P=(cap,body,on)=>`<div><div class="cap">${cap}</div><div class="ph"><div class="sb"><span>9:41</span><span>5G</span></div><div class="in">${body}</div>${tabs(on)}</div></div>`;
+document.write(
+P('Start',`<div class="d">Donnerstag, 26. November</div><h1>Guten Morgen, Jakob</h1>
+<div class="h">Schlaf<span>7 h 20 min</span></div><div class="g" style="padding:4px 4px 12px"><div class="tl"><i></i></div><div class="ax"><span style="left:16.7%">23:40</span><span style="left:83.3%">7:00</span></div></div>
+<div class="h">Heute<span>3 von 5</span></div><div class="g"><div class="r"><span class="ck"></span>Statistik-Skript abholen</div><div class="r"><span class="ck"></span>Frieda wegen Samstag schreiben</div><div class="r"><span class="ck"></span>10 Seiten lesen<span class="n">Ziel</span></div></div>
+<div class="h">Essen<span>64 % vom Bedarf</span></div><div class="g"><div class="r">Mittag: Linsencurry</div></div>
+<div class="h">Neues<span>6</span></div><div class="g"><div class="r">MVG: U-Bahn-Ausbau in Freiham kommt schneller</div></div>`,'Start')+
+P('To-dos',`<div class="d">Donnerstag, 26. November</div><h1>To-dos</h1>
+<div class="h">Heute<span>3 von 5</span></div><div class="g"><div class="r"><span class="ck"></span>Statistik-Skript abholen</div><div class="r"><span class="ck"></span>Frieda wegen Samstag schreiben</div><div class="r"><span class="ck x"></span><span class="done">Mietüberweisung</span></div><div class="r add">Neues To-do</div></div>
+<div class="h">Ziele jeden Tag<span>diese Woche</span></div><div class="g"><div class="r"><span class="ck"></span>10 Seiten lesen${wk([1,1,0,1,0,0,0])}</div><div class="r"><span class="ck x"></span>2 Liter trinken${wk([1,1,1,1,0,0,0])}</div><div class="r"><span class="ck x"></span>30 min Statistik${wk([1,0,1,1,0,0,0])}</div></div>
+<div class="h">Später<span>4</span></div><div class="g"><div class="r">Fahrrad zur Werkstatt<span class="n">Sa</span></div><div class="r">Geschenk für Mama<span class="n">12. Dez</span></div></div>`,'To-dos')+
+P('Statistik',`<div class="d">Letzte 7 Tage</div><h1>Statistik</h1>
+<div class="seg"><span class="on">Woche</span><span>Monat</span><span>Jahr</span></div>
+<div class="h">Schlaf<span>im Schnitt 7 h 05 min</span></div><div class="g" style="padding-bottom:6px"><div class="bars">${[[78,'Fr'],[60,'Sa'],[85,'So'],[70,'Mo'],[74,'Di'],[66,'Mi'],[80,'Do']].map(([h,d])=>`<div><b style="height:${h*0.7}px"></b>${d}</div>`).join('')}</div></div>
+<div class="h">Ziele<span>71 % geschafft</span></div><div class="g"><div class="r">10 Seiten lesen<span class="n">4 von 7</span></div><div class="r">2 Liter trinken<span class="n">6 von 7</span></div><div class="r">30 min Statistik<span class="n">5 von 7</span></div></div>
+<div class="h">Essen<span>Schnitt vom Bedarf</span></div><div class="g"><div class="r">Kalorien<span class="n">92 %</span></div><div class="r">Eiweiß<span class="n">81 %</span></div></div>`,'Statistik'));
+</script></body></html>
