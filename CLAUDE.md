@@ -31,7 +31,7 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - Start: Schlaf als Zeitstrahl (Jakob mag den, nicht entfernen), Eintragen (Training, Gegessen), Heute (To-dos + Ziele), Vorschlag (was noch fehlt, ohne KI über `suggestFoods`), Essen.
 - Statistik: Schlaf-Balken ab 0 mit 8-h-Linie, Training-Balken, Ziele als Tagesfelder, Kalorien groß, Nährstoffe als Menü mit Unterseiten (Sheets).
 - Einstellungen: Menü mit Unterseiten (`setSub`), zurück per Wischen.
-- Logo: weiß auf Schwarz, zwei Striche, Punkt rechts oberhalb der Mitte (`icons/`).
+- Logo (Entwurf 3, mit Jakob ausgesucht Nov. 2026): zwei weiße Striche, rosa Punkt (`#ff7aa8`) rechts oberhalb, auf Schwarz. Quelle `icons/logo.svg`, PNGs daraus gerendert. Jakob mochte auch die flächige weiße Sonne mit Horizont-Schlitzen.
 - Offen: Nährstoff-Darstellung weiter verbessern (Jakob hat noch Punkte), Training in den Kalorienbedarf einrechnen, News (RSS + KI), Uni-Bereich, CSS aufräumen (viele Überschreib-Blöcke), `app.js` in Module teilen.
 - Nächste große Punkte (mit Jakob besprochen, Ende Nov. 2026):
   1. **News**: Bereiche KI, Wirtschaft (inkl. auffällige Kursbewegungen/boomende Firmen), Politik Deutschland und Welt, ganz unten Weiterbildung/Arbeitsmarkt. Seriöse Quellen (Tagesschau u. a.) per RSS über die Supabase-Funktion, kurze KI-Zusammenfassungen zum Lesen in der Bahn, wenn möglich mit Bild aus dem Artikel.
