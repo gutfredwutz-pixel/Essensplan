@@ -1,0 +1,57 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{margin:0;display:flex;gap:32px;padding:32px;background:#C9CFDB;font-family:Inter,sans-serif;-webkit-font-smoothing:antialiased}
+.ph{width:390px;height:844px;border-radius:48px;overflow:hidden;position:relative;color:#14213A;box-shadow:0 20px 60px rgba(0,0,0,.18)}
+.sb{height:54px;display:flex;justify-content:space-between;align-items:center;padding:0 32px;font-weight:600;font-size:15px}
+.in{padding:14px 22px 0}.d{font-size:15px;color:#66728A}h1{font-size:32px;font-weight:700;letter-spacing:-.025em;margin:2px 0 26px}
+.tabs{position:absolute;left:22px;right:22px;bottom:26px;height:62px;border-radius:40px;display:flex;justify-content:space-around;align-items:center;font-size:12px;font-weight:600;color:#7C879C}
+.tabs .on{color:#14213A}
+.h{display:flex;justify-content:space-between;align-items:baseline;margin:0 4px 10px;font-size:19px;font-weight:650}.h span{font-size:14px;font-weight:500;color:#66728A}
+.r{display:flex;gap:14px;align-items:center;padding:13px 0;font-size:15.5px}.ck{width:21px;height:21px;border-radius:50%;border:2px solid #C9D0DC;flex:none}
+/* V1 iOS-Gruppen */
+.v1{background:#F2F3F7}.v1 .g{background:#fff;border-radius:26px;padding:4px 18px;margin-bottom:26px}.v1 .r+.r{border-top:1px solid #ECEEF3}.v1 .tabs{background:#fff;box-shadow:0 6px 20px rgba(20,33,58,.08)}
+.tl{height:12px;border-radius:99px;background:#ECEEF3;position:relative;margin:14px 0 8px}.tl i{position:absolute;left:12%;right:10%;top:0;bottom:0;border-radius:99px;background:#4A5BD9}
+.ax{display:flex;justify-content:space-between;font-size:12.5px;color:#8A93A6}
+/* V2 nur Typo */
+.v2{background:#FBFBFC}.v2 .big{font-size:56px;font-weight:700;letter-spacing:-.04em;line-height:1}.v2 .lab{font-size:15px;color:#66728A;margin:8px 0 30px}
+.v2 .sec{border-top:1px solid #E7E9EE;padding-top:18px;margin-bottom:24px}.v2 .r{padding:9px 0}.v2 .tabs{background:#F1F2F5}.v2 .tabs .on{color:#2F55D4}
+/* V3 Farbflächen */
+.v3{background:#FFFFFF}.v3 .b{border-radius:30px;padding:18px 20px;margin-bottom:14px}.v3 .b .h{margin:0 0 6px}
+.s1{background:#EBEEFF}.s2{background:#FFF0E8}.s3{background:#E7F6EF}.s4{background:#FAECF4}
+.v3 .n{font-size:30px;font-weight:700;letter-spacing:-.03em}.v3 .ck{border-color:#E9A07E}.v3 .r{padding:8px 0}
+.v3 .tabs{background:#F3F4F7}
+/* V4 Nacht */
+.v4{background:#0E1526;color:#E9EEF8}.v4 .d,.v4 .h span,.v4 .ax{color:#8B97B0}.v4 .g{background:#172036;border-radius:26px;padding:16px 18px;margin-bottom:22px}
+.v4 .tl{background:#243052}.v4 .tl i{background:#8C9BFF}.v4 .ck{border-color:#3A4766}.v4 .r+.r{border-top:1px solid #222C45}.v4 .tabs{background:#172036;color:#6F7C98}.v4 .tabs .on{color:#fff}
+.v4 .n{font-size:34px;font-weight:700;letter-spacing:-.03em}
+.cap{font:600 15px Inter;color:#3B4458;margin:0 0 10px 6px}
+</style></head><body>
+<div><div class="cap">C1 Gruppen wie in iOS</div><div class="ph v1"><div class="sb"><span>9:41</span><span>5G</span></div><div class="in">
+<div class="d">Donnerstag, 26. November</div><h1>Guten Morgen, Jakob</h1>
+<div class="h">Schlaf<span>7 h 20 min</span></div><div class="g" style="padding:16px 18px"><div class="tl"><i></i></div><div class="ax"><span>22 Uhr</span><span>23:40</span><span>7:00</span><span>8 Uhr</span></div></div>
+<div class="h">To-dos<span>3 von 5</span></div><div class="g"><div class="r"><span class="ck"></span>Statistik-Skript abholen</div><div class="r"><span class="ck"></span>Frieda wegen Samstag schreiben</div></div>
+<div class="h">Essen<span>64 % vom Bedarf</span></div><div class="g"><div class="r">Heute: Linsencurry</div><div class="r">Einkaufsliste<span style="margin-left:auto;color:#8A93A6">8</span></div></div>
+</div><div class="tabs"><span class="on">Start</span><span>Essen</span><span>Schlaf</span><span>To-dos</span><span>News</span></div></div></div>
+
+<div><div class="cap">C2 Nur Schrift</div><div class="ph v2"><div class="sb"><span>9:41</span><span>5G</span></div><div class="in">
+<div class="d">Donnerstag, 26. November</div><h1>Guten Morgen, Jakob</h1>
+<div class="big">7:20</div><div class="lab">Stunden geschlafen, 23:40 bis 7:00 Uhr</div>
+<div class="sec"><div class="h">To-dos<span>3 von 5</span></div><div class="r"><span class="ck"></span>Statistik-Skript abholen</div><div class="r"><span class="ck"></span>Frieda wegen Samstag schreiben</div></div>
+<div class="sec"><div class="h">Essen<span>64 %</span></div><div class="r">Linsencurry, 8 Dinge auf der Liste</div></div>
+<div class="sec"><div class="h">Nachrichten<span>6</span></div><div class="r">MVG: U-Bahn-Ausbau in Freiham kommt schneller</div></div>
+</div><div class="tabs"><span class="on">Start</span><span>Essen</span><span>Schlaf</span><span>To-dos</span><span>News</span></div></div></div>
+
+<div><div class="cap">C3 Zarte Farbflächen</div><div class="ph v3"><div class="sb"><span>9:41</span><span>5G</span></div><div class="in">
+<div class="d">Donnerstag, 26. November</div><h1>Guten Morgen, Jakob</h1>
+<div class="b s1"><div class="h">Schlaf<span>23:40 bis 7:00</span></div><div class="n">7 h 20 min</div></div>
+<div class="b s2"><div class="h">To-dos<span>3 von 5</span></div><div class="r"><span class="ck"></span>Statistik-Skript abholen</div><div class="r"><span class="ck"></span>Frieda wegen Samstag schreiben</div></div>
+<div class="b s3"><div class="h">Essen<span>64 % vom Bedarf</span></div><div class="r">Linsencurry</div></div>
+<div class="b s4"><div class="h">Nachrichten<span>6 neu</span></div></div>
+</div><div class="tabs"><span class="on">Start</span><span>Essen</span><span>Schlaf</span><span>To-dos</span><span>News</span></div></div></div>
+
+<div><div class="cap">C4 Nachtblau</div><div class="ph v4"><div class="sb"><span>9:41</span><span>5G</span></div><div class="in">
+<div class="d">Donnerstag, 26. November</div><h1>Guten Morgen, Jakob</h1>
+<div class="g"><div class="h" style="margin:0 0 4px">Schlaf<span>23:40 bis 7:00</span></div><div class="n">7 h 20 min</div><div class="tl"><i></i></div></div>
+<div class="h">To-dos<span>3 von 5</span></div><div class="g" style="padding:4px 18px"><div class="r"><span class="ck"></span>Statistik-Skript abholen</div><div class="r"><span class="ck"></span>Frieda wegen Samstag schreiben</div></div>
+<div class="h">Essen<span>64 %</span></div><div class="g" style="padding:4px 18px"><div class="r">Linsencurry</div></div>
+</div><div class="tabs"><span class="on">Start</span><span>Essen</span><span>Schlaf</span><span>To-dos</span><span>News</span></div></div></div>
+</body></html>
