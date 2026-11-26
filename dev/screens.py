@@ -38,13 +38,14 @@ async def main():
               const d={}; d[t]=true; await db.collection('goals').doc('g1').set({who:'Jakob',title:'10 Seiten lesen',days:{},created:1});
               const nv=window.NUTRI['haferflocken']||Object.values(window.NUTRI)[0]; await db.collection('diary').doc('Jakob_'+t).set({foods:[{name:'Haferflocken',gr:80,v:nv}]});
               const dd2={}; for(let i=0;i<7;i+=2) dd2[ymd(addDays(new Date(),-i))]=true; await db.collection('goals').doc('g3').set({who:'Jakob',title:'30 min Statistik',days:dd2,created:1});
+              for (const [i,m,k] of [[0,45,'kraft'],[2,30,'ausdauer'],[3,60,'kraft'],[5,40,'kraft']]) { const d=ymd(addDays(new Date(),-i)); await db.collection('training').doc('tr'+i).set({who:'Jakob',date:d,kind:k,min:m}); }
               await db.collection('goals').doc('g2').set({who:'Jakob',title:'2 Liter trinken',days:d,created:2});
             })()"""); await pg.wait_for_timeout(500)
             for i, name in enumerate(['start', 'statistik', 'essen', 'todos', 'news']):
                 await pg.click(f'.tabs button >> nth={i}'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / f'{name}.png'), full_page=(name in ('statistik', 'todos')))
             await pg.click('.tabs button >> nth=2'); await pg.wait_for_timeout(500)
-            for name in ['Liste', 'Rezepte']:
-                await pg.click(f'#fseg >> text={name}'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / f'essen_{name.lower()}.png'))
+            await pg.click('#cart'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'essen_liste.png'))
+            await pg.click('#fseg >> text=Rezepte'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'essen_rezepte.png'))
             await pg.click('.tabs button >> nth=0'); await pg.wait_for_timeout(600); await pg.click('#gear'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'einstellungen.png'))
             await pg.click('.setmenu >> text=Nie auf die Liste'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'einstellungen_nie.png'))
             await pg.evaluate("closeSheet()"); await pg.click('.tabs button >> nth=1'); await pg.wait_for_timeout(600); await pg.click('.ln.menu >> text=Vitamine'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'vitamine.png'))

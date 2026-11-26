@@ -1496,6 +1496,19 @@ html.dark .field,html.dark .inp{background:#1C1C1E!important;border:0!important}
 :root,html.dark{--ac:#F2F2F4;--blue:#F2F2F4;--blue-d:#F2F2F4;--blue-l:#2C2C2E;--grad:#F2F2F4;--c-food:#F2F2F4}
 .btn.p,.btn.grad,.ib.p{background:#F2F2F4!important;color:#000!important}
 .tabs button{color:#636366!important}.tabs button.on{color:#F2F2F4!important}
+/* Schritt 6: mehr Luft, Einkaufswagen, Training */
+.pg{padding-top:22px!important}
+.sh{margin:0 4px 10px!important}
+.ln,.ln.pad{margin-bottom:40px!important}
+.useg{padding-top:14px!important}
+#cart,[data-cid=cart]{margin-left:auto;width:44px;height:44px;background:none!important;box-shadow:none!important;color:#8E8E93!important;border:0}
+#cart.on,[data-cid=cart].on{color:#F2F2F4!important}
+#cart svg,[data-cid=cart] svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.train .bars b{background:#F2F2F4!important;opacity:.85}
+.train .bars{height:128px}
+html.dark #gear,html.dark [data-cid=gear],#gear{background:none!important;background-image:none!important;box-shadow:none!important;border:0!important;color:#8E8E93!important;width:44px!important;height:44px!important}
+#gear::before,#gear::after,[data-cid=gear]::before,[data-cid=gear]::after{display:none!important}
+#gear .fa,[data-cid=gear] .fa{width:22px;height:22px}
 </style>
 </head>
 <body data-tab="start">
@@ -1507,6 +1520,7 @@ html.dark .field,html.dark .inp{background:#1C1C1E!important;border:0!important}
     <div id="art"></div>
     <h1 id="title">Essenswoche</h1>
     <span class="status" id="status"></span>
+    <button class="ib cartb hidden" id="cart" aria-label="Einkaufsliste" onclick="if(tab!=='list')goTab('list',-1);else goTab(foodSub==='list'?'cal':foodSub,1)"></button>
     <button class="ib gearb hidden" id="gear" aria-label="Einstellungen" onclick="openTop('set')"></button>
     <button class="av big hidden" id="who" aria-label="Ich und Nährstoffe" onclick="openTop('nutri')"></button>
   </div>

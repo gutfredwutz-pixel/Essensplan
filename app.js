@@ -63,7 +63,7 @@ function catOf(name) {
 /* ============ Zustand ============ */
 let db = null, sample = null, dict = null, userCap = null, canWrite = true;
 let items = [], plan = [], recipes = [], known = new Map(), profiles = {}, diary = {};
-let todos = [], goals = [], sleeps = []; const PAGES = {}; // Seiten aus start.js
+let todos = [], goals = [], sleeps = [], trainings = []; const PAGES = {}; // Seiten aus start.js
 let tab = 'start', view = 'week', anchor = (() => { const t = dayOnly(new Date()); try { return localStorage.getItem('ep_weekstart') === 'mo' ? new Date(t.getFullYear(), t.getMonth(), t.getDate() - ((t.getDay() + 6) % 7)) : t; } catch (e) { return t; } })(), monthAnchor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 let loaded = { items: false, plan: false, recipes: false };
 try { const s = localStorage.getItem('ep_view'); if (s === 'month' || s === 'week') view = s; } catch (e) { }
@@ -124,7 +124,7 @@ function startData() {
   const done = () => { if (loaded.items && loaded.plan && loaded.recipes) { clearTimeout(timer); setStatus(''); } };
   const sub = (name, set) => db.collection(name).onSnapshot(snap => { set(snap.docs.map(x => ({ id: x.id, ...x.data() }))); loaded[name] = true; done(); render(); }, e => { lastErr = (e && (e.message || e.code)) || ''; setStatus('Fehler beim Laden'); console.error(e); });
   sub('items', v => items = v); sub('plan', v => plan = v); sub('recipes', v => recipes = v);
-  sub('todos', v => todos = v); sub('goals', v => goals = v); sub('sleep', v => sleeps = v);
+  sub('todos', v => todos = v); sub('goals', v => goals = v); sub('sleep', v => sleeps = v); sub('training', v => trainings = v);
   db.collection('known').onSnapshot(snap => { known = new Map(snap.docs.map(x => [x.id, x.data()])); });
   db.collection('settings').onSnapshot(snap => { const d = snap.docs.find(x => x.id === 'household'); hhSet = d ? d.data() : {}; if (tab === 'set') render(); });
   db.collection('profiles').onSnapshot(snap => { profiles = Object.fromEntries(snap.docs.map(x => [x.id, x.data()])); });
@@ -447,6 +447,7 @@ function renderHead() {
   const a = $('#art'); a.replaceChildren(); if (ART[tab]) a.append(svgEl(ART[tab])); $('#title').textContent = tab === 'start' && window.startTitle ? startTitle() : TITLES[tab] || ''; renderFoodSeg(); const kk = $('#kicker'); if (kk) { const n = statRange === 'week' ? 7 : statRange === 'month' ? 30 : 365; kk.textContent = tab === 'stat' ? (n === 365 ? 'Letzte 12 Monate' : `Letzte ${n} Tage`) : longDate(ymd(new Date())); }
   const w = $('#who'); const m = me(); w.classList.toggle('hidden', !household); w.style.background = colorOf(m); w.textContent = (m || '?')[0];
   const gr = $('#gear'); if (gr && !gr.firstChild) gr.append(ic('gear')); if (gr) gr.classList.toggle('hidden', !household || tab !== 'start');
+  const ct = $('#cart'); if (ct) { if (!ct.firstChild) ct.append(svgEl('<svg class="ti" viewBox="0 0 24 24"><path d="M3 4h2.2l2.3 10.5a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H6.3"/><circle cx="9.5" cy="19" r="1.3"/><circle cx="16.5" cy="19" r="1.3"/></svg>')); ct.classList.toggle('hidden', !FOOD.includes(tab)); ct.classList.toggle('on', tab === 'list'); }
   document.body.dataset.tab = tab;
 }
 function renderTabs() {
@@ -487,7 +488,7 @@ function renderFoodSeg() {
   f.classList.toggle('hidden', !FOOD.includes(tab) && tab !== 'stat');
   if (tab === 'stat') { f.replaceChildren(...[['week', 'Woche'], ['month', 'Monat'], ['year', 'Jahr']].map(([k, l]) => h('button', { class: k === statRange ? 'on' : '', onclick: () => { statRange = k; renderHead(); render(); } }, l))); return; }
   if (!FOOD.includes(tab)) return;
-  f.replaceChildren(...[['list', 'Liste'], ['cal', 'Woche'], ['rec', 'Rezepte']].map(([id, l]) => h('button', { class: id === tab ? 'on' : '', onclick: () => { if (id !== tab) goTab(id, FOOD.indexOf(id) - FOOD.indexOf(tab)); } }, l)));
+  f.replaceChildren(...[['cal', 'Woche'], ['rec', 'Rezepte']].map(([id, l]) => h('button', { class: id === tab ? 'on' : '', onclick: () => { if (id !== tab) goTab(id, FOOD.indexOf(id) - FOOD.indexOf(tab)); } }, l)));
 }
 let topSheet = null, setSub = null;
 function openTop(id) {

@@ -131,6 +131,46 @@ function mealTip() {
     foods.length ? h('div', { class: 'foods', text: 'Passt gut: ' + foods.join(', ') }) : null)];
 }
 
+
+/* ---------- Eintragen: Schlaf, Training, Gegessen ---------- */
+const TRAIN = [['kraft', 'Kraft'], ['ausdauer', 'Ausdauer'], ['sonst', 'Sonstiges']];
+function trainOf(date) { return trainings.filter(x => x.who === me() && x.date === date); }
+function trainMin(date) { return trainOf(date).reduce((a, x) => a + (x.min || 0), 0); }
+function inputBlock() {
+  const t = today(), sm = sleepMinutes(sleepOf(t)), tr = trainOf(t), pf = profiles[me()];
+  const kc = pf ? Math.round(dayIntake(me(), t).tot[0]) : 0, logged = !!diary[me() + '_' + t];
+  const trTxt = tr.length ? tr.map(x => `${x.min} min ${(TRAIN.find(k => k[0] === x.kind) || ['', ''])[1]}`).join(', ') : '';
+  const row = (label, val, fn) => lrow({ class: 'lr tap', onclick: fn }, h('span', { class: 'tx', text: label }), h('span', { class: 'n', text: val || 'Eintragen' }), h('span', { class: 'chev', text: '›' }));
+  return [secHead('Eintragen'), h('div', { class: 'ln' },
+    row('Schlaf', sm != null ? hm(sm) : '', openSleep),
+    row('Training', trTxt, () => openTraining()),
+    row('Gegessen', logged ? `${de(kc)} kcal` : '', () => openDiary(me(), t, render)))];
+}
+function openTraining() {
+  const d = today(), id = `${slug(me())}_${d}_${Date.now()}`;
+  let kind = 'kraft';
+  const mi = h('input', { class: 'inp', type: 'number', inputmode: 'numeric', placeholder: 'Minuten', value: '' });
+  const kinds = h('div', { class: 'chips' });
+  const drawK = () => kinds.replaceChildren(...TRAIN.map(([k, l]) => h('button', { class: 'cp' + (k === kind ? ' on' : ''), onclick: () => { kind = k; drawK(); save(); } }, l)));
+  const save = () => { const m = parseInt(mi.value, 10); if (m > 0) db.collection('training').doc(id).set({ who: me(), date: d, kind, min: m }); };
+  mi.addEventListener('input', save); drawK();
+  const list = trainOf(d);
+  openSheet('Training', [h('div', { class: 'form' }, kinds, h('label', { class: 'fl' }, h('span', { text: 'Dauer' }), mi),
+    list.length ? h('div', { class: 'sheetnote', text: 'Heute schon: ' + list.map(x => `${x.min} min ${(TRAIN.find(k => k[0] === x.kind) || ['', ''])[1]}`).join(', ') }) : null,
+    ...list.map(x => h('button', { class: 'btn g sm', style: 'align-self:flex-start', onclick: () => { db.collection('training').doc(x.id).delete(); closeSheet(); } }, `${x.min} min löschen`)))]);
+  setTimeout(() => mi.focus(), 300);
+}
+function trainBars(days) {
+  let groups;
+  if (statRange === 'year') { const by = {}; days.forEach(d => { const k = d.slice(0, 7); (by[k] = by[k] || []).push(d); }); groups = Object.keys(by).sort().slice(-12).map(k => ({ lbl: MON[+k.slice(5) - 1][0], days: by[k] })); }
+  else groups = days.map((d, i) => ({ lbl: statRange === 'week' ? WD[(parseYmd(d).getDay() + 6) % 7] : (i % 5 === 4 ? String(parseYmd(d).getDate()) : ''), days: [d] }));
+  const vals = groups.map(g => g.days.reduce((a, d) => a + trainMin(d), 0)), total = vals.reduce((a, b) => a + b, 0);
+  const n = days.reduce((a, d) => a + trainOf(d).length, 0), max = Math.max(60, ...vals);
+  return [secHead('Training', total ? `${n} mal, ${hm(total)}` : null),
+    h('div', { class: 'ln tap train', onclick: () => openTraining() }, total ? h('div', { class: 'bars' + (statRange === 'month' ? ' thin' : '') }, ...groups.map((g, k) => h('div', {}, h('b', { style: `height:${vals[k] ? Math.max(4, vals[k] / max * 96) : 0}px` }), h('span', { text: g.lbl }))))
+      : h('div', { class: 'add', text: 'Noch kein Training eingetragen' }))];
+}
+
 /* ---------- Start, To-dos, News ---------- */
 PAGES.start = function () {
   const t = today(), td = todayTodos(), gl = mine(goals);
@@ -138,13 +178,12 @@ PAGES.start = function () {
   const all = td.length + gl.length, open = openT.length + openG.length;
   const meals = planOn(t), shop = items.filter(i => !i.checked).length;
   return h('div', { class: 'pg' },
-    ...sleepBlock(),
+    ...inputBlock(),
     secHead('Heute', all ? `${all - open} von ${all}` : null),
     h('div', { class: 'ln todo' }, ...openT.map(x => todoRow(x)), ...openG.map(goalRow), addRow('Neues To-do', s => addTodo(s))),
     ...mealTip(),
     secHead('Essen'),
     h('div', { class: 'ln food' }, ...meals.map(p => lrow({ class: 'lr tap', onclick: () => goTab('cal', 1) }, h('span', { class: 'tx', text: p.title || (recipeOf(p) || {}).title || '' }), p.meal ? h('span', { class: 'n', text: p.meal }) : null)),
-      lrow({ class: 'lr tap', onclick: () => openDiary(me(), t, render) }, h('span', { class: 'tx', text: 'Gegessen eintragen' }), h('span', { class: 'n', text: '›' })),
       lrow({ class: 'lr tap', onclick: () => goTab('list', 1) }, h('span', { class: 'tx', text: 'Einkaufsliste' }), h('span', { class: 'n', text: shop ? String(shop) : 'leer' }))));
 };
 PAGES.todo = function () {
@@ -219,4 +258,4 @@ function nutStats(days) {
     lrow({ class: 'lr tap', onclick: () => { cachePage(); tab = 'nutri'; renderTabs(); render(); window.scrollTo(0, 0); } }, h('span', { class: 'tx', text: 'Einzelne Tage' }), h('span', { class: 'chev', text: '›' }))));
   return out;
 }
-PAGES.stat = function () { const days = statDays(); return h('div', { class: 'pg' }, ...sleepBars(days), ...goalStats(days), ...nutStats(days)); };
+PAGES.stat = function () { const days = statDays(); return h('div', { class: 'pg' }, ...sleepBars(days), ...trainBars(days), ...goalStats(days), ...nutStats(days)); };
