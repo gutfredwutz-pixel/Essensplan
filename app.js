@@ -243,7 +243,7 @@ applyTheme();
 function openSettings() { openTop('set'); }
 function aiCard() {
   const st = h('span', { class: 'aist', text: aiState === true ? 'Verbunden' : aiState === false ? 'Aus' : 'Noch nicht geprüft' });
-  const test = h('button', { class: 'btn s sm', onclick: async () => { st.textContent = 'Prüfe …'; const was = aiState; if (aiState === false && LS.get('ep_ai') !== 'off') aiState = null; const d = await aiCall('ping', {}); st.textContent = d ? 'Verbunden' : 'Nicht erreichbar'; if (!d && was !== false) aiState = null; } }, 'Prüfen');
+  const test = h('button', { class: 'btn s sm', onclick: async () => { st.textContent = 'Prüfe …'; const was = aiState; if (aiState === false && LS.get('ep_ai') !== 'off') aiState = null; const d = await aiCall('ping', {}); st.textContent = !d ? 'Nicht erreichbar' : (d.claude === false ? 'Claude-Schlüssel fehlt' : 'Verbunden') + (d.speech ? ', Sprache in der Cloud' : d.speech === false ? ', Sprache auf dem iPhone' : ''); if (!d && was !== false) aiState = null; } }, 'Prüfen');
   const sw = h('div', { class: 'seg wide' }, ...[['an', 'An'], ['off', 'Aus']].map(([k, t]) => h('button', { class: (LS.get('ep_ai') === 'off') === (k === 'off') ? 'on' : '', onclick: () => { LS.set('ep_ai', k); aiState = k === 'off' ? false : null; refreshSet(); } }, t)));
   return h('div', { class: 'setcard b' }, h('div', { class: 'settitle', text: 'KI' }), h('div', { class: 'muted setnote', text: 'Liest Rezepte aus Videos, Fotos und Sprache und versteht, was du ins Tagebuch sprichst. Ohne KI arbeitet die App mit festen Regeln.' }), sw, h('div', { class: 'row', style: 'justify-content:space-between;margin-top:12px' }, st, test));
 }
@@ -1991,7 +1991,24 @@ async function decodeAudio16k(file) {
   const src = off.createBufferSource(); src.buffer = audio; src.connect(off.destination); src.start(0, 0, len);
   const r = await off.startRendering(); return r.getChannelData(0);
 }
+// Spracherkennung: zuerst ElevenLabs Scribe über einen Einmal-Schlüssel der Supabase-Funktion, sonst Whisper auf dem Gerät
+let cloudStt = null;
+async function cloudTranscribe(file, onProg, lang) {
+  if (cloudStt === false || aiState === false) return null;
+  const tk = await aiCall('stt_token', {}); if (!tk || !tk.token) { cloudStt = false; return null; }
+  if (onProg) onProg('Erkenne Sprache …');
+  const fd = new FormData();
+  fd.append('file', file, file.name || ('aufnahme.' + ((file.type || '').includes('webm') ? 'webm' : 'm4a')));
+  fd.append('model_id', 'scribe_v3'); if (lang) fd.append('language_code', lang); fd.append('tag_audio_events', 'false');
+  const r = await fetch('https://api.elevenlabs.io/v1/speech-to-text?token=' + encodeURIComponent(tk.token), { method: 'POST', body: fd });
+  if (!r.ok) { console.warn('Scribe', r.status, await r.text().catch(() => '')); return null; }
+  const j = await r.json(); cloudStt = true; return (j.text || '').trim();
+}
 window.transcribeVideo = async (file, onProg) => {
+  try { const isVid = (file.type || '').startsWith('video'); const t = await cloudTranscribe(file, onProg, isVid ? null : 'de'); if (t != null) return t; } catch (e) { console.warn('Cloud-Spracherkennung', e); }
+  return transcribeLocal(file, onProg);
+};
+async function transcribeLocal(file, onProg) {
   onProg && onProg('Lese Tonspur …');
   const pcm = await decodeAudio16k(file);
   let peak = 0; for (let i = 0; i < pcm.length; i += 160) peak = Math.max(peak, Math.abs(pcm[i]));

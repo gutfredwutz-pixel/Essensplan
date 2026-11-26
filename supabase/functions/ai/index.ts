@@ -1,6 +1,7 @@
 // Supabase Edge Function "ai": leitet Anfragen der App an Claude weiter.
 // Der API-Schlüssel liegt nur hier als Secret ANTHROPIC_API_KEY, nie in der App.
 const KEY = Deno.env.get('ANTHROPIC_API_KEY') ?? '';
+const XI = Deno.env.get('ELEVENLABS_API_KEY') ?? '';
 const MODEL = 'claude-haiku-5-5';
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -11,7 +12,7 @@ const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { sta
 
 const TOOLS: Record<string, { system: string; tool: Record<string, unknown> }> = {
   recipe: {
-    system: 'Du liest Rezepte aus Text, Untertiteln, gesprochener Sprache und Bildern (Standbilder aus Kochvideos in zeitlicher Reihenfolge, Fotos von Rezepten). Eingeblendete Untertitel und Texte in den Bildern gehören zum Rezept, lies sie alle. Antworte immer auf Deutsch. Zutaten mit deutschen Supermarkt-Namen in Grundform (z. B. "Zwiebeln", "Hackfleisch", "Sahne"), Mengen in g, ml, EL, TL oder Stück. Fehlt eine Menge, schätze eine übliche. Schritte kurz und klar. Erfinde nichts, was nicht zum Rezept passt. Wenn es eine Spracheingabe ist, korrigiere offensichtliche Hörfehler.',
+    system: 'Du liest Rezepte aus Text, Untertiteln, gesprochener Sprache und Bildern (Standbilder aus Kochvideos in zeitlicher Reihenfolge, Fotos von Rezepten). Eingeblendete Untertitel und Texte in den Bildern gehören zum Rezept, lies sie alle. Schreibe die Zubereitung als vollständige, nachkochbare Schritte in der richtigen Reihenfolge. Nutze dafür auch, was du in den Bildern siehst, selbst wenn es nicht gesagt wird: was in welche Pfanne oder welchen Topf kommt, wie stark angebraten wird, wann etwas fertig aussieht, welche Werkzeuge benutzt werden. Ergänze fehlende Hitze, Zeiten und Garzustände mit üblichen Werten, aber erfinde keine Zutaten, die nicht vorkommen. Jeder Schritt ein bis zwei klare Sätze. Antworte immer auf Deutsch. Zutaten mit deutschen Supermarkt-Namen in Grundform (z. B. "Zwiebeln", "Hackfleisch", "Sahne"), Mengen in g, ml, EL, TL oder Stück. Fehlt eine Menge, schätze eine übliche. Schritte kurz und klar. Erfinde nichts, was nicht zum Rezept passt. Wenn es eine Spracheingabe ist, korrigiere offensichtliche Hörfehler.',
     tool: {
       name: 'rezept', description: 'Das erkannte Rezept',
       input_schema: { type: 'object', properties: {
@@ -37,17 +38,24 @@ const TOOLS: Record<string, { system: string; tool: Record<string, unknown> }> =
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   try {
-    if (!KEY) return json({ ok: false, error: 'Kein API-Schlüssel hinterlegt' }, 500);
     const body = await req.json();
     const task = String(body.task || '');
-    if (task === 'ping') return json({ ok: true, data: 'ok' });
+    if (task === 'ping') return json({ ok: true, data: { claude: !!KEY, speech: !!XI } });
+    if (task === 'stt_token') {
+      if (!XI) return json({ ok: false, error: 'Kein Spracherkennungs-Schlüssel' });
+      const t = await fetch('https://api.elevenlabs.io/v1/single-use-token/batch_scribe', { method: 'POST', headers: { 'xi-api-key': XI } });
+      const tj = await t.json();
+      if (!t.ok || !tj.token) return json({ ok: false, error: tj?.detail?.message || 'Token-Fehler' }, 502);
+      return json({ ok: true, data: { token: tj.token } });
+    }
+    if (!KEY) return json({ ok: false, error: 'Kein API-Schlüssel hinterlegt' }, 500);
     const cfg = TOOLS[task]; if (!cfg) return json({ ok: false, error: 'Unbekannte Aufgabe' }, 400);
     const text = String(body.text || '').slice(0, 20000);
     const frames: string[] = Array.isArray(body.frames) ? body.frames.slice(0, 48) : [];
     if (frames.some((f) => typeof f !== 'string' || f.length > 700000)) return json({ ok: false, error: 'Bild zu groß' }, 400);
     const context = String(body.context || '').slice(0, 4000);
     const content = [
-      ...frames.map((data) => ({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } })),
+      ...frames.flatMap((data, k) => [{ type: 'text', text: `Bild ${k + 1} von ${frames.length}` }, { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } }]),
       { type: 'text', text: (context ? context + '\n\n' : '') + (text ? 'Text:\n' + text : 'Lies das Rezept aus den Bildern.') },
     ];
     const r = await fetch('https://api.anthropic.com/v1/messages', {
