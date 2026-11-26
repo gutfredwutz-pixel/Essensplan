@@ -20,23 +20,32 @@ function sleepMinutes(s) { const b = toMin(s && s.bed), w = toMin(s && s.wake); 
 function sleepBlock() {
   const s = sleepOf(today()), m = sleepMinutes(s);
   const head = secHead('Schlaf', m != null ? hm(m) : null);
-  if (m == null) return [head, lines(lrow({ class: 'lr tap', onclick: openSleep }, h('span', { class: 'add', text: 'Letzte Nacht eintragen' })))];
+  if (m == null) return [head, lines(lrow({ class: 'lr tap', onclick: () => openSleep() }, h('span', { class: 'add', text: 'Letzte Nacht eintragen' })))];
   // Zeitstrahl von 21 bis 10 Uhr
   const pos = t => { let v = toMin(t) - 21 * 60; if (v < 0) v += 1440; return Math.max(0, Math.min(100, v / (13 * 60) * 100)); };
   const l = pos(s.bed), r = pos(s.wake);
-  return [head, h('div', { class: 'ln pad tap sleep', onclick: openSleep },
+  return [head, h('div', { class: 'ln pad tap sleep', onclick: () => openSleep() },
     h('div', { class: 'tl' }, h('i', { style: `left:${l}%;right:${100 - r}%` })),
     h('div', { class: 'ax' }, h('span', { style: `left:${l}%`, text: s.bed }), h('span', { style: `left:${r}%`, text: s.wake })))];
 }
-function openSleep() {
-  const d = today(), s = sleepOf(d) || {};
-  const save = () => { if (bi.value && wi.value) db.collection('sleep').doc(`${slug(me())}_${d}`).set({ who: me(), date: d, bed: bi.value, wake: wi.value }); };
-  const bi = h('input', { class: 'inp', type: 'time', value: s.bed || '23:30', onchange: save });
-  const wi = h('input', { class: 'inp', type: 'time', value: s.wake || '07:00', onchange: save });
-  openSheet('Letzte Nacht', [h('div', { class: 'form' },
-    h('label', { class: 'fl' }, h('span', { text: 'Eingeschlafen' }), bi),
-    h('label', { class: 'fl' }, h('span', { text: 'Aufgewacht' }), wi))]);
-  save();
+function dayPicker(d, onChange) {
+  const di = h('input', { class: 'inp', type: 'date', value: d, max: today(), onchange: e => onChange(e.target.value || today()) });
+  return di;
+}
+function openSleep(d0) {
+  let d = d0 || today();
+  const draw = () => {
+    const s = sleepOf(d) || {};
+    const save = () => { if (bi.value && wi.value) db.collection('sleep').doc(`${slug(me())}_${d}`).set({ who: me(), date: d, bed: bi.value, wake: wi.value }); };
+    const bi = h('input', { class: 'inp', type: 'time', value: s.bed || '23:30', onchange: save });
+    const wi = h('input', { class: 'inp', type: 'time', value: s.wake || '07:00', onchange: save });
+    openSheet('Schlaf', [h('div', { class: 'form' },
+      h('label', { class: 'fl' }, h('span', { text: 'Nacht auf' }), dayPicker(d, v => { d = v; draw(); })),
+      h('label', { class: 'fl' }, h('span', { text: 'Eingeschlafen' }), bi),
+      h('label', { class: 'fl' }, h('span', { text: 'Aufgewacht' }), wi),
+      h('button', { class: 'btn p done', onclick: () => { save(); closeSheet(); render(); } }, 'Fertig'))]);
+  };
+  draw();
 }
 
 /* ---------- To-dos ---------- */
@@ -145,20 +154,25 @@ function inputBlock() {
     row('Training', trTxt, () => openTraining()),
     row('Gegessen', logged ? `${de(kc)} kcal` : '', () => openDiary(me(), t, render)))];
 }
-function openTraining() {
-  const d = today(), id = `${slug(me())}_${d}_${Date.now()}`;
-  let kind = 'kraft';
-  const mi = h('input', { class: 'inp', type: 'number', inputmode: 'numeric', placeholder: 'Minuten', value: '' });
-  const kinds = h('div', { class: 'chips' });
-  const drawK = () => kinds.replaceChildren(...TRAIN.map(([k, l]) => h('button', { class: 'cp' + (k === kind ? ' on' : ''), onclick: () => { kind = k; drawK(); save(); } }, l)));
-  const save = () => { const m = parseInt(mi.value, 10); if (m > 0) db.collection('training').doc(id).set({ who: me(), date: d, kind, min: m }); };
-  mi.addEventListener('input', save); drawK();
-  const list = trainOf(d);
-  openSheet('Training', [h('div', { class: 'form' }, kinds, h('label', { class: 'fl' }, h('span', { text: 'Dauer' }), mi),
-    list.length ? h('div', { class: 'sheetnote', text: 'Heute schon: ' + list.map(x => `${x.min} min ${(TRAIN.find(k => k[0] === x.kind) || ['', ''])[1]}`).join(', ') }) : null,
-    ...list.map(x => h('button', { class: 'btn g sm', style: 'align-self:flex-start', onclick: () => { db.collection('training').doc(x.id).delete(); closeSheet(); } }, `${x.min} min löschen`)))]);
-  setTimeout(() => mi.focus(), 300);
+function openTraining(d0) {
+  let d = d0 || today(), kind = 'kraft';
+  const draw = () => {
+    const id = `${slug(me())}_${d}_${Date.now()}`;
+    const mi = h('input', { class: 'inp', type: 'number', inputmode: 'numeric', placeholder: 'Minuten', value: '' });
+    const kinds = h('div', { class: 'chips' });
+    const save = () => { const m = parseInt(mi.value, 10); if (m > 0) db.collection('training').doc(id).set({ who: me(), date: d, kind, min: m }); };
+    const drawK = () => kinds.replaceChildren(...TRAIN.map(([k, l]) => h('button', { class: 'cp' + (k === kind ? ' on' : ''), onclick: () => { kind = k; drawK(); save(); } }, l)));
+    mi.addEventListener('input', save); drawK();
+    const list = trainOf(d);
+    openSheet('Training', [h('div', { class: 'form' },
+      h('label', { class: 'fl' }, h('span', { text: 'Tag' }), dayPicker(d, v => { d = v; draw(); })),
+      kinds, h('label', { class: 'fl' }, h('span', { text: 'Dauer' }), mi),
+      ...list.map(x => h('div', { class: 'fl' }, h('span', { class: 'muted', text: `${x.min} min ${(TRAIN.find(k => k[0] === x.kind) || ['', ''])[1]}` }), h('button', { class: 'btn g sm', onclick: () => { db.collection('training').doc(x.id).delete(); draw(); } }, 'Löschen'))),
+      h('button', { class: 'btn p done', onclick: () => { save(); closeSheet(); render(); } }, 'Fertig'))]);
+  };
+  draw();
 }
+
 function trainBars(days) {
   let groups;
   if (statRange === 'year') { const by = {}; days.forEach(d => { const k = d.slice(0, 7); (by[k] = by[k] || []).push(d); }); groups = Object.keys(by).sort().slice(-12).map(k => ({ lbl: MON[+k.slice(5) - 1][0], days: by[k] })); }
@@ -186,17 +200,28 @@ PAGES.start = function () {
     h('div', { class: 'ln food' }, ...meals.map(p => lrow({ class: 'lr tap', onclick: () => goTab('cal', 1) }, h('span', { class: 'tx', text: p.title || (recipeOf(p) || {}).title || '' }), p.meal ? h('span', { class: 'n', text: p.meal }) : null)),
       lrow({ class: 'lr tap', onclick: () => goTab('list', 1) }, h('span', { class: 'tx', text: 'Einkaufsliste' }), h('span', { class: 'n', text: shop ? String(shop) : 'leer' }))));
 };
+function openAdd(kind) {
+  const ti = h('input', { class: 'inp', placeholder: kind === 'goal' ? 'z. B. 10 Seiten lesen' : 'Was steht an?' });
+  const di = h('input', { class: 'inp', type: 'date', value: ymd(addDays(new Date(), 1)) });
+  const ok = () => { const v = cap(ti.value.trim()); if (!v) return closeSheet();
+    if (kind === 'goal') db.collection('goals').doc().set({ who: me(), title: v, days: {}, created: Date.now() }); else addTodo(v, di.value || ymd(addDays(new Date(), 1)));
+    closeSheet(); };
+  ti.addEventListener('keydown', e => { if (e.key === 'Enter') ok(); });
+  openSheet(kind === 'goal' ? 'Neues Ziel' : 'Für später', [h('div', { class: 'form' }, ti, kind === 'goal' ? null : h('label', { class: 'fl' }, h('span', { text: 'Tag' }), di), h('button', { class: 'btn p done', onclick: ok }, 'Fertig'))]);
+  setTimeout(() => ti.focus(), 300);
+}
 PAGES.todo = function () {
   const td = todayTodos(), gl = mine(goals), later = laterTodos(), rep = repeatTodos(), t = today();
   return h('div', { class: 'pg' },
     secHead('Heute', td.length ? `${td.filter(x => isDone(x, t)).length} von ${td.length}` : null),
     h('div', { class: 'ln todo' }, ...td.map(x => todoRow(x)), addRow('Neues To-do', s => addTodo(s))),
-    secHead('Ziele jeden Tag', gl.length ? 'diese Woche' : null),
-    h('div', { class: 'ln goals' }, ...gl.map(goalRow), addRow('Neues Ziel, z. B. 10 Seiten lesen', s => db.collection('goals').doc().set({ who: me(), title: s, days: {}, created: Date.now() }))),
-    secHead('Später', later.length ? String(later.length) : null),
-    h('div', { class: 'ln todo' }, ...later.map(x => todoRow(x, 'later')), addRow('Für später', s => addTodo(s, ymd(addDays(new Date(), 1))))),
+    gl.length ? secHead('Ziele jeden Tag', 'diese Woche') : null,
+    gl.length ? h('div', { class: 'ln goals' }, ...gl.map(goalRow)) : null,
+    later.length ? secHead('Später', String(later.length)) : null,
+    later.length ? h('div', { class: 'ln todo' }, ...later.map(x => todoRow(x, 'later'))) : null,
     rep.length ? secHead('Wiederkehrend', String(rep.length)) : null,
-    rep.length ? h('div', { class: 'ln todo' }, ...rep.map(x => todoRow(x, 'rep'))) : null);
+    rep.length ? h('div', { class: 'ln todo' }, ...rep.map(x => todoRow(x, 'rep'))) : null,
+    h('div', { class: 'links' }, h('button', { onclick: () => openAdd('goal') }, 'Neues Ziel'), h('button', { onclick: () => openAdd('later') }, 'Für später')));
 };
 PAGES.news = function () {
   return h('div', { class: 'pg' }, h('div', { class: 'ln pad' }, h('p', { class: 'soon', text: 'Hier stehen bald Nachrichten aus Quellen, die du aussuchst, kurz zusammengefasst.' })));
@@ -204,7 +229,7 @@ PAGES.news = function () {
 
 /* ---------- Statistik ---------- */
 const openGroups = new Set();
-function statDays() { const n = statRange === 'week' ? 7 : statRange === 'month' ? 30 : 365; return [...Array(n)].map((_, i) => ymd(addDays(new Date(), i - n + 1))); }
+function statDays() { const n = statRange === 'day' ? 1 : statRange === 'week' ? 7 : statRange === 'month' ? 30 : 365; return [...Array(n)].map((_, i) => ymd(addDays(new Date(), i - n + 1))); }
 function sleepBars(days) {
   let groups;
   if (statRange === 'year') {
@@ -215,7 +240,7 @@ function sleepBars(days) {
   const vals = groups.map(g => avgOf(g.days)), all = vals.filter(x => x != null);
   const avg = all.length ? Math.round(avgOf(days)) : null, max = Math.max(600, ...all), y = m => Math.max(4, m / max * 96);
   return [secHead('Schlaf', avg != null ? `im Schnitt ${hm(avg)}` : null),
-    h('div', { class: 'ln pad tap sleep', onclick: openSleep },
+    h('div', { class: 'ln pad tap sleep', onclick: () => openSleep() },
       all.length ? h('div', { class: 'bars' + (statRange === 'month' ? ' thin' : '') },
         h('div', { class: 'eight', style: `bottom:${22 + y(480)}px` }, h('span', { text: '8 h' })),
         ...groups.map((g, k) => h('div', {}, h('b', { class: vals[k] != null && vals[k] >= 480 ? 'ok' : '', style: `height:${vals[k] != null ? y(vals[k]) : 0}px` }), h('span', { text: g.lbl }))))
@@ -232,6 +257,9 @@ function goalStats(days) {
   });
   return [secHead('Ziele', tot ? `${Math.round(hit / tot * 100)} % geschafft` : null), h('div', { class: 'ln goals' }, ...rows)];
 }
+// Ampel: ab 80 % grün, ab 60 % gelb, ab 40 % orange, darunter rot; bei „nicht zu viel“ umgekehrt
+function lvl(pct, limit) { if (limit) return pct <= 100 ? 'g' : pct <= 125 ? 'y' : pct <= 150 ? 'o' : 'r'; return pct >= 80 ? 'g' : pct >= 60 ? 'y' : pct >= 40 ? 'o' : 'r'; }
+function groupPct(rs) { const lim = rs.every(r => LIMIT_KEYS.has(r.i)); if (lim) return Math.max(...rs.map(r => r.pct)); return Math.round(rs.reduce((a, r) => a + Math.min(100, r.pct), 0) / rs.length); }
 function nutRowsList(rs) { return rs.map(r => lrow({}, h('span', { class: 'tx', text: r.nm }), h('span', { class: 'n', text: `${r.pct} %` }), h('span', { class: 'mb ' + r.st }, h('i', { style: `width:${Math.min(100, r.pct)}%` })))); }
 function openNutList(title, rs, note) { openSheet(title, [note ? h('div', { class: 'sheetnote', text: note }) : null, h('div', { class: 'ln' }, ...nutRowsList(rs))]); }
 function nutStats(days) {
@@ -242,7 +270,7 @@ function nutStats(days) {
   const rows = {};
   for (const [, keys] of NUT_GROUPS) for (const i of keys) if (refs[i]) {
     const [ref, nm, unit] = refs[i], v = d.total[i] / d.n, pct = Math.round(v / ref * 100), st0 = nutState(i, pct);
-    rows[i] = { i, nm, unit, v, ref, pct, st: st0 === 'sun' ? 'low' : st0 };
+    rows[i] = { i, nm, unit, v, ref, pct, st: lvl(pct, LIMIT_KEYS.has(i)) };
   }
   const k = rows[0], out = [];
   out.push(secHead('Kalorien', d.n === 1 ? 'an 1 Tag erfasst' : `Schnitt aus ${d.n} Tagen`));
@@ -253,7 +281,7 @@ function nutStats(days) {
   out.push(secHead('Nährstoffe'));
   out.push(h('div', { class: 'ln menu' }, ...groups.map(([title, rs, note]) => lrow({ class: 'lr tap', onclick: () => openNutList(title, rs, note) },
     h('span', { class: 'tx', text: title }),
-    title === 'Fehlt am meisten' ? h('span', { class: 'n', text: rs[0] ? rs[0].nm : '' }) : h('span', { class: 'dots' }, ...rs.map(r => h('i', { class: r.st }))),
+    title === 'Fehlt am meisten' ? h('span', { class: 'n', text: rs[0] ? rs[0].nm : '' }) : (() => { const gp = groupPct(rs), lim = rs.every(r => LIMIT_KEYS.has(r.i)); return h('span', { class: 'gsum ' + lvl(gp, lim) }, h('i'), lim ? (gp <= 100 ? 'im Rahmen' : `${gp} %`) : `${gp} %`); })(),
     h('span', { class: 'chev', text: '›' }))),
     lrow({ class: 'lr tap', onclick: () => { cachePage(); tab = 'nutri'; renderTabs(); render(); window.scrollTo(0, 0); } }, h('span', { class: 'tx', text: 'Einzelne Tage' }), h('span', { class: 'chev', text: '›' }))));
   return out;

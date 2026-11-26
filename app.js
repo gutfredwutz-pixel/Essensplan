@@ -444,7 +444,7 @@ function grey(text) { return h('div', { class: 'greytxt', text }); }
 
 /* ============ Kopf & Tabs ============ */
 function renderHead() {
-  const a = $('#art'); a.replaceChildren(); if (ART[tab]) a.append(svgEl(ART[tab])); $('#title').textContent = tab === 'start' && window.startTitle ? startTitle() : TITLES[tab] || ''; renderFoodSeg(); const kk = $('#kicker'); if (kk) { const n = statRange === 'week' ? 7 : statRange === 'month' ? 30 : 365; kk.textContent = tab === 'stat' ? (n === 365 ? 'Letzte 12 Monate' : `Letzte ${n} Tage`) : longDate(ymd(new Date())); }
+  const a = $('#art'); a.replaceChildren(); if (ART[tab]) a.append(svgEl(ART[tab])); $('#title').textContent = tab === 'start' && window.startTitle ? startTitle() : TITLES[tab] || ''; renderFoodSeg(); const kk = $('#kicker'); if (kk) { const n = statRange === 'day' ? 1 : statRange === 'week' ? 7 : statRange === 'month' ? 30 : 365; kk.textContent = tab === 'stat' ? (n === 1 ? 'Heute' : n === 365 ? 'Letzte 12 Monate' : `Letzte ${n} Tage`) : longDate(ymd(new Date())); }
   const w = $('#who'); const m = me(); w.classList.toggle('hidden', !household); w.style.background = colorOf(m); w.textContent = (m || '?')[0];
   const gr = $('#gear'); if (gr && !gr.firstChild) gr.append(ic('gear')); if (gr) gr.classList.toggle('hidden', !household || tab !== 'start');
   const ct = $('#cart'); if (ct) { if (!ct.firstChild) ct.append(svgEl('<svg class="ti" viewBox="0 0 24 24"><path d="M3 4h2.2l2.3 10.5a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H6.3"/><circle cx="9.5" cy="19" r="1.3"/><circle cx="16.5" cy="19" r="1.3"/></svg>')); ct.classList.toggle('hidden', !FOOD.includes(tab)); ct.classList.toggle('on', tab === 'list'); }
@@ -486,7 +486,7 @@ const TAB_DEF = [
 function renderFoodSeg() {
   let f = $('#fseg'); if (!f) { f = h('div', { id: 'fseg', class: 'useg' }); $('header').append(f); }
   f.classList.toggle('hidden', !FOOD.includes(tab) && tab !== 'stat');
-  if (tab === 'stat') { f.replaceChildren(...[['week', 'Woche'], ['month', 'Monat'], ['year', 'Jahr']].map(([k, l]) => h('button', { class: k === statRange ? 'on' : '', onclick: () => { statRange = k; renderHead(); render(); } }, l))); return; }
+  if (tab === 'stat') { f.replaceChildren(...[['day', 'Tag'], ['week', 'Woche'], ['month', 'Monat'], ['year', 'Jahr']].map(([k, l]) => h('button', { class: k === statRange ? 'on' : '', onclick: () => { statRange = k; renderHead(); render(); } }, l))); return; }
   if (!FOOD.includes(tab)) return;
   f.replaceChildren(...[['cal', 'Woche'], ['rec', 'Rezepte']].map(([id, l]) => h('button', { class: id === tab ? 'on' : '', onclick: () => { if (id !== tab) goTab(id, FOOD.indexOf(id) - FOOD.indexOf(tab)); } }, l)));
 }
