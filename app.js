@@ -809,25 +809,30 @@ function drawListBody() {
 /* ---- Was der Liste noch fehlt ---- */
 function syncDock() { const d = $('#tipdock'); if (d) d.classList.toggle('show', tab === 'list' && !!d.firstChild); }
 function listNutrition() {
-  const tot = new Array(24).fill(0); let counted = 0;
+  // Liste: geteilter Einkauf, pro Person ein Anteil
+  const lst = new Array(24).fill(0); let counted = 0;
   for (const it of items) {
     const v = nutOf({ name: it.name, variant: it.variant }); if (!v) continue;
     let g = gramsOf(it.name, it.qty || ''); if (g == null) g = PIECE[canon(it.name)] || 250;
-    for (let i = 0; i < 24; i++) tot[i] += (v[i] || 0) * g / 100; counted++;
+    for (let i = 0; i < 24; i++) lst[i] += (v[i] || 0) * g / 100; counted++;
   }
-  const persons = Math.max(1, people.length || 2);
-  const nd = profiles[me()] && window.needsOf ? needsOf(profiles[me()]) : avgNeeds();
+  const persons = Math.max(1, people.length || 1);
+  const who = me(), pf = profiles[who];
+  const nd = pf && window.needsOf ? needsOf(pf) : avgNeeds();
+  // Was die eingeloggte Person diese Woche bisher gegessen hat (bis heute)
+  const ws = weekStartOf(new Date()), today0 = dayOnly(new Date());
+  const days = []; for (let d = ws; d <= today0; d = addDays(d, 1)) days.push(ymd(d));
+  const eaten = window.rangeData ? rangeData(who, days).total : new Array(24).fill(0);
   const keys = [4, 23, 9, 15, 14, 16, 8, 10, 11, 12, 13, 20, 22, 18, 19, 21, 17, 1];
-  const ref = i => (nd.R[i] || REF[i])[0] * 7 * persons;
-  const rows = keys.filter(i => nd.R[i] || REF[i]).map(i => ({ i, name: (nd.R[i] || REF[i])[1], pct: Math.min(100, tot[i] / ref(i) * 100) }));
+  const refOf = i => (nd.R[i] || REF[i]);
+  const rows = keys.filter(i => refOf(i)).map(i => { const need = refOf(i)[0] * 7; const ate = Math.min(100, eaten[i] / need * 100); const fromList = Math.min(100 - ate, lst[i] / persons / need * 100); return { i, name: refOf(i)[1], ate, fromList, pct: ate + fromList }; });
   const cov = rows.reduce((s, r) => s + r.pct, 0) / rows.length;
   const low = rows.filter(r => r.pct < 60).sort((x, y) => x.pct - y.pct);
-  // Lebensmittel, die mehrere Lücken auf einmal schließen
   const onList = n => items.some(it => canon(it.name) === canon(n));
   const score = new Map();
-  low.forEach((r, k) => (GOOD_SRC[r.i] || []).forEach(([n], j) => { if (onList(n)) return; const s = score.get(n) || { n, w: 0, for: [] }; s.w += (6 - Math.min(5, j)) * (1 + (60 - r.pct) / 60); s.for.push(r.name); score.set(n, s); }));
+  low.forEach(r => (GOOD_SRC[r.i] || []).forEach(([n], j) => { if (onList(n)) return; const s = score.get(n) || { n, w: 0, for: [] }; s.w += (6 - Math.min(5, j)) * (1 + (60 - r.pct) / 60); s.for.push(r.name); score.set(n, s); }));
   const best = [...score.values()].sort((x, y) => y.w - x.w).slice(0, 8);
-  return { cov, rows, low, best, counted };
+  return { cov, rows, low, best, counted, who, nDays: days.length, hasProfile: !!pf };
 }
 function listTipPill() {
   if (!items.length || typeof GOOD_SRC === 'undefined') return null;
@@ -835,7 +840,7 @@ function listTipPill() {
   const n = Math.min(d.best.length, 6);
   return h('button', { class: 'tippill', onclick: () => openListTips() },
     h('span', { class: 'tring' }, ring(d.cov, 'good', 34)),
-    h('span', { class: 'ttxt' }, h('b', { text: n ? `${n} Ideen für die Liste` : 'Liste ist gut aufgestellt' }), h('span', { text: `${fmtInt(d.cov)} % vom Wochenbedarf drin` })),
+    h('span', { class: 'ttxt' }, h('b', { text: n ? `${n} Ideen für die Liste` : 'Liste ist gut aufgestellt' }), h('span', { text: `${fmtInt(d.cov)} % deiner Woche gedeckt` })),
     h('span', { class: 'tgo' }, ic('chevron-right')));
 }
 function openListTips() {
@@ -845,7 +850,8 @@ function openListTips() {
   const parts = [
     h('div', { class: 'rephero phero2 tiphero' },
       h('div', { class: 'ph2top' }, h('div', { class: 'ph2ring' }, ring(d.cov, 'good', 104), h('span', { class: 'ph2pct', text: fmtInt(d.cov) + ' %' })),
-        h('div', { class: 'ph2txt' }, h('b', { text: 'Eure Liste' }), h('span', { text: (k => `deckt so viel vom Wochenbedarf für ${k} ${k === 1 ? 'Person' : 'Personen'}`)(Math.max(1, people.length || 2)) })))),
+        h('div', { class: 'ph2txt' }, h('b', { text: 'Deine Woche' }), h('span', { text: 'Was du bisher gegessen hast und dein Anteil an der Liste' }))),
+      h('div', { class: 'tiplegend' }, h('span', { class: 'lg1' }, h('i'), 'Schon gegessen'), h('span', { class: 'lg2' }, h('i'), 'Kommt von der Liste'))),
   ];
   if (d.best.length) parts.push(h('div', { class: 'infocard' }, h('h3', { text: 'Bringt am meisten' }), h('div', { class: 'muted', style: 'margin:-4px 0 12px;font-size:13px', text: 'Schließt gleich mehrere Lücken. Antippen setzt es auf die Liste.' }),
     h('div', { class: 'gsrcs' }, ...d.best.slice(0, 6).map(b => card(b.n, b.for.slice(0, 2).join(', '))))));
@@ -855,14 +861,14 @@ function openListTips() {
       const unit = (REF[r.i] || [0, '', 'g'])[2];
       const foods = (GOOD_SRC[r.i] || []).map(([n]) => { const v = nutOf({ name: n }); return { n, x: v ? v[r.i] || 0 : null }; }).sort((p, q) => (q.x ?? -1) - (p.x ?? -1));
       const box = h('div', { class: 'tipfoods hidden' }, h('div', { class: 'gsrcs' }, ...foods.map(f => card(f.n, f.x != null ? fmtV(f.x, unit) + ' in 100 g' : ''))));
-      const head = h('button', { class: 'tiplow' }, h('div', { class: 'macl' }, h('span', { text: r.name }), h('span', { class: 'macv' }, h('b', { text: fmtInt(r.pct) + ' %' }), h('span', { class: 'tchev' }, ic('chevron-right')))), h('div', { class: 'macbar' }, h('i', { style: `width:${Math.max(3, r.pct)}%` })));
+      const head = h('button', { class: 'tiplow' }, h('div', { class: 'macl' }, h('span', { text: r.name }), h('span', { class: 'macv' }, h('b', { text: fmtInt(r.pct) + ' %' }), h('span', { class: 'tchev' }, ic('chevron-right')))), h('div', { class: 'macbar two' }, h('i', { class: 'b1', style: `width:${r.ate}%` }), h('i', { class: 'b2', style: `width:${Math.max(r.ate + r.fromList > 0 ? 0 : 3, r.fromList)}%` })));
       head.onclick = () => { const open = box.classList.toggle('hidden') === false; head.classList.toggle('open', open); };
       return h('div', { class: 'tipgrp' }, head, box);
     });
     parts.push(h('div', { class: 'infocard' }, h('h3', { text: 'Hier fehlt noch was' }), h('div', { class: 'muted', style: 'margin:-4px 0 14px;font-size:13px', text: 'Antippen zeigt Lebensmittel mit viel davon.' }), h('div', { class: 'tiplows' }, ...rowsEl)));
   }
   else parts.push(h('div', { class: 'infocard' }, h('h3', { text: 'Sieht gut aus' }), h('div', { class: 'muted', text: 'Für die wichtigsten Nährstoffe ist genug auf der Liste.' })));
-  parts.push(h('div', { class: 'muted', style: 'font-size:12.5px;margin:0 6px', text: 'Grobe Schätzung aus den Einträgen. Ohne Menge rechnet die App mit einer üblichen Packung.' }));
+  parts.push(h('div', { class: 'muted', style: 'font-size:12.5px;margin:0 6px', text: (d.hasProfile ? 'Bezogen auf deine Angaben' : 'Ohne deine Angaben mit Durchschnittswerten gerechnet') + '. Die Liste zählt anteilig für jede Person im Haushalt. Ohne Menge rechnet die App mit einer üblichen Packung.' }));
   openSheet('Was noch fehlt', [h('div', { class: 'npage' }, ...parts)]);
 }
 function emptyArt(text) {
