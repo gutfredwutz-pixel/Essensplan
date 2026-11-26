@@ -35,6 +35,7 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - Offen: Nährstoff-Darstellung weiter verbessern (Jakob hat noch Punkte), Training in den Kalorienbedarf einrechnen, Erinnerungen (Web-Push) für To-dos mit Uhrzeit, News (RSS + KI), Uni-Bereich, CSS aufräumen (viele Überschreib-Blöcke), `app.js` in Module teilen.
 - Nächste große Punkte (mit Jakob besprochen, Ende Nov. 2026):
   1. **News**: Bereiche KI, Wirtschaft (inkl. auffällige Kursbewegungen/boomende Firmen), Politik Deutschland und Welt, ganz unten Weiterbildung/Arbeitsmarkt. Seriöse Quellen (Tagesschau u. a.) per RSS über die Supabase-Funktion, kurze KI-Zusammenfassungen zum Lesen in der Bahn, wenn möglich mit Bild aus dem Artikel.
+     Quellen-Wunsch: Handelsblatt, FAZ, Heise, Tagesschau „und die besten“ (seriös). Wichtig: Artikel wirklich aufbereiten, lesbar für Nicht-Fachleute: Fachbegriffe kurz erklären und Zahlen einordnen (z. B. „DAX +300 Punkte“ = wie viel Prozent, ist das viel, warum). Achtung Bezahlschranken (Handelsblatt/FAZ): per RSS oft nur Teaser; offen damit umgehen und frei lesbare Quellen ergänzen.
   2. **Vorrat**: festhalten, was zu Hause ist; Vorschläge unterscheiden „hast du da“ und „bitte kaufen“.
   3. **Start Essen**: Vorschläge, was man bald essen und was man einkaufen sollte (passend zu fehlenden Nährstoffen), evtl. per KI.
   4. **Einkaufsliste neu**: wirkt unübersichtlich; Kauf-Ideen für fehlende Nährstoffe direkt dort statt schwebender Pille.
