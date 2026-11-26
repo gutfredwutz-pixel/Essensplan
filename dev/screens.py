@@ -39,6 +39,7 @@ async def main():
               const nv=window.NUTRI['haferflocken']||Object.values(window.NUTRI)[0]; await db.collection('diary').doc('Jakob_'+t).set({foods:[{name:'Haferflocken',gr:80,v:nv}]});
               const dd2={}; for(let i=0;i<7;i+=2) dd2[ymd(addDays(new Date(),-i))]=true; await db.collection('goals').doc('g3').set({who:'Jakob',title:'30 min Statistik',days:dd2,created:1});
               for (const [i,m,k] of [[0,45,'kraft'],[2,30,'ausdauer'],[3,60,'kraft'],[5,40,'kraft']]) { const d=ymd(addDays(new Date(),-i)); await db.collection('training').doc('tr'+i).set({who:'Jakob',date:d,kind:k,min:m}); }
+              const DAY=864e5; for (const [n,q,a] of [['Spinat','',5],['Linsen','500 g',20],['Kartoffeln','1 kg',3],['Zwiebeln','',10],['Eier','6',2],['Haferflocken','',12],['Joghurt','',1],['Hackfleisch','400 g',1],['Karotten','',6]]) await db.collection('pantry').doc(slug(n)).set({name:n,qty:q,category:catOf(n),added:Date.now()-a*DAY,by:'Jakob'});
               await db.collection('goals').doc('g2').set({who:'Jakob',title:'2 Liter trinken',days:d,created:2});
             })()"""); await pg.wait_for_timeout(500)
             for i, name in enumerate(['start', 'statistik', 'essen', 'todos', 'news']):
@@ -50,6 +51,13 @@ async def main():
             await pg.click('.setmenu >> text=Nie auf die Liste'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'einstellungen_nie.png'))
             await pg.evaluate("closeSheet()"); await pg.click('.tabs button >> nth=1'); await pg.wait_for_timeout(600); await pg.screenshot(path=str(OUT / 'statistik_oben.png')); await pg.click('.ln.menu >> text=Vitamine'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'vitamine.png'))
             await pg.evaluate("closeSheet();openSleep()"); await pg.wait_for_timeout(600); await pg.screenshot(path=str(OUT / 'schlaf_sheet.png'))
+            await pg.evaluate("closeSheet()"); await pg.wait_for_timeout(400); await pg.click('.tabs button >> nth=0'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'start_ganz.png'), full_page=True)
+            await pg.evaluate("openMealIdeas()"); await pg.wait_for_timeout(900); await pg.screenshot(path=str(OUT / 'ideen.png'))
+            await pg.evaluate("closeSheet()"); await pg.wait_for_timeout(400); await pg.click('.tabs button >> nth=2'); await pg.wait_for_timeout(500); await pg.click('#fseg >> text=Vorrat'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'vorrat.png'), full_page=True)
+            await pg.click('.ln.pantry >> text=Spinat'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'vorrat_spinat.png'))
+            await pg.evaluate("closeSheet(); const it=items.find(i=>i.name==='Milch'); db.collection('items').doc(it.id).update({checked:true,checkedAt:Date.now()})"); await pg.wait_for_timeout(500)
+            await pg.click('#cart'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'liste_wagen.png'))
+            await pg.click('text=In den Vorrat'); await pg.wait_for_timeout(600); print('Milch im Vorrat:', await pg.evaluate("!!inPantry('Milch') && !items.some(i=>i.name==='Milch')"))
             await pg.evaluate("closeSheet();openTodo(todos.find(x=>x.id==='t2'))"); await pg.wait_for_timeout(600); await pg.screenshot(path=str(OUT / 'todo_erinnern.png'))
             await pg.evaluate("closeSheet();setSub='Mitteilungen';openTop('set')"); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'mitteilungen_aus.png'))
             await pg.evaluate("(async()=>{LS.set('ep_push','dtest'); await db.collection('push').doc('dtest').set({who:'Jakob',sub:{endpoint:'https://web.push.apple.com/x'},nudge:true}); closeSheet(); setSub='Mitteilungen'; openTop('set');})()"); await pg.wait_for_timeout(800); await pg.screenshot(path=str(OUT / 'mitteilungen_an.png'))

@@ -32,15 +32,21 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - Statistik: Schlaf-Balken ab 0 mit 8-h-Linie, Training-Balken, Ziele als Tagesfelder, Kalorien groß, Nährstoffe als Menü mit Unterseiten (Sheets).
 - Einstellungen: Menü mit Unterseiten (`setSub`), zurück per Wischen.
 - Logo: weiß auf Schwarz, zwei Striche, Punkt rechts oberhalb der Mitte (`icons/`).
-- Offen: Nährstoff-Darstellung weiter verbessern (Jakob hat noch Punkte), Training in den Kalorienbedarf einrechnen, Erinnerungen (Web-Push) für To-dos mit Uhrzeit, News (RSS + KI), Uni-Bereich, CSS aufräumen (viele Überschreib-Blöcke), `app.js` in Module teilen.
+- Offen: Nährstoff-Darstellung weiter verbessern (Jakob hat noch Punkte), Training in den Kalorienbedarf einrechnen, News (RSS + KI), Uni-Bereich, CSS aufräumen (viele Überschreib-Blöcke), `app.js` in Module teilen.
 - Nächste große Punkte (mit Jakob besprochen, Ende Nov. 2026):
   1. **News**: Bereiche KI, Wirtschaft (inkl. auffällige Kursbewegungen/boomende Firmen), Politik Deutschland und Welt, ganz unten Weiterbildung/Arbeitsmarkt. Seriöse Quellen (Tagesschau u. a.) per RSS über die Supabase-Funktion, kurze KI-Zusammenfassungen zum Lesen in der Bahn, wenn möglich mit Bild aus dem Artikel.
      Quellen-Wunsch: Handelsblatt, FAZ, Heise, Tagesschau „und die besten“ (seriös). Wichtig: Artikel wirklich aufbereiten, lesbar für Nicht-Fachleute: Fachbegriffe kurz erklären und Zahlen einordnen (z. B. „DAX +300 Punkte“ = wie viel Prozent, ist das viel, warum). Achtung Bezahlschranken (Handelsblatt/FAZ): per RSS oft nur Teaser; offen damit umgehen und frei lesbare Quellen ergänzen.
-  2. **Vorrat**: festhalten, was zu Hause ist; Vorschläge unterscheiden „hast du da“ und „bitte kaufen“.
-  3. **Start Essen**: Vorschläge, was man bald essen und was man einkaufen sollte (passend zu fehlenden Nährstoffen), evtl. per KI.
+  2. ~~Vorrat~~ und 3. ~~Start Essen~~: erledigt (Ende Nov. 2026), siehe unten „Vorrat und Vorschläge“.
   4. **Einkaufsliste neu**: wirkt unübersichtlich; Kauf-Ideen für fehlende Nährstoffe direkt dort statt schwebender Pille.
   5. Ladebildschirm beim Öffnen klären (Screenshot von Jakob abwarten; evtl. alter iOS-Startbildschirm, nach Neu-Hinzufügen weg).
+- **Mitteilungen** (Web Push): Einstellungen > Mitteilungen, je Gerät und Person (Sammlung `push`, Doc-ID in `ep_push`). To-dos haben `remind` (Minuten vorher, `'off'`, Standard 15). Die Datenbank ruft jede Minute `push_tick()` auf (pg_cron, `supabase-push.sql`), die Funktion `push` (`supabase/functions/push/index.ts`, Verify JWT aus, keine Secrets) entscheidet und verschickt: Erinnerungen und höchstens 2 Anstupser am Tag (ab ca. 12 und 17:30 Uhr, nicht wenn in der Stunde ein To-do mit Uhrzeit ansteht). Signier-Schlüssel erzeugt die App beim ersten Einschalten, er liegt in `push_config` (nur Datenbank). Rückmeldung per `push_mark` mit Einmal-Token gegen doppelte Meldungen.
 - `dev/screens.py` braucht Python-Playwright (`pip install playwright`), nutzt den vorinstallierten Chromium unter `/opt/pw-browsers/chromium`.
+
+## Vorrat und Vorschläge (`vorrat.js`)
+
+- Sammlung `pantry` (ganzer Haushalt): `name`, `qty`, `category`, `added`, `by`. Essen-Umschalter: Woche / Rezepte / Vorrat (Reiter-ID `pan`). Abgehakte Sachen der Einkaufsliste per „In den Vorrat“ übernehmen.
+- Start: „Bald essen“ (Vorrat, der Lücken der letzten 7 Tage füllt, dann frische Sachen ab 3 Tagen, eigenes Rezept mit den meisten Zutaten da, „Gericht-Ideen“) und „Einkaufen“ (Tippen setzt auf die Liste). Auswahl schrittweise (`greedy`), damit nicht drei Lebensmittel dieselbe Lücke füllen.
+- Rechnung ohne KI auf dem Gerät. Nur „Gericht-Ideen“ fragt die KI (Aufgabe `meal`), Ergebnis pro Tag und Vorrat in `localStorage` gemerkt. Ohne KI: passende eigene Rezepte.
 
 ## Aufbau (Stand jetzt)
 
