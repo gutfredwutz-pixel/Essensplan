@@ -45,7 +45,7 @@ const ART = {
   list: `<svg viewBox="0 0 64 64"><defs><linearGradient id="gb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5B8CFF"/><stop offset="1" stop-color="#FF8DBA"/></linearGradient></defs><path d="M30 2C48 0 63 13 62 31 62 49 49 63 31 62 14 62 1 50 2 32 2 15 13 4 30 2Z" fill="url(#gb)"/><path d="M28 21c-1-5 2-9 6-10" stroke="#3FA34D" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M33 13c4-3 8-2 9 0-3 3-7 3-9 0z" fill="#5DBB63"/><path d="M22 26c-2-6 1-11 5-12l3 12z" fill="#FF9F43"/><path d="M38 26c0-5 3-9 7-9 3 2 3 6 1 9z" fill="#E8473E"/><path d="M15 26h34l-3 22c-1 3-3 5-6 5H24c-3 0-5-2-6-5z" fill="#fff"/><path d="M23 33v12M32 33v12M41 33v12" stroke="#DDE6FF" stroke-width="2.6" stroke-linecap="round"/></svg>`,
   rec: `<svg viewBox="0 0 64 64"><defs><linearGradient id="gc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F6BFF"/><stop offset="1" stop-color="#FF8DBA"/></linearGradient></defs><path d="M33 2C51 3 63 15 62 33 61 51 48 63 30 62 12 61 1 48 2 30 3 13 16 1 33 2Z" fill="url(#gc)"/><path d="M12 20c7-3 14-3 20 2v26c-6-5-13-5-20-2z" fill="#fff"/><path d="M52 20c-7-3-14-3-20 2v26c6-5 13-5 20-2z" fill="#F4F7FF"/><path d="M17 27c3-1 7-1 10 1M17 33c3-1 7-1 10 1M17 39c3-1 7-1 10 1" stroke="#C9D6FF" stroke-width="2" stroke-linecap="round"/><path d="M37 27c3-1 7-1 10 1M37 33c3-1 7-1 10 1" stroke="#FFC2DA" stroke-width="2" stroke-linecap="round"/><circle cx="44" cy="41" r="4" fill="#FFC23D"/></svg>`
 };
-const TITLES = { start: '', stat: '', nutri: '', list: '', cal: '', rec: '', todo: 'To-dos', news: 'News', set: 'Einstellungen' };
+const TITLES = { start: '', stat: 'Statistik', nutri: 'Nährstoffe', list: 'Essen', cal: 'Essen', rec: 'Essen', todo: 'To-dos', news: 'News', set: 'Einstellungen' };
 window.FA = window.FA || {};
 window.FA['jar'] = [512, 512, 'M176 32h160c13 0 24 11 24 24v24c0 9-5 17-13 21 66 28 109 88 109 159 0 107-74 220-200 220S56 367 56 260c0-71 43-131 109-159-8-4-13-12-13-21V56c0-13 11-24 24-24zm-48 248c0 78 52 168 128 168s128-90 128-168c0-6 0-12-1-18-33 18-75 18-110 2-38-17-80-16-144 2z'];
 
@@ -430,7 +430,7 @@ function grey(text) { return h('div', { class: 'greytxt', text }); }
 
 /* ============ Kopf & Tabs ============ */
 function renderHead() {
-  const a = $('#art'); a.replaceChildren(); if (ART[tab]) a.append(svgEl(ART[tab])); $('#title').textContent = TITLES[tab] || ''; renderFoodSeg();
+  const a = $('#art'); a.replaceChildren(); if (ART[tab]) a.append(svgEl(ART[tab])); $('#title').textContent = tab === 'start' && window.startTitle ? startTitle() : TITLES[tab] || ''; renderFoodSeg();
   const w = $('#who'); const m = me(); w.classList.toggle('hidden', !household); w.style.background = colorOf(m); w.textContent = (m || '?')[0];
   const gr = $('#gear'); if (gr && !gr.firstChild) gr.append(ic('gear')); if (gr) gr.classList.toggle('hidden', !household || tab !== 'start');
   document.body.dataset.tab = tab;
@@ -459,7 +459,7 @@ function tabInd(i, prog, anim) {
   bs.forEach((b, k) => b.classList.toggle('near', k === (p > 0.5 ? j : i)));
 }
 let listUI = null, recUI = null;
-const FOOD = ['list', 'cal', 'rec']; let foodSub = 'cal';
+const FOOD = ['list', 'cal', 'rec']; let foodSub = 'cal', statRange = 'week';
 const TABS = () => ['start', 'stat', foodSub, 'todo', 'news'];
 const TAB_DEF = [
   ['start', 'Start', 'M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z'],
@@ -470,7 +470,8 @@ const TAB_DEF = [
 // Unterteilung im Bereich Essen: Liste / Woche / Rezepte
 function renderFoodSeg() {
   let f = $('#fseg'); if (!f) { f = h('div', { id: 'fseg', class: 'useg' }); $('header').append(f); }
-  f.classList.toggle('hidden', !FOOD.includes(tab));
+  f.classList.toggle('hidden', !FOOD.includes(tab) && tab !== 'stat');
+  if (tab === 'stat') { f.replaceChildren(...[['week', 'Woche'], ['month', 'Monat'], ['year', 'Jahr']].map(([k, l]) => h('button', { class: k === statRange ? 'on' : '', onclick: () => { statRange = k; renderFoodSeg(); render(); } }, l))); return; }
   if (!FOOD.includes(tab)) return;
   f.replaceChildren(...[['list', 'Liste'], ['cal', 'Woche'], ['rec', 'Rezepte']].map(([id, l]) => h('button', { class: id === tab ? 'on' : '', onclick: () => { if (id !== tab) goTab(id, FOOD.indexOf(id) - FOOD.indexOf(tab)); } }, l)));
 }

@@ -1,22 +1,22 @@
 'use strict';
-/* Neue Bereiche: Start, To-dos (mit täglichen Zielen), Schlaf, News.
+/* Neue Bereiche: Start, Statistik, To-dos (mit Zielen und Wiederholung), Schlaf, News.
    Daten in den Sammlungen todos, goals, sleep (je Person über das Feld who). */
 
 const today = () => ymd(new Date());
 const mine = arr => arr.filter(x => x.who === me());
-const hm = m => `${Math.floor(m / 60)} h ${pad(m % 60)} min`;
+const hm = m => `${Math.floor(m / 60)} h ${pad(Math.round(m % 60))} min`;
 const toMin = t => { if (!t) return null; const [a, b] = t.split(':').map(Number); return isNaN(a) ? null : a * 60 + (b || 0); };
+const de = (n, d = 0) => Number(n).toLocaleString('de-DE', { maximumFractionDigits: d, minimumFractionDigits: 0 });
 
 function secHead(title, meta) { return h('div', { class: 'sh' }, h('span', { class: 'st', text: title }), meta ? h('span', { text: meta }) : null); }
 function lines(...rows) { return h('div', { class: 'ln' }, ...rows); }
 function lrow(props, ...kids) { return h('div', Object.assign({ class: 'lr' }, props), ...kids); }
+function greeting() { const hr = new Date().getHours(); return hr < 11 ? 'Guten Morgen' : hr < 18 ? 'Hallo' : 'Guten Abend'; }
+function startTitle() { return me() ? `Hallo, ${me()}` : 'Hallo'; }
 
 /* ---------- Schlaf ---------- */
 function sleepOf(date) { return sleeps.find(x => x.who === me() && x.date === date); }
-function sleepMinutes(s) {
-  const b = toMin(s && s.bed), w = toMin(s && s.wake); if (b == null || w == null) return null;
-  return (w - b + 1440) % 1440;
-}
+function sleepMinutes(s) { const b = toMin(s && s.bed), w = toMin(s && s.wake); return b == null || w == null ? null : (w - b + 1440) % 1440; }
 function sleepBlock() {
   const s = sleepOf(today()), m = sleepMinutes(s);
   const head = secHead('Schlaf', m != null ? hm(m) : null);
@@ -24,16 +24,13 @@ function sleepBlock() {
   // Zeitstrahl von 21 bis 10 Uhr
   const pos = t => { let v = toMin(t) - 21 * 60; if (v < 0) v += 1440; return Math.max(0, Math.min(100, v / (13 * 60) * 100)); };
   const l = pos(s.bed), r = pos(s.wake);
-  return [head, h('div', { class: 'ln tap', onclick: openSleep },
+  return [head, h('div', { class: 'ln pad tap sleep', onclick: openSleep },
     h('div', { class: 'tl' }, h('i', { style: `left:${l}%;right:${100 - r}%` })),
     h('div', { class: 'ax' }, h('span', { style: `left:${l}%`, text: s.bed }), h('span', { style: `left:${r}%`, text: s.wake })))];
 }
 function openSleep() {
   const d = today(), s = sleepOf(d) || {};
-  const save = () => {
-    const bed = bi.value, wake = wi.value; if (!bed || !wake) return;
-    db.collection('sleep').doc(`${slug(me())}_${d}`).set({ who: me(), date: d, bed, wake });
-  };
+  const save = () => { if (bi.value && wi.value) db.collection('sleep').doc(`${slug(me())}_${d}`).set({ who: me(), date: d, bed: bi.value, wake: wi.value }); };
   const bi = h('input', { class: 'inp', type: 'time', value: s.bed || '23:30', onchange: save });
   const wi = h('input', { class: 'inp', type: 'time', value: s.wake || '07:00', onchange: save });
   openSheet('Letzte Nacht', [h('div', { class: 'form' },
@@ -43,37 +40,63 @@ function openSleep() {
 }
 
 /* ---------- To-dos ---------- */
-function todayTodos() {
-  const t = today();
-  return mine(todos).filter(x => (x.date || t) <= t && (!x.done || x.doneOn === t))
-    .sort((a, b) => (a.done - b.done) || ((a.time || '99') < (b.time || '99') ? -1 : (a.time || '99') > (b.time || '99') ? 1 : 0) || (a.created || 0) - (b.created || 0));
+const REPEAT = [['', 'Nie'], ['daily', 'Täglich'], ['workdays', 'Werktags'], ['weekly', 'Wöchentlich'], ['monthly', 'Monatlich']];
+const repLabel = r => (REPEAT.find(x => x[0] === r) || ['', ''])[1];
+function dueOn(x, ds) { // gilt dieses wiederkehrende To-do an diesem Tag?
+  const start = x.date || ds; if (!x.repeat || ds < start) return false;
+  const d = parseYmd(ds), s = parseYmd(start);
+  if (x.repeat === 'daily') return true;
+  if (x.repeat === 'workdays') return d.getDay() > 0 && d.getDay() < 6;
+  if (x.repeat === 'weekly') return d.getDay() === s.getDay();
+  if (x.repeat === 'monthly') return d.getDate() === s.getDate();
+  return false;
 }
-function laterTodos() { const t = today(); return mine(todos).filter(x => !x.done && x.date > t).sort((a, b) => a.date < b.date ? -1 : 1); }
-function toggleTodo(x) { db.collection('todos').doc(x.id).update({ done: !x.done, doneOn: x.done ? '' : today() }); }
-function todoRow(x, withDate) {
-  const d = withDate && x.date ? parseYmd(x.date) : null;
-  const meta = [d ? (x.date === ymd(addDays(new Date(), 1)) ? 'Morgen' : `${WD[(d.getDay() + 6) % 7]}, ${d.getDate()}. ${MON[d.getMonth()].slice(0, 3)}`) : '', x.time || ''].filter(Boolean).join(', ');
-  return lrow({ class: 'lr' + (x.done ? ' done' : '') },
-    h('button', { class: 'ckb' + (x.done ? ' x' : ''), 'aria-label': 'Erledigt', onclick: () => toggleTodo(x) }),
+const isDone = (x, ds) => x.repeat ? !!(x.doneDays || {})[ds] : !!x.done;
+function todayTodos() {
+  const t = today(), tm = x => x.time || '99';
+  return mine(todos).filter(x => x.repeat ? dueOn(x, t) : (x.date || t) <= t && (!x.done || x.doneOn === t))
+    .sort((a, b) => (isDone(a, t) - isDone(b, t)) || (tm(a) < tm(b) ? -1 : tm(a) > tm(b) ? 1 : 0) || (a.created || 0) - (b.created || 0));
+}
+function laterTodos() { const t = today(); return mine(todos).filter(x => !x.repeat && !x.done && x.date > t).sort((a, b) => a.date < b.date ? -1 : 1); }
+function repeatTodos() { return mine(todos).filter(x => x.repeat); }
+function toggleTodo(x) {
+  const t = today();
+  if (x.repeat) { const dd = Object.assign({}, x.doneDays); if (dd[t]) delete dd[t]; else dd[t] = true; db.collection('todos').doc(x.id).update({ doneDays: dd }); }
+  else db.collection('todos').doc(x.id).update({ done: !x.done, doneOn: x.done ? '' : t });
+}
+function todoRow(x, mode) {
+  const t = today(), done = mode === 'rep' ? false : isDone(x, t);
+  let meta = '';
+  if (mode === 'later' && x.date) { const d = parseYmd(x.date); meta = x.date === ymd(addDays(new Date(), 1)) ? 'Morgen' : `${WD[(d.getDay() + 6) % 7]}, ${d.getDate()}. ${MON[d.getMonth()].slice(0, 3)}`; }
+  if (mode === 'rep') meta = repLabel(x.repeat);
+  meta = [meta, x.time || ''].filter(Boolean).join(', ');
+  return lrow({ class: 'lr' + (done ? ' done' : '') },
+    mode === 'rep' ? h('span', { class: 'rp' }, svgEl('<svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7"/></svg>'))
+      : h('button', { class: 'ckb' + (done ? ' x' : ''), 'aria-label': 'Erledigt', onclick: () => toggleTodo(x) }),
     h('span', { class: 'tx tap', text: x.text, onclick: () => openTodo(x) }),
     meta ? h('span', { class: 'n', text: meta }) : null);
 }
 function addRow(ph, onAdd) {
   const inp = h('input', { placeholder: ph, enterkeyhint: 'done' });
-  inp.addEventListener('keydown', e => { if (e.key === 'Enter' && inp.value.trim()) { onAdd(cap(inp.value.trim())); inp.value = ''; } });
-  inp.addEventListener('blur', () => { if (inp.value.trim()) { onAdd(cap(inp.value.trim())); inp.value = ''; } });
-  return lrow({}, h('span', { class: 'ckb ghost' }), inp);
+  const go = () => { if (inp.value.trim()) { onAdd(cap(inp.value.trim())); inp.value = ''; } };
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+  inp.addEventListener('blur', go);
+  return lrow({ class: 'lr addr' }, h('span', { class: 'plus', text: '+' }), inp);
 }
-function addTodo(text, date) { db.collection('todos').doc().set({ who: me(), text, date: date || today(), time: '', done: false, doneOn: '', created: Date.now() }); }
+function addTodo(text, date) { db.collection('todos').doc().set({ who: me(), text, date: date || today(), time: '', repeat: '', done: false, doneOn: '', doneDays: {}, created: Date.now() }); }
 function openTodo(x) {
-  const up = o => db.collection('todos').doc(x.id).update(o);
+  const up = o => { Object.assign(x, o); db.collection('todos').doc(x.id).update(o); };
   const ti = h('input', { class: 'inp', value: x.text, onchange: e => e.target.value.trim() && up({ text: e.target.value.trim() }) });
   const di = h('input', { class: 'inp', type: 'date', value: x.date || today(), onchange: e => up({ date: e.target.value || today() }) });
   const hi = h('input', { class: 'inp', type: 'time', value: x.time || '', onchange: e => up({ time: e.target.value }) });
+  const rep = h('div', { class: 'chips' });
+  const drawRep = () => rep.replaceChildren(...REPEAT.map(([k, l]) => h('button', { class: 'cp' + ((x.repeat || '') === k ? ' on' : ''), onclick: () => { up({ repeat: k }); drawRep(); } }, l)));
+  drawRep();
   openSheet('To-do', [h('div', { class: 'form' }, ti,
-    h('label', { class: 'fl' }, h('span', { text: 'Tag' }), di),
+    h('label', { class: 'fl' }, h('span', { text: 'Ab' }), di),
     h('label', { class: 'fl' }, h('span', { text: 'Uhrzeit' }), hi),
-    h('button', { class: 'btn danger', style: 'width:100%', onclick: () => { db.collection('todos').doc(x.id).delete(); closeSheet(); } }, 'Löschen'))]);
+    h('div', { class: 'fl' }, h('span', { text: 'Wiederholen' })), rep,
+    h('button', { class: 'btn danger', style: 'width:100%;margin-top:8px', onclick: () => { db.collection('todos').doc(x.id).delete(); closeSheet(); } }, 'Löschen'))]);
 }
 
 /* ---------- Ziele ---------- */
@@ -81,7 +104,7 @@ function weekDays() { const m = monday(new Date()); return [...Array(7)].map((_,
 function toggleGoal(g) { const t = today(), days = Object.assign({}, g.days); if (days[t]) delete days[t]; else days[t] = true; db.collection('goals').doc(g.id).update({ days }); }
 function goalRow(g) {
   const on = !!(g.days || {})[today()];
-  return lrow({},
+  return lrow({ class: 'lr goal' },
     h('button', { class: 'ckb' + (on ? ' x' : ''), 'aria-label': 'Heute geschafft', onclick: () => toggleGoal(g) }),
     h('span', { class: 'tx tap', text: g.title, onclick: () => openGoal(g) }),
     h('span', { class: 'wk' }, ...weekDays().map(d => h('i', { class: (g.days || {})[d] ? 'y' : '' }))));
@@ -92,39 +115,40 @@ function openGoal(g) {
     h('button', { class: 'btn danger', style: 'width:100%', onclick: () => { db.collection('goals').doc(g.id).delete(); closeSheet(); } }, 'Löschen'))]);
 }
 
-/* ---------- Seiten ---------- */
-function greeting() { const hr = new Date().getHours(); return hr < 11 ? 'Guten Morgen' : hr < 18 ? 'Hallo' : 'Guten Abend'; }
+/* ---------- Start, To-dos, News ---------- */
 PAGES.start = function () {
   const t = today(), td = todayTodos(), gl = mine(goals);
-  const open = td.filter(x => !x.done).length + gl.filter(g => !(g.days || {})[t]).length, all = td.length + gl.length;
+  const openT = td.filter(x => !isDone(x, t)), openG = gl.filter(g => !(g.days || {})[t]);
+  const all = td.length + gl.length, open = openT.length + openG.length;
   const meals = planOn(t), shop = items.filter(i => !i.checked).length;
   return h('div', { class: 'pg' },
     h('div', { class: 'dt', text: longDate(t) }),
-    h('h2', { class: 'hello', text: me() ? `${greeting()}, ${me()}` : greeting() }),
     ...sleepBlock(),
     secHead('Heute', all ? `${all - open} von ${all}` : null),
-    lines(...td.filter(x => !x.done).map(x => todoRow(x)), ...gl.filter(g => !(g.days || {})[t]).map(goalRow), addRow('Neues To-do', s => addTodo(s))),
+    h('div', { class: 'ln todo' }, ...openT.map(x => todoRow(x)), ...openG.map(goalRow), addRow('Neues To-do', s => addTodo(s))),
     secHead('Essen'),
-    lines(...meals.map(p => lrow({ class: 'lr tap', onclick: () => goTab('cal', 1) }, h('span', { text: (p.meal ? p.meal + ': ' : '') + (p.title || (recipeOf(p) || {}).title || '') }))),
-      lrow({ class: 'lr tap', onclick: () => openDiary(me(), t, render) }, h('span', { text: 'Gegessen eintragen' })),
-      lrow({ class: 'lr tap', onclick: () => goTab('list', 1) }, h('span', { text: 'Einkaufsliste' }), h('span', { class: 'n', text: shop ? String(shop) : 'leer' }))));
+    h('div', { class: 'ln food' }, ...meals.map(p => lrow({ class: 'lr tap', onclick: () => goTab('cal', 1) }, h('span', { class: 'tx', text: p.title || (recipeOf(p) || {}).title || '' }), p.meal ? h('span', { class: 'n', text: p.meal }) : null)),
+      lrow({ class: 'lr tap', onclick: () => openDiary(me(), t, render) }, h('span', { class: 'tx', text: 'Gegessen eintragen' }), h('span', { class: 'n', text: '›' })),
+      lrow({ class: 'lr tap', onclick: () => goTab('list', 1) }, h('span', { class: 'tx', text: 'Einkaufsliste' }), h('span', { class: 'n', text: shop ? String(shop) : 'leer' }))));
 };
 PAGES.todo = function () {
-  const td = todayTodos(), gl = mine(goals), later = laterTodos(), t = today();
+  const td = todayTodos(), gl = mine(goals), later = laterTodos(), rep = repeatTodos(), t = today();
   return h('div', { class: 'pg' },
-    secHead('Heute', td.length ? `${td.filter(x => x.done).length} von ${td.length}` : null),
-    lines(...td.map(x => todoRow(x)), addRow('Neues To-do', s => addTodo(s))),
+    secHead('Heute', td.length ? `${td.filter(x => isDone(x, t)).length} von ${td.length}` : null),
+    h('div', { class: 'ln todo' }, ...td.map(x => todoRow(x)), addRow('Neues To-do', s => addTodo(s))),
     secHead('Ziele jeden Tag', gl.length ? 'diese Woche' : null),
-    lines(...gl.map(goalRow), addRow('Neues Ziel, z. B. 10 Seiten lesen', s => db.collection('goals').doc().set({ who: me(), title: s, days: {}, created: Date.now() }))),
+    h('div', { class: 'ln goals' }, ...gl.map(goalRow), addRow('Neues Ziel, z. B. 10 Seiten lesen', s => db.collection('goals').doc().set({ who: me(), title: s, days: {}, created: Date.now() }))),
     secHead('Später', later.length ? String(later.length) : null),
-    lines(...later.map(x => todoRow(x, true)), addRow('Für später', s => addTodo(s, ymd(addDays(new Date(), 1))))));
+    h('div', { class: 'ln todo' }, ...later.map(x => todoRow(x, 'later')), addRow('Für später', s => addTodo(s, ymd(addDays(new Date(), 1))))),
+    rep.length ? secHead('Wiederkehrend', String(rep.length)) : null,
+    rep.length ? h('div', { class: 'ln todo' }, ...rep.map(x => todoRow(x, 'rep'))) : null);
 };
 PAGES.news = function () {
-  return h('div', { class: 'pg' }, h('p', { class: 'soon', text: 'Hier stehen bald Nachrichten aus Quellen, die du aussuchst, kurz zusammengefasst.' }));
+  return h('div', { class: 'pg' }, h('div', { class: 'ln pad' }, h('p', { class: 'soon', text: 'Hier stehen bald Nachrichten aus Quellen, die du aussuchst, kurz zusammengefasst.' })));
 };
 
 /* ---------- Statistik ---------- */
-let statRange = 'week';
+const openGroups = new Set();
 function statDays() { const n = statRange === 'week' ? 7 : statRange === 'month' ? 30 : 365; return [...Array(n)].map((_, i) => ymd(addDays(new Date(), i - n + 1))); }
 function sleepBars(days) {
   let groups;
@@ -134,12 +158,11 @@ function sleepBars(days) {
   } else groups = days.map((d, i) => ({ lbl: statRange === 'week' ? WD[(parseYmd(d).getDay() + 6) % 7] : (i % 5 === 4 ? String(parseYmd(d).getDate()) : ''), days: [d] }));
   const avgOf = ds => { const v = ds.map(d => sleepMinutes(sleepOf(d))).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
   const vals = groups.map(g => avgOf(g.days)), all = vals.filter(x => x != null);
-  const avg = all.length ? Math.round(avgOf(days)) : null;
-  const max = Math.max(600, ...all);
+  const avg = all.length ? Math.round(avgOf(days)) : null, max = Math.max(600, ...all);
   return [secHead('Schlaf', avg != null ? `im Schnitt ${hm(avg)}` : null),
-    h('div', { class: 'ln tap', onclick: openSleep },
+    h('div', { class: 'ln pad tap sleep', onclick: openSleep },
       all.length ? h('div', { class: 'bars' + (statRange === 'month' ? ' thin' : '') }, ...groups.map((g, k) => h('div', {}, h('b', { style: `height:${vals[k] != null ? Math.max(4, (vals[k] - 240) / (max - 240) * 84) : 0}px` }), h('span', { text: g.lbl }))))
-        : h('div', { class: 'lr' }, h('span', { class: 'add', text: 'Noch kein Schlaf eingetragen' })))];
+        : h('div', { class: 'add', text: 'Noch kein Schlaf eingetragen' }))];
 }
 function goalStats(days) {
   const gl = mine(goals); if (!gl.length) return [];
@@ -147,9 +170,9 @@ function goalStats(days) {
   const rows = gl.map(g => {
     const from = g.created ? ymd(new Date(g.created)) : days[0]; const ds = days.filter(d => d >= from);
     const n = ds.filter(d => (g.days || {})[d]).length; hit += n; tot += ds.length;
-    return lrow({}, h('span', { class: 'tx', text: g.title }), h('span', { class: 'n', text: `${n} von ${ds.length}` }));
+    return lrow({}, h('span', { class: 'tx', text: g.title }), h('span', { class: 'n', text: `${n} von ${ds.length}` }), h('span', { class: 'mb goal' }, h('i', { style: `width:${ds.length ? n / ds.length * 100 : 0}%` })));
   });
-  return [secHead('Ziele', tot ? `${Math.round(hit / tot * 100)} % geschafft` : null), lines(...rows)];
+  return [secHead('Ziele', tot ? `${Math.round(hit / tot * 100)} % geschafft` : null), h('div', { class: 'ln goals' }, ...rows)];
 }
 function nutStats(days) {
   const name = me(), pf = profiles[name];
@@ -157,20 +180,34 @@ function nutStats(days) {
   const d = rangeData(name, days), refs = allRefs(needsOf(pf));
   const out = [secHead('Nährstoffe', d.n ? (d.n === 1 ? 'an 1 Tag erfasst' : `Schnitt aus ${d.n} Tagen`) : null)];
   if (!d.n) { out.push(lines(lrow({ class: 'lr tap', onclick: () => openDiary(name, today(), render) }, h('span', { class: 'add', text: 'Noch nichts gegessen eingetragen' })))); return out; }
-  for (const [title, keys] of NUT_GROUPS) {
-    out.push(h('div', { class: 'sub', text: title }));
-    out.push(lines(...keys.filter(i => refs[i]).map(i => {
-      const [ref, nm] = refs[i], pct = Math.round(d.total[i] / d.n / ref * 100), st = nutState(i, pct);
-      return lrow({}, h('span', { class: 'tx', text: nm }), h('span', { class: 'n', text: `${pct} %` }),
-        h('span', { class: 'mb ' + (st === 'sun' ? 'low' : st) }, h('i', { style: `width:${Math.min(100, pct)}%` })));
-    })));
+  const rows = {};
+  for (const [, keys] of NUT_GROUPS) for (const i of keys) if (refs[i]) {
+    const [ref, nm, unit] = refs[i], v = d.total[i] / d.n, pct = Math.round(v / ref * 100), st0 = nutState(i, pct);
+    rows[i] = { i, nm, unit, v, ref, pct, st: st0 === 'sun' ? 'low' : st0 };
   }
-  out.push(lines(lrow({ class: 'lr tap', onclick: () => { cachePage(); tab = 'nutri'; renderTabs(); render(); window.scrollTo(0, 0); } }, h('span', { text: 'Einzelne Tage ansehen' }), h('span', { class: 'n', text: '›' }))));
+  const list = Object.values(rows), plain = list.filter(r => !LIMIT_KEYS.has(r.i));
+  const cover = Math.round(plain.reduce((a, r) => a + Math.min(100, r.pct), 0) / plain.length);
+  const cnt = s => list.filter(r => r.st === s).length;
+  const bar = h('div', { class: 'stack' }, ...['good', 'ok', 'low', 'high'].map(s => cnt(s) ? h('i', { class: s, style: `flex:${cnt(s)}` }) : null));
+  const legend = h('div', { class: 'leg' }, ...[['good', 'gut'], ['ok', 'ordentlich'], ['low', 'wenig'], ['high', 'zu viel']].filter(([s]) => cnt(s)).map(([s, l]) => h('span', { class: s }, h('i'), `${cnt(s)} ${l}`)));
+  const lack = plain.filter(r => !MACRO.has(r.i)).sort((a, b) => a.pct - b.pct).slice(0, 3);
+  out.push(h('div', { class: 'ln pad nsum' },
+    h('div', { class: 'big' }, h('b', { text: `${cover} %` }), h('span', { text: 'deines Bedarfs gedeckt' })), bar, legend,
+    lack.length ? h('div', { class: 'lack' }, h('span', { class: 'lt', text: 'Fehlt am meisten' }), h('div', { class: 'chips' }, ...lack.map(r => h('span', { class: 'cp low' }, `${r.nm} ${r.pct} %`)))) : null));
+  // Makros als Kacheln
+  out.push(h('div', { class: 'macgrid' }, ...[0, 1, 3, 2].filter(i => rows[i]).map(i => { const r = rows[i];
+    return h('div', { class: 'mt ' + r.st }, h('span', { class: 'mn', text: r.nm }), h('b', { text: `${r.pct} %` }),
+      h('span', { class: 'mv', text: `${de(r.v)} von ${de(r.ref)} ${r.unit}` }), h('span', { class: 'mb ' + r.st }, h('i', { style: `width:${Math.min(100, r.pct)}%` }))); })));
+  // Gruppen zum Aufklappen
+  for (const [title, keys] of NUT_GROUPS) {
+    const rs = keys.map(i => rows[i]).filter(r => r && !MACRO.has(r.i) && r.i !== 1); if (!rs.length) continue;
+    const open = openGroups.has(title), good = rs.filter(r => r.st === 'good').length;
+    out.push(h('div', { class: 'ln grp' + (open ? ' open' : '') },
+      lrow({ class: 'lr tap gh', onclick: () => { open ? openGroups.delete(title) : openGroups.add(title); render(); } },
+        h('span', { class: 'tx', text: title }), h('span', { class: 'dots' }, ...rs.map(r => h('i', { class: r.st }))), h('span', { class: 'chev', text: '›' })),
+      ...(open ? rs.map(r => lrow({}, h('span', { class: 'tx', text: r.nm }), h('span', { class: 'n', text: `${r.pct} %` }), h('span', { class: 'mb ' + r.st }, h('i', { style: `width:${Math.min(100, r.pct)}%` })))) : [])));
+  }
+  out.push(lines(lrow({ class: 'lr tap', onclick: () => { cachePage(); tab = 'nutri'; renderTabs(); render(); window.scrollTo(0, 0); } }, h('span', { class: 'tx', text: 'Einzelne Tage ansehen' }), h('span', { class: 'n', text: '›' }))));
   return out;
 }
-PAGES.stat = function () {
-  const days = statDays();
-  return h('div', { class: 'pg' },
-    h('div', { class: 'useg' }, ...[['week', 'Woche'], ['month', 'Monat'], ['year', 'Jahr']].map(([k, l]) => h('button', { class: k === statRange ? 'on' : '', onclick: () => { statRange = k; render(); } }, l))),
-    ...sleepBars(days), ...goalStats(days), ...nutStats(days));
-};
+PAGES.stat = function () { const days = statDays(); return h('div', { class: 'pg' }, ...sleepBars(days), ...goalStats(days), ...nutStats(days)); };

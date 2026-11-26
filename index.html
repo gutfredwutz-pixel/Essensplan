@@ -1360,6 +1360,69 @@ html.dark .ph2ring circle:first-of-type{stroke:var(--line)!important}
 .mb i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--lv-ok)}
 .mb.low i{background:var(--lv-low)}.mb.good i{background:var(--lv-good)}.mb.high i{background:var(--lv-high)}
 .lr .n+.mb{margin-left:12px}
+/* ===== Schritt 3: Mittelding, weiche Karten, Farbe je Bereich, einheitlicher Kopf ===== */
+html.dark{--card:#18181B;--card2:#222226;--sep:#26262B;--c-sleep:#9AA5FF;--c-todo:#F2A877;--c-goal:#E6C170;--c-food:#8FB8A8;
+ --cardbg:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,0) 46px),var(--card);--cardsh:0 10px 26px -14px rgba(0,0,0,.7)}
+/* Kopf: auf jeder Seite gleich */
+header{padding:calc(var(--top) + 16px) 20px 4px!important}
+.hrow{min-height:46px;padding:0!important}
+#title,[data-cid=title]{display:block!important;font-size:32px!important;font-weight:700!important;letter-spacing:-.025em;line-height:1.15;padding-left:4px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.useg{padding:12px 4px 2px!important;gap:24px}
+.pg{padding:14px 6px 0!important}
+.pg>.dt{margin:-6px 4px 22px;color:var(--ink3);font-size:15px}
+/* Karten statt Linien */
+.ln{background:var(--cardbg);border:0!important;border-radius:22px;padding:2px 16px;margin-bottom:30px;box-shadow:var(--cardsh)}
+.ln.pad{padding:16px 16px 14px}
+.lr+.lr{border-top:1px solid var(--sep)!important}
+.sh{margin:0 6px 10px!important}
+.lr .plus{width:22px;text-align:center;color:var(--ink3);font-size:21px;line-height:1;flex:none}
+.ln.todo .ckb.x{background:var(--c-todo);border-color:var(--c-todo)}
+.ln.todo .ckb{border-color:color-mix(in srgb,var(--c-todo) 55%,#3A3A40)}
+.lr.goal .ckb,.ln.goals .ckb{border-color:color-mix(in srgb,var(--c-goal) 55%,#3A3A40)}
+.lr.goal .ckb.x,.ln.goals .ckb.x{background:var(--c-goal);border-color:var(--c-goal)}
+.lr.goal .wk i.y,.ln.goals .wk i.y{background:var(--c-goal)}
+.mb.goal i{background:var(--c-goal)!important}
+.sleep .tl i,.sleep .bars b{background:linear-gradient(180deg,color-mix(in srgb,var(--c-sleep) 80%,#fff),var(--c-sleep))!important}
+.sleep .tl{background:color-mix(in srgb,var(--c-sleep) 14%,var(--card2))}
+.rp{width:22px;height:22px;flex:none;color:var(--c-todo)}.rp svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.cp{border:0;background:var(--card2);color:var(--ink2);border-radius:14px;padding:8px 13px;font-size:14px;font-weight:550;cursor:pointer}
+.cp.on{background:color-mix(in srgb,var(--c-todo) 22%,var(--card2));color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--c-todo)}
+.cp.low{background:color-mix(in srgb,var(--lv-low) 18%,var(--card2));color:#EBC4C4}
+/* Nährstoff-Übersicht */
+.nsum .big{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}
+.nsum .big b{font-size:36px;font-weight:750;letter-spacing:-.03em}
+.nsum .big span{color:var(--ink3);font-size:14.5px}
+.stack{display:flex;gap:3px;height:12px;border-radius:6px;overflow:hidden;margin-bottom:10px}
+.stack i{display:block;height:100%}
+.stack .good,.leg .good i{background:var(--lv-good)}.stack .ok,.leg .ok i{background:var(--lv-ok)}.stack .low,.leg .low i{background:var(--lv-low)}.stack .high,.leg .high i{background:var(--lv-high)}
+.leg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--ink2)}
+.leg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.lack{margin-top:18px}.lack .lt{display:block;font-size:13.5px;color:var(--ink3);margin-bottom:8px}
+.macgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:30px}
+.mt{background:var(--cardbg);border-radius:20px;padding:14px 14px 15px;box-shadow:var(--cardsh);display:flex;flex-direction:column;gap:3px}
+.mt .mn{font-size:13.5px;color:var(--ink3)}
+.mt b{font-size:24px;font-weight:700;letter-spacing:-.02em}
+.mt .mv{font-size:12.5px;color:var(--ink3);margin-bottom:8px}
+.mt .mb{width:100%;margin:0}
+.ln.grp{margin-bottom:12px}
+.gh .dots{display:flex;gap:4px;margin-left:auto}.gh .dots i{width:8px;height:8px;border-radius:50%;background:var(--lv-ok)}
+.gh .dots i.good{background:var(--lv-good)}.gh .dots i.low{background:var(--lv-low)}.gh .dots i.high{background:var(--lv-high)}
+.gh .chev{color:var(--ink3);font-size:20px;line-height:1;transition:transform .2s;margin-left:6px}
+.grp.open .gh .chev{transform:rotate(90deg)}
+.ln.grp:last-of-type{margin-bottom:30px}
+.grp+.ln:not(.grp){margin-top:18px}
+/* Essen-Seiten ebenfalls als Karten */
+html.dark .week{border-top:0!important;background:var(--cardbg);border-radius:22px;padding:2px 14px;box-shadow:var(--cardsh)}
+html.dark .day,html.dark .day.today,html.dark .day:not(.today){border-bottom:1px solid var(--sep)!important}
+html.dark .day:last-child{border-bottom:0!important}
+html.dark .day.today .dlabel .wd,html.dark .day.today .dlabel .dn{color:var(--c-food)!important}
+html.dark .flatlist{border-top:0!important;background:var(--cardbg);border-radius:22px;padding:2px 14px;box-shadow:var(--cardsh)}
+html.dark .item{border-bottom:1px solid var(--sep)!important}html.dark .flatlist .item:last-child{border-bottom:0!important}
+html.dark .reclist{background:var(--cardbg);border-radius:22px;padding:2px 14px;box-shadow:var(--cardsh)}
+html.dark .rcard{border-bottom:1px solid var(--sep)!important}html.dark .reclist .rcard:last-child{border-bottom:0!important}
+html.dark .weekcard,html.dark .rephero{background:var(--cardbg)!important;border:0!important;border-radius:22px!important;box-shadow:var(--cardsh)!important;padding:16px!important}
+html.dark .tile{background:var(--cardbg)!important;border:0!important;border-radius:14px!important;box-shadow:var(--cardsh)!important}
 </style>
 </head>
 <body data-tab="start">

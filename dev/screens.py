@@ -33,12 +33,13 @@ async def main():
               await db.collection('todos').doc('t1').set({who:'Jakob',text:'Statistik-Skript abholen',date:t,time:'',done:false,created:1});
               await db.collection('todos').doc('t2').set({who:'Jakob',text:'Frieda wegen Samstag schreiben',date:t,time:'18:00',done:false,created:2});
               await db.collection('todos').doc('t3').set({who:'Jakob',text:'Miete überweisen',date:t,time:'',done:true,doneOn:t,created:3});
+              await db.collection('todos').doc('t5').set({who:'Jakob',text:'Zähne Zahnseide',date:t,time:'',repeat:'daily',doneDays:{},created:5});
               await db.collection('todos').doc('t4').set({who:'Jakob',text:'Fahrrad zur Werkstatt',date:tm,time:'',done:false,created:4});
               const d={}; d[t]=true; await db.collection('goals').doc('g1').set({who:'Jakob',title:'10 Seiten lesen',days:{},created:1});
               await db.collection('goals').doc('g2').set({who:'Jakob',title:'2 Liter trinken',days:d,created:2});
             })()"""); await pg.wait_for_timeout(500)
             for i, name in enumerate(['start', 'statistik', 'essen', 'todos', 'news']):
-                await pg.click(f'.tabs button >> nth={i}'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / f'{name}.png'), full_page=(name == 'statistik'))
+                await pg.click(f'.tabs button >> nth={i}'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / f'{name}.png'), full_page=(name in ('statistik', 'todos')))
             await pg.click('.tabs button >> nth=2'); await pg.wait_for_timeout(500)
             for name in ['Liste', 'Rezepte']:
                 await pg.click(f'#fseg >> text={name}'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / f'essen_{name.lower()}.png'))
