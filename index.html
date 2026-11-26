@@ -1475,6 +1475,23 @@ html.dark{--lv-good:#F2F2F4;--lv-ok:#8E8E93;--lv-low:#D08C8C;--lv-high:#E0B05A}
 .tip .tips{font-size:14px;color:var(--ink3);margin:4px 0 12px}
 .tip .chips{margin-top:2px}
 .sleep .bars b{background:var(--c-sleep)!important;opacity:.5}.sleep .bars b.ok{opacity:1}
+/* ===== Schritt 5: keine Kästen, keine Trennlinien, nur Textzeilen ===== */
+.ln,.ln.pad,.mt,html.dark .week,html.dark .flatlist,html.dark .reclist,html.dark .weekcard,html.dark .rephero,html.dark .donebox,html.dark .setcard,html.dark .infocard,html.dark .rectop,html.dark .fsec{background:none!important;background-image:none!important;border:0!important;border-radius:0!important;box-shadow:none!important}
+.ln,.ln.pad{padding:0 4px!important;margin-bottom:34px}
+.ln .lr,.lr+.lr,html.dark .day,html.dark .day.today,html.dark .day:not(.today),html.dark .item,html.dark .rcard{border:0!important}
+.lr{padding:10px 0!important}
+.sh{margin:0 4px 6px!important}
+html.dark .day,html.dark .day.today,html.dark .day:not(.today){padding:10px 0!important}
+html.dark .week,html.dark .flatlist,html.dark .reclist{padding:0 4px!important}
+/* Auswahl als Text: gelb = gewählt */
+.cp,html.dark .tile{background:none!important;box-shadow:none!important;border:0!important;padding:4px 0!important;margin-right:14px;color:var(--ink3)!important;font-size:15px!important;border-radius:0!important}
+.cp.on,html.dark .tile.on,html.dark .tile.on span{color:var(--ac)!important}
+html.dark .tile span:first-child{color:var(--ink)!important}
+html.dark .tiles{gap:4px 6px!important}
+.chips{gap:2px 0}
+.tip .foods{font-size:15px;color:var(--ink2);margin-top:2px}
+html.dark .field,html.dark .inp{background:#1C1C1E!important;border:0!important}
+.setmenu{margin-top:0}
 </style>
 </head>
 <body data-tab="start">

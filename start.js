@@ -128,7 +128,7 @@ function mealTip() {
   return [secHead('Vorschlag'), h('div', { class: 'ln pad tip' },
     h('div', { class: 'tipt' }, `Heute noch offen: ${de(kcal)} kcal` + (prot > 5 ? ` und ${de(prot)} g Eiweiß` : '')),
     worst ? h('div', { class: 'tips', text: `Am wenigsten bisher: ${worst.nm}` }) : null,
-    foods.length ? h('div', { class: 'chips' }, ...foods.map(f => h('span', { class: 'cp', text: f }))) : null)];
+    foods.length ? h('div', { class: 'foods', text: 'Passt gut: ' + foods.join(', ') }) : null)];
 }
 
 /* ---------- Start, To-dos, News ---------- */

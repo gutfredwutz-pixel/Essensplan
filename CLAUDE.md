@@ -12,6 +12,8 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 
 ## Geschmacksregeln (gelten für jedes Design)
 
+- **Keine Kästen und keine Trennlinien.** Inhalte stehen als reine Textzeilen auf Schwarz, mit Abstand statt Rahmen (Look wie iOS-Notizen, aber ohne gruppierte Kästen). Abgerundete Karten mit Inhalt drauf wirken für Jakob nach KI-Look; sie wurden zweimal abgelehnt. Auswahl-Knöpfe ebenfalls als Text, gewählt = gelb. Haken: weißer Kreis, schwarzer Haken, kein Orange.
+
 - Kein typischer KI-Look: keine Mittelpunkte (·) als Trenner, lieber Slash oder Bindestrich; keine Rauten (#); keine überflüssigen Icons, Untertitel oder Texte, die nur wiederholen; keine ALL-CAPS-Labels.
 - **Nichts bewegt sich von selbst.** Keine Dauer-Animationen, keine animierten Icons, kein Hochzählen. Bewegung nur als Antwort auf eine Aktion (Antippen, Wischen, Seitenwechsel, kurz Ring/Balken füllen beim Tageswechsel).
 - **Symmetrie und Einheitlichkeit selbst prüfen**, auf allen Seiten, hell und dunkel, bevor etwas an Jakob geht. Gleiche Abstände unter Überschriften, gleiche Ränder, gleiche Elemente gleich gestaltet. Jakob hat „gedrungen“ sehr oft bemängelt: lieber großzügige Abstände.
