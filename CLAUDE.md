@@ -48,6 +48,14 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - Start: „Bald essen“ (Vorrat, der Lücken der letzten 7 Tage füllt, dann frische Sachen ab 3 Tagen, eigenes Rezept mit den meisten Zutaten da, „Gericht-Ideen“) und „Einkaufen“ (Tippen setzt auf die Liste). Auswahl schrittweise (`greedy`), damit nicht drei Lebensmittel dieselbe Lücke füllen.
 - Rechnung ohne KI auf dem Gerät. Nur „Gericht-Ideen“ fragt die KI (Aufgabe `meal`), Ergebnis pro Tag und Vorrat in `localStorage` gemerkt. Ohne KI: passende eigene Rezepte.
 
+- Gewohnheiten (`habits()`): was in 30 Tagen oft gegessen, gekocht, gekauft wurde. Vertrautes wird bei „Einkaufen“ leicht bevorzugt und geht als Text an die KI (Gericht-Ideen); die KI hat kein Gedächtnis, sie weiß nur, was die App mitschickt.
+
+## Supplemente (`supplemente.js`)
+
+- Feste Regeln, keine KI. Prüft eingetragene Supplemente (Summe aller) gegen BfR-Höchstmengen für Supplemente (2024, belegt nur: D 20 µg, Jod 100 µg, Eisen 6 mg, Magnesium 250 mg, Zink 6,5 mg, Folsäure 200 µg; andere ohne Warnung) und meldet „eher unnötig“, wenn das Essen schon 100 % deckt.
+- Empfehlungen: Vitamin D 20 µg von Oktober bis März (DGE) bzw. bei wenig Sonne; Jod, B12 (vegan/vegetarisch), Omega-3, Eisen erst übers Essen, Eisen nur nach Bluttest. Prüfungen außer D erst ab 5 eingetragenen Tagen in 14 Tagen.
+- Rückfragen im Profil: `jodsalz`, `salz` (wenig/normal/viel = 1/2,5/4 g), `sonne`. Jodsalz zählt in `dayIntake` mit (20 µg Jod pro g). Gefragt wird auf Start (eine Zeile) und im Sheet „Supplemente“ (Statistik > Nährstoffe).
+
 ## Aufbau (Stand jetzt)
 
 - Reines HTML/CSS/JS ohne Build-Schritt, gehostet über **GitHub Pages** (Branch `main`, Push = live nach ca. 1 Minute). Kein Service-Worker-Cache für App-Dateien; nach Änderungen App einmal ganz schließen.

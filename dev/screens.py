@@ -25,7 +25,7 @@ async def main():
             await pg.evaluate("""(async()=>{
               await db.collection('recipes').doc('r1').set({title:'Lasagne',servings:'4',ingredients:[{name:'Hackfleisch',amount:'400 g'},{name:'Karotten',amount:'2'}],steps:['Anbraten','Schichten','Backen']});
               await db.collection('plan').doc('p1').set({date:ymd(new Date()),title:'Lasagne',recipeId:'r1',meal:'Abend'});
-              await db.collection('profiles').doc('Jakob').set({sex:'m',age:24,height:182,weight:78,pal:1.55,sportH:3,sportI:2,train:'kraft',goal:'halten',supps:[],protG:180});
+              await db.collection('profiles').doc('Jakob').set({sex:'m',age:24,height:182,weight:78,pal:1.55,sportH:3,sportI:2,train:'kraft',goal:'halten',supps:[{label:'Zink',i:21,amt:10,freq:1},{label:'Magnesium',i:19,amt:300,freq:1}],diet:'alles',protG:180});
               for (const n of ['500 g Nudeln','Tomaten','Milch']) addItem(n);
               const t=ymd(new Date()), tm=ymd(addDays(new Date(),2));
               await db.collection('sleep').doc('jakob_'+t).set({who:'Jakob',date:t,bed:'23:40',wake:'07:00'});
@@ -61,6 +61,12 @@ async def main():
             await pg.evaluate("closeSheet();openTodo(todos.find(x=>x.id==='t2'))"); await pg.wait_for_timeout(600); await pg.screenshot(path=str(OUT / 'todo_erinnern.png'))
             await pg.evaluate("closeSheet();setSub='Mitteilungen';openTop('set')"); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'mitteilungen_aus.png'))
             await pg.evaluate("(async()=>{LS.set('ep_push','dtest'); await db.collection('push').doc('dtest').set({who:'Jakob',sub:{endpoint:'https://web.push.apple.com/x'},nudge:true}); closeSheet(); setSub='Mitteilungen'; openTop('set');})()"); await pg.wait_for_timeout(800); await pg.screenshot(path=str(OUT / 'mitteilungen_an.png'))
+            await pg.evaluate("closeSheet()"); await pg.wait_for_timeout(400)
+            await pg.click('.tabs button >> nth=0'); await pg.wait_for_timeout(700); await pg.evaluate("window.scrollTo(0, document.body.scrollHeight)"); await pg.wait_for_timeout(300); await pg.screenshot(path=str(OUT / 'start_unten.png'))
+            await pg.evaluate("openSuppCheck()"); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'supplemente.png'), full_page=False)
+            await pg.click('.lr.ask >> text=Ja'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'supplemente2.png'))
+            print('Jod mit Jodsalz heute:', await pg.evaluate("Math.round(dayIntake('Jakob', ymd(new Date())).tot[22])"))
+            print('Kontext KI:', await pg.evaluate("mealContext(gapState())"))
             print('Fehler auf der Seite:', errs or 'keine'); print('Bilder in', OUT)
             await b.close()
     finally:

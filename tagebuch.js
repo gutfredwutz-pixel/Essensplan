@@ -73,6 +73,7 @@ function dayIntake(name, ds) {
   const counted = !!e || planned;
   const pf = profiles[name];
   if (counted && pf) for (const s of pf.supps || []) add(s.label + ' (Supplement)', suppVec(s), 1);
+  const sv = counted && window.saltVec ? saltVec(pf) : null; if (sv) add('Jodsalz beim Kochen', sv, 1);
   return { tot, src, logged: !!e, counted };
 }
 function rangeData(name, days) {
