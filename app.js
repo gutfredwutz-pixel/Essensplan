@@ -45,7 +45,7 @@ const ART = {
   list: `<svg viewBox="0 0 64 64"><defs><linearGradient id="gb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5B8CFF"/><stop offset="1" stop-color="#FF8DBA"/></linearGradient></defs><path d="M30 2C48 0 63 13 62 31 62 49 49 63 31 62 14 62 1 50 2 32 2 15 13 4 30 2Z" fill="url(#gb)"/><path d="M28 21c-1-5 2-9 6-10" stroke="#3FA34D" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M33 13c4-3 8-2 9 0-3 3-7 3-9 0z" fill="#5DBB63"/><path d="M22 26c-2-6 1-11 5-12l3 12z" fill="#FF9F43"/><path d="M38 26c0-5 3-9 7-9 3 2 3 6 1 9z" fill="#E8473E"/><path d="M15 26h34l-3 22c-1 3-3 5-6 5H24c-3 0-5-2-6-5z" fill="#fff"/><path d="M23 33v12M32 33v12M41 33v12" stroke="#DDE6FF" stroke-width="2.6" stroke-linecap="round"/></svg>`,
   rec: `<svg viewBox="0 0 64 64"><defs><linearGradient id="gc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F6BFF"/><stop offset="1" stop-color="#FF8DBA"/></linearGradient></defs><path d="M33 2C51 3 63 15 62 33 61 51 48 63 30 62 12 61 1 48 2 30 3 13 16 1 33 2Z" fill="url(#gc)"/><path d="M12 20c7-3 14-3 20 2v26c-6-5-13-5-20-2z" fill="#fff"/><path d="M52 20c-7-3-14-3-20 2v26c6-5 13-5 20-2z" fill="#F4F7FF"/><path d="M17 27c3-1 7-1 10 1M17 33c3-1 7-1 10 1M17 39c3-1 7-1 10 1" stroke="#C9D6FF" stroke-width="2" stroke-linecap="round"/><path d="M37 27c3-1 7-1 10 1M37 33c3-1 7-1 10 1" stroke="#FFC2DA" stroke-width="2" stroke-linecap="round"/><circle cx="44" cy="41" r="4" fill="#FFC23D"/></svg>`
 };
-const TITLES = { list: 'Einkaufsliste', cal: 'Essenswoche', rec: 'Rezepte', nutri: 'Nährstoffe', set: 'Einstellungen' };
+const TITLES = { start: '', nutri: '', list: '', cal: '', rec: '', todo: 'To-dos', news: 'News', set: 'Einstellungen' };
 window.FA = window.FA || {};
 window.FA['jar'] = [512, 512, 'M176 32h160c13 0 24 11 24 24v24c0 9-5 17-13 21 66 28 109 88 109 159 0 107-74 220-200 220S56 367 56 260c0-71 43-131 109-159-8-4-13-12-13-21V56c0-13 11-24 24-24zm-48 248c0 78 52 168 128 168s128-90 128-168c0-6 0-12-1-18-33 18-75 18-110 2-38-17-80-16-144 2z'];
 
@@ -63,7 +63,8 @@ function catOf(name) {
 /* ============ Zustand ============ */
 let db = null, sample = null, dict = null, userCap = null, canWrite = true;
 let items = [], plan = [], recipes = [], known = new Map(), profiles = {}, diary = {};
-let tab = 'cal', view = 'week', anchor = (() => { const t = dayOnly(new Date()); try { return localStorage.getItem('ep_weekstart') === 'mo' ? new Date(t.getFullYear(), t.getMonth(), t.getDate() - ((t.getDay() + 6) % 7)) : t; } catch (e) { return t; } })(), monthAnchor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let todos = [], goals = [], sleeps = []; const PAGES = {}; // Seiten aus start.js
+let tab = 'start', view = 'week', anchor = (() => { const t = dayOnly(new Date()); try { return localStorage.getItem('ep_weekstart') === 'mo' ? new Date(t.getFullYear(), t.getMonth(), t.getDate() - ((t.getDay() + 6) % 7)) : t; } catch (e) { return t; } })(), monthAnchor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 let loaded = { items: false, plan: false, recipes: false };
 try { const s = localStorage.getItem('ep_view'); if (s === 'month' || s === 'week') view = s; } catch (e) { }
 
@@ -123,6 +124,7 @@ function startData() {
   const done = () => { if (loaded.items && loaded.plan && loaded.recipes) { clearTimeout(timer); setStatus(''); } };
   const sub = (name, set) => db.collection(name).onSnapshot(snap => { set(snap.docs.map(x => ({ id: x.id, ...x.data() }))); loaded[name] = true; done(); render(); }, e => { lastErr = (e && (e.message || e.code)) || ''; setStatus('Fehler beim Laden'); console.error(e); });
   sub('items', v => items = v); sub('plan', v => plan = v); sub('recipes', v => recipes = v);
+  sub('todos', v => todos = v); sub('goals', v => goals = v); sub('sleep', v => sleeps = v);
   db.collection('known').onSnapshot(snap => { known = new Map(snap.docs.map(x => [x.id, x.data()])); });
   db.collection('settings').onSnapshot(snap => { const d = snap.docs.find(x => x.id === 'household'); hhSet = d ? d.data() : {}; if (tab === 'set') render(); });
   db.collection('profiles').onSnapshot(snap => { profiles = Object.fromEntries(snap.docs.map(x => [x.id, x.data()])); });
@@ -227,8 +229,8 @@ function showWho() {
   fullSheet([h('div', { class: 'welcome' }, h('h2', { text: 'Wer bist du?' }), list, other)]);
   $('#ov').dataset.locked = '1';
 }
-function isDark() { const t = LS.get('ep_theme'); return t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches); }
-function barColor(off) { const m = document.querySelector('meta[name=theme-color]'); if (!m) return; const d = isDark(), dim = !off && $('#ov') && $('#ov').classList.contains('on'); const col = d ? (dim ? '#11151F' : '#121827') : (dim ? '#C4CFE4' : '#E8F0FF'); m.content = col; document.documentElement.style.backgroundColor = col; }
+function isDark() { return true; } // neues Design: vorerst nur dunkel
+function barColor(off) { const m = document.querySelector('meta[name=theme-color]'); if (!m) return; const d = isDark(), dim = !off && $('#ov') && $('#ov').classList.contains('on'); const col = d ? (dim ? '#050506' : '#0B0B0C') : (dim ? '#C4CFE4' : '#E8F0FF'); m.content = col; document.documentElement.style.backgroundColor = col; }
 function applyTheme() { const d = isDark(); document.documentElement.classList.toggle('dark', d); barColor(); }
 // Hintergrund festhalten, solange ein Blatt offen ist
 let lockY = null;
@@ -267,7 +269,7 @@ function renderSettings() {
     catch (e) { asrProg.textContent = 'Laden hat nicht geklappt, bitte später im WLAN nochmal versuchen.'; asrBtn.disabled = false; }
   });
   return h('div', { class: 'setpage' },
-    card('a', 'Anzeigemodus', seg('ep_theme', [['light', 'Hell'], ['dark', 'Dunkel'], ['auto', 'Wie iPhone']], 'light', applyTheme)),
+    
     card('b', 'Meine Angaben', note(profiles[who] ? 'Körper, Alltag, Sport, Ziel und Supplemente' : 'Noch nichts eingetragen'),
       h('button', { class: 'btn grad', style: 'width:100%', onclick: () => openProfileEdit(who, () => openTop('set')) }, profiles[who] ? 'Bearbeiten' : 'Angaben machen')),
     card('b', 'Haushalt', note('Mitglieder, Code und Einladungslink für neue Leute.'), h('button', { class: 'btn s', style: 'width:100%', onclick: () => { topSheet = null; openProfile(); } }, 'Haushalt öffnen')),
@@ -428,23 +430,21 @@ function grey(text) { return h('div', { class: 'greytxt', text }); }
 
 /* ============ Kopf & Tabs ============ */
 function renderHead() {
-  const a = $('#art'); a.replaceChildren(svgEl(ART[tab])); $('#title').textContent = TITLES[tab];
+  const a = $('#art'); a.replaceChildren(); if (ART[tab]) a.append(svgEl(ART[tab])); $('#title').textContent = TITLES[tab] || ''; renderFoodSeg();
   const w = $('#who'); const m = me(); w.classList.toggle('hidden', !household); w.style.background = colorOf(m); w.textContent = (m || '?')[0];
-  const gr = $('#gear'); if (gr && !gr.firstChild) gr.append(ic('gear')); if (gr) gr.classList.toggle('hidden', !household);
+  const gr = $('#gear'); if (gr && !gr.firstChild) gr.append(ic('gear')); if (gr) gr.classList.toggle('hidden', !household || tab !== 'start');
   document.body.dataset.tab = tab;
 }
 function renderTabs() {
   const t = $('#tabs');
   if (!t._built) {
     t._built = true; t.replaceChildren();
-    const go = id => () => goTab(id, TAB_ORDER.indexOf(tab) < 0 ? (tab === 'nutri' ? -1 : 1) : TAB_ORDER.indexOf(id) - TAB_ORDER.indexOf(tab));
-    t.append(h('span', { class: 'tind' }),
-      h('button', { class: 'side', 'data-t': 'list', 'aria-label': 'Einkaufsliste', onclick: go('list') }, ic('cart-shopping')),
-      h('button', { class: 'mid', 'data-t': 'cal', 'aria-label': 'Essenswoche', onclick: go('cal') }, h('span', { class: 'bub' }, ic('calendar-days'))),
-      h('button', { class: 'side', 'data-t': 'rec', 'aria-label': 'Rezepte', onclick: go('rec') }, ic('book-open')));
+    const go = id => () => goTab(id, TABS().indexOf(tab) < 0 ? (tab === 'nutri' ? -1 : 1) : TABS().indexOf(id) - TABS().indexOf(tab));
+    t.append(h('span', { class: 'tind' }), ...TAB_DEF.map(([id, label, path]) => h('button', { 'data-t': id, 'aria-label': label, onclick: () => goTab(id === 'food' ? foodSub : id, TABS().indexOf(id === 'food' ? foodSub : id) - TABS().indexOf(tab)) }, svgEl(`<svg class="ti" viewBox="0 0 24 24"><path d="${path}"/></svg>`), h('span', { text: label }))));
   }
-  t.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
-  tabInd(TAB_ORDER.indexOf(tab), 0, true);
+  if (FOOD.includes(tab)) foodSub = tab;
+  t.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.t === (FOOD.includes(tab) ? 'food' : tab)));
+  tabInd(TABS().indexOf(tab), 0, true);
   renderHead(); syncDock();
 }
 // Gleitender Kreis in der Tab-Leiste; folgt beim Wischen dem Finger
@@ -459,7 +459,21 @@ function tabInd(i, prog, anim) {
   bs.forEach((b, k) => b.classList.toggle('near', k === (p > 0.5 ? j : i)));
 }
 let listUI = null, recUI = null;
-const TAB_ORDER = ['list', 'cal', 'rec'];
+const FOOD = ['list', 'cal', 'rec']; let foodSub = 'cal';
+const TABS = () => ['start', 'nutri', foodSub, 'todo', 'news'];
+const TAB_DEF = [
+  ['start', 'Start', 'M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z'],
+  ['nutri', 'Statistik', 'M5 20V13M10 20V8M15 20v-6M20 20V5'],
+  ['food', 'Essen', 'M7 4v7m-2-7v4a2 2 0 0 0 4 0V4M7 11v9M16.5 4c-1.8 0-3 2.2-3 5 0 2 1.2 3 3 3v8'],
+  ['todo', 'To-dos', 'm4.5 7 1.8 1.8L9.5 5.5M4.5 15.5l1.8 1.8 3.2-3.3M13 7.5h7M13 16h7'],
+  ['news', 'News', 'M5 5h11v14H6a1 1 0 0 1-1-1zM16 9h3v9a1 1 0 0 1-2 0M8 9h5M8 12.5h5M8 16h3']];
+// Unterteilung im Bereich Essen: Liste / Woche / Rezepte
+function renderFoodSeg() {
+  let f = $('#fseg'); if (!f) { f = h('div', { id: 'fseg', class: 'useg' }); $('header').append(f); }
+  f.classList.toggle('hidden', !FOOD.includes(tab));
+  if (!FOOD.includes(tab)) return;
+  f.replaceChildren(...[['list', 'Liste'], ['cal', 'Woche'], ['rec', 'Rezepte']].map(([id, l]) => h('button', { class: id === tab ? 'on' : '', onclick: () => { if (id !== tab) goTab(id, FOOD.indexOf(id) - FOOD.indexOf(tab)); } }, l)));
+}
 let topSheet = null;
 function openTop(id) {
   topSheet = id;
@@ -518,7 +532,7 @@ function peekNode(id) {
       const d = h('div'); const f = nutriFn, w = nutriWho; nutriTarget = d; try { nutriHome(); } finally { nutriTarget = null; nutriFn = f; nutriWho = w; } return d;
     }
     const sl = listUI, sr = recUI; let n = null;
-    if (id === 'cal') n = renderCal(); else if (id === 'set') n = renderSettings(); else if (id === 'list') n = renderList(); else if (id === 'rec') n = renderRec();
+    if (PAGES[id]) n = PAGES[id](); else if (id === 'cal') n = renderCal(); else if (id === 'set') n = renderSettings(); else if (id === 'list') n = renderList(); else if (id === 'rec') n = renderRec();
     listUI = sl; recUI = sr; return n || (pageCache[id] && pageCache[id].cloneNode(true));
   } catch (err) { console.warn(err); return pageCache[id] ? pageCache[id].cloneNode(true) : null; }
 }
@@ -535,7 +549,7 @@ function peekNode(id) {
     if (peeks.l) peeks.l.style.transform = `translate3d(${-W + x}px,0,0)`;
   };
   document.addEventListener('touchstart', e => {
-    mode = 0; if (busy || TAB_ORDER.indexOf(tab) < 0 || $('#ov').classList.contains('on') || document.querySelector('.cook') || e.touches.length > 1) { mode = -1; return; }
+    mode = 0; if (busy || TABS().indexOf(tab) < 0 || $('#ov').classList.contains('on') || document.querySelector('.cook') || e.touches.length > 1) { mode = -1; return; }
     const t = e.target; if (t.closest('.swipe,input,textarea,select,[data-no-tab-swipe],.tabs,.month')) { mode = -1; return; }
     if (Object.keys(peeks).length) { clearPeeks(); resetStage(); }
     sx = e.touches[0].clientX; sy = e.touches[0].clientY; dx = 0; vx = 0; lt = performance.now(); lxp = sx;
@@ -550,16 +564,16 @@ function peekNode(id) {
     }
     if (e.cancelable) e.preventDefault();
     const now = performance.now(); if (now > lt) { vx = 0.7 * vx + 0.3 * ((cx - lxp) / (now - lt)); lt = now; lxp = cx; }
-    const idx = TAB_ORDER.indexOf(tab); const edge = (dx > 0 && idx === 0) || (dx < 0 && idx === TAB_ORDER.length - 1);
+    const idx = TABS().indexOf(tab); const edge = (dx > 0 && idx === 0) || (dx < 0 && idx === TABS().length - 1);
     const x = edge ? Math.sign(dx) * Math.pow(Math.abs(dx), 0.75) : dx;
     cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { place(x); tabInd(idx, edge ? 0 : -x / (window.innerWidth * 0.55), false); });
   }, { passive: false });
   const endSwipe = () => {
     document.body.classList.remove('swiping');
     if (mode !== 1) return; mode = 0; cancelAnimationFrame(raf);
-    const st = stage(), W = window.innerWidth; const idx = TAB_ORDER.indexOf(tab);
+    const st = stage(), W = window.innerWidth; const idx = TABS().indexOf(tab);
     const dir = (Math.abs(vx) > 0.2 ? -Math.sign(vx) : -Math.sign(dx)) || 1;
-    const id = TAB_ORDER[idx + dir];
+    const id = TABS()[idx + dir];
     const go = id && (Math.abs(dx) > W * 0.12 || (Math.abs(vx) > 0.2 && Math.sign(vx) === -dir));
     const cur = peeks.cur;
     if (go && cur) {
@@ -596,6 +610,7 @@ function render() {
   if (tab === 'rec' && recUI && m.contains(recUI.wrap)) { recUI.draw(); return; }
   if (tab === 'nutri') { (nutriFn || nutriHome)(); window.scrollTo(0, scroll); return; }
   if (tab === 'set') { m.replaceChildren(renderSettings()); window.scrollTo(0, scroll); return; }
+  if (PAGES[tab]) { m.replaceChildren(PAGES[tab]()); window.scrollTo(0, scroll); return; }
   m.replaceChildren(tab === 'cal' ? renderCal() : tab === 'list' ? renderList() : renderRec());
   window.scrollTo(0, scroll);
 }

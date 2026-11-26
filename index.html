@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#E8F0FF">
+<meta name="theme-color" content="#0B0B0C">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -1226,9 +1226,67 @@ body.moving #tipdock,body.swiping #tipdock,body:has(#ov.on) #tipdock{opacity:0!i
 .tiplegend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
 .tiplegend .lg1 i{background:#7B5BFF}.tiplegend .lg2 i{background:#F09A7A}
 .hidden{display:none!important}
+/* ===== Neues Design, Schritt 1: dunkel, ruhig, Linien statt Kästen ===== */
+:root,html.dark{--bg:#0B0B0C;--bg0:rgba(11,11,12,0);--bg85:rgba(11,11,12,.92);--ink:#F2F2F4;--ink2:#B4B4BC;--ink3:#8A8A93;--line:#26262A;--card:#161618;--card2:#1E1E21;--glass:#161618;--glassb:rgba(255,255,255,.06);
+ --blue:#8FB8A8;--blue-d:#B5D3C7;--blue-l:#1C2622;--blue-ll:#141A17;--rosa:#2A1F24;--rosa-l:#1E181B;--rosa-d:#E2A3BC;--grad:#8FB8A8;--shadow:rgba(0,0,0,.4);--ac:#8FB8A8;--ok:#8FB8A8}
+html,body{background:var(--bg)!important}
+.blobs,.tabfade{display:none!important}
+header{background:var(--bg)!important;padding:calc(var(--top) + 14px) 20px 6px!important}
+.hrow{background:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+#who,[data-cid=who],#art,[data-cid=art]{display:none!important}
+#title:empty,[data-cid=title]:empty{display:none}
+#gear,[data-cid=gear]{margin-left:auto;background:none!important;box-shadow:none!important;color:var(--ink3)!important}
+main{padding:2px 14px calc(var(--bot) + 110px)!important}
+/* Leiste unten */
+.tabs{left:0!important;right:0!important;bottom:0!important;transform:none!important;width:auto!important;display:flex!important;justify-content:space-around!important;align-items:flex-start!important;gap:0!important;
+ padding:8px 4px calc(var(--bot) + 6px)!important;border-radius:0!important;background:var(--bg)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:none!important;border-top:1px solid var(--line)!important}
+.tabs .tind{display:none!important}
+.tabs{z-index:35!important}
+html.dark .tabs,html .tabs{background:var(--bg)!important;box-shadow:none!important;border-top:1px solid var(--line)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.tabs button{flex:1;width:auto!important;height:auto!important;min-width:0!important;padding:4px 0!important;display:flex!important;flex-direction:column;align-items:center;gap:4px;font-size:11px!important;font-weight:600;color:var(--ink3)!important;background:none!important;box-shadow:none!important;transition:transform .12s,opacity .12s}
+.tabs button.on{color:var(--ac)!important}
+.tabs button:active{transform:scale(.96)!important;opacity:.75}
+.tabs svg.ti{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+/* Unterteilung Essen (und gleicher Stil für andere Umschalter) */
+.useg{display:flex;gap:24px;padding:4px 4px 6px}
+.useg button{border:0;background:none;padding:0 0 5px;font-size:17px;font-weight:600;color:var(--ink3);border-bottom:2px solid transparent;cursor:pointer}
+.useg button.on{color:var(--ink);border-bottom-color:var(--ac)}
+/* Knöpfe: flach, Akzent mit dunkler Schrift */
+.btn.p,.btn.grad,.ib.p{background:var(--ac)!important;background-image:none!important;color:#0B0B0C!important;box-shadow:none!important}
+.btn.s{background:var(--card2)!important;color:var(--ink)!important;box-shadow:none!important}
+.btn,.ib{box-shadow:none!important}
+.day,.rectop,.weekcard,.rephero,.fsec,.setcard,.infocard,.rcard,.donebox,.pcta,.item{box-shadow:none!important;background-image:none!important}
+.sheet{background:#141416!important}
+/* Neue Seiten */
+.pg{padding:6px 6px 0}
+.pg .dt{color:var(--ink3);font-size:15px}
+.pg .hello{font-size:32px;font-weight:700;letter-spacing:-.025em;margin:2px 0 30px}
+.sh{display:flex;justify-content:space-between;align-items:baseline;margin:0 4px 8px}
+.sh .st{font-size:18px;font-weight:650}.sh span+span{font-size:14px;color:var(--ink3)}
+.ln{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:0 4px;margin-bottom:30px}
+.ln.tap{padding:14px 4px 12px}
+.lr{display:flex;gap:14px;align-items:center;padding:13px 0;font-size:15.5px;min-height:24px}
+.lr+.lr{border-top:1px solid var(--line)}
+.lr .tx{flex:1;min-width:0}
+.lr .n{margin-left:auto;color:var(--ink3);font-size:14px;white-space:nowrap}
+.lr input{flex:1;min-width:0;background:none;border:0;outline:0;font-size:15.5px;color:var(--ink);padding:0}
+.lr input::placeholder{color:var(--ink3)}
+.lr.done .tx{color:var(--ink3);text-decoration:line-through}
+.lr .add{color:var(--ink3)}
+.tap{cursor:pointer}
+.ckb{width:22px;height:22px;border-radius:50%;border:1.5px solid #5A5A63;flex:none;background:none;padding:0;cursor:pointer;transition:background .15s,border-color .15s}
+.ckb.x{background:var(--ac);border-color:var(--ac)}
+.ckb.ghost{border-style:dashed;border-color:#3A3A40}
+.wk{display:flex;gap:6px;margin-left:auto}.wk i{width:9px;height:9px;border-radius:50%;background:var(--line)}.wk i.y{background:var(--ac)}
+.tl{height:8px;border-radius:4px;background:var(--line);position:relative}.tl i{position:absolute;top:0;bottom:0;border-radius:4px;background:var(--ac)}
+.ax{position:relative;height:16px;margin-top:8px;font-size:12.5px;color:var(--ink3)}.ax span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.soon{color:var(--ink3);font-size:15.5px;line-height:1.5;margin:10px 4px}
+.form{display:flex;flex-direction:column;gap:14px;padding:4px 0 10px}
+.fl{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:15.5px}
+.fl .inp{max-width:60%}
 </style>
 </head>
-<body data-tab="cal">
+<body data-tab="start">
 <div class="blobs"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i></div>
 <div id="stage">
 <header>
@@ -1257,5 +1315,6 @@ body.moving #tipdock,body.swiping #tipdock,body:has(#ov.on) #tipdock{opacity:0!i
 <script src="app.js"></script>
 <script src="diaryfoods.js"></script>
 <script src="tagebuch.js"></script>
+<script src="start.js"></script>
 </body>
 </html>

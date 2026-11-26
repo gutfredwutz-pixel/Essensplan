@@ -14,7 +14,7 @@ async def main():
     srv = subprocess.Popen(['python3', '-m', 'http.server', '8776', '-d', str(ROOT)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(1)
     try:
         async with async_playwright() as p:
-            kw = {'executable_path': os.environ['CHROME']} if os.environ.get('CHROME') else {}
+            kw = {'executable_path': os.environ['CHROME']} if os.environ.get('CHROME') else ({'executable_path': '/opt/pw-browsers/chromium'} if os.path.exists('/opt/pw-browsers/chromium') else {})
             b = await p.chromium.launch(args=['--no-sandbox'], **kw)
             ctx = await b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, has_touch=True, is_mobile=True)
             await ctx.route('**/lib/supabase.js', lambda r: r.fulfill(path=str(ROOT / 'dev' / 'sbmock.js'), content_type='application/javascript'))
@@ -27,11 +27,20 @@ async def main():
               await db.collection('plan').doc('p1').set({date:ymd(new Date()),title:'Lasagne',recipeId:'r1',meal:'Abend'});
               await db.collection('profiles').doc('Jakob').set({sex:'m',age:24,height:182,weight:78,pal:1.55,sportH:3,sportI:2,train:'kraft',goal:'halten',supps:[],protG:180});
               for (const n of ['500 g Nudeln','Tomaten','Milch']) addItem(n);
+              const t=ymd(new Date()), tm=ymd(addDays(new Date(),2));
+              await db.collection('sleep').doc('jakob_'+t).set({who:'Jakob',date:t,bed:'23:40',wake:'07:00'});
+              await db.collection('todos').doc('t1').set({who:'Jakob',text:'Statistik-Skript abholen',date:t,time:'',done:false,created:1});
+              await db.collection('todos').doc('t2').set({who:'Jakob',text:'Frieda wegen Samstag schreiben',date:t,time:'18:00',done:false,created:2});
+              await db.collection('todos').doc('t3').set({who:'Jakob',text:'Miete überweisen',date:t,time:'',done:true,doneOn:t,created:3});
+              await db.collection('todos').doc('t4').set({who:'Jakob',text:'Fahrrad zur Werkstatt',date:tm,time:'',done:false,created:4});
+              const d={}; d[t]=true; await db.collection('goals').doc('g1').set({who:'Jakob',title:'10 Seiten lesen',days:{},created:1});
+              await db.collection('goals').doc('g2').set({who:'Jakob',title:'2 Liter trinken',days:d,created:2});
             })()"""); await pg.wait_for_timeout(500)
-            for i, name in enumerate(['liste', 'woche', 'rezepte']):
+            for i, name in enumerate(['start', 'statistik', 'essen', 'todos', 'news']):
                 await pg.click(f'.tabs button >> nth={i}'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / f'{name}.png'))
-            await pg.click('#who'); await pg.wait_for_timeout(900); await pg.screenshot(path=str(OUT / 'naehrstoffe.png'))
-            await pg.evaluate("closeSheet();document.documentElement.classList.add('dark')"); await pg.wait_for_timeout(300); await pg.screenshot(path=str(OUT / 'rezepte_dunkel.png'))
+            await pg.click('.tabs button >> nth=2'); await pg.wait_for_timeout(500)
+            for name in ['Liste', 'Rezepte']:
+                await pg.click(f'#fseg >> text={name}'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / f'essen_{name.lower()}.png'))
             print('Fehler auf der Seite:', errs or 'keine'); print('Bilder in', OUT)
             await b.close()
     finally:
