@@ -1509,6 +1509,17 @@ html.dark .field,html.dark .inp{background:#1C1C1E!important;border:0!important}
 html.dark #gear,html.dark [data-cid=gear],#gear{background:none!important;background-image:none!important;box-shadow:none!important;border:0!important;color:#8E8E93!important;width:44px!important;height:44px!important}
 #gear::before,#gear::after,[data-cid=gear]::before,[data-cid=gear]::after{display:none!important}
 #gear .fa,[data-cid=gear] .fa{width:22px;height:22px}
+/* ===== Einheitliche Abstände oben (gilt für alle Seiten) =====
+   Kopf: Datum 10 px unter der Statusleiste, Überschrift direkt darunter, Umschalter 18 px darunter,
+   danach 30 px bis zum ersten Inhalt. Zwischen Bereichen 44 px, unter Bereichsüberschriften 12 px. */
+html header,html.dark header{padding:calc(var(--top) + 10px) 20px 0!important}
+.kicker{padding:0 4px 4px!important}
+.useg{padding:18px 4px 0!important}
+html main,html.dark main,#main,[data-cid=main]{padding:30px 16px calc(var(--bot) + 110px)!important}
+.pg{padding:0 4px!important}
+.sh{margin:0 4px 12px!important}
+.ln,.ln.pad{margin-bottom:44px!important}
+.ln.pad.sleep{padding-top:4px!important}
 </style>
 </head>
 <body data-tab="start">

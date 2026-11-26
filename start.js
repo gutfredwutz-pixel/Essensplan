@@ -142,7 +142,6 @@ function inputBlock() {
   const trTxt = tr.length ? tr.map(x => `${x.min} min ${(TRAIN.find(k => k[0] === x.kind) || ['', ''])[1]}`).join(', ') : '';
   const row = (label, val, fn) => lrow({ class: 'lr tap', onclick: fn }, h('span', { class: 'tx', text: label }), h('span', { class: 'n', text: val || 'Eintragen' }), h('span', { class: 'chev', text: '›' }));
   return [secHead('Eintragen'), h('div', { class: 'ln' },
-    row('Schlaf', sm != null ? hm(sm) : '', openSleep),
     row('Training', trTxt, () => openTraining()),
     row('Gegessen', logged ? `${de(kc)} kcal` : '', () => openDiary(me(), t, render)))];
 }
@@ -178,6 +177,7 @@ PAGES.start = function () {
   const all = td.length + gl.length, open = openT.length + openG.length;
   const meals = planOn(t), shop = items.filter(i => !i.checked).length;
   return h('div', { class: 'pg' },
+    ...sleepBlock(),
     ...inputBlock(),
     secHead('Heute', all ? `${all - open} von ${all}` : null),
     h('div', { class: 'ln todo' }, ...openT.map(x => todoRow(x)), ...openG.map(goalRow), addRow('Neues To-do', s => addTodo(s))),
@@ -213,7 +213,7 @@ function sleepBars(days) {
   } else groups = days.map((d, i) => ({ lbl: statRange === 'week' ? WD[(parseYmd(d).getDay() + 6) % 7] : (i % 5 === 4 ? String(parseYmd(d).getDate()) : ''), days: [d] }));
   const avgOf = ds => { const v = ds.map(d => sleepMinutes(sleepOf(d))).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
   const vals = groups.map(g => avgOf(g.days)), all = vals.filter(x => x != null);
-  const avg = all.length ? Math.round(avgOf(days)) : null, max = Math.max(600, ...all), y = m => Math.max(4, (m - 240) / (max - 240) * 96);
+  const avg = all.length ? Math.round(avgOf(days)) : null, max = Math.max(600, ...all), y = m => Math.max(4, m / max * 96);
   return [secHead('Schlaf', avg != null ? `im Schnitt ${hm(avg)}` : null),
     h('div', { class: 'ln pad tap sleep', onclick: openSleep },
       all.length ? h('div', { class: 'bars' + (statRange === 'month' ? ' thin' : '') },

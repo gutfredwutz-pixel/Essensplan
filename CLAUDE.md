@@ -23,6 +23,18 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - Mikrofon als bekanntes Icon direkt im Textfeld, nicht als Text „Einsprechen“.
 - Zahlen mit Dezimalkomma, Eingaben speichern sich sofort (kein Speichern-Knopf nötig).
 
+## Stand des Umbaus (Ende Nov. 2026)
+
+- Fünf Reiter unten mit Symbolen: Start, Statistik, Essen (Mitte), To-dos, News. Interne Reiter-IDs: `start`, `stat`, `list`/`cal`/`rec` (Essen, Umschalter Woche/Rezepte, Einkaufsliste über Wagen-Symbol oben rechts), `todo`, `news`; `nutri` = alte Tagesansicht der Nährstoffe („Einzelne Tage“).
+- Neue Seiten in `start.js` (`PAGES.start/stat/todo/news`). Neue Sammlungen: `todos` (mit `repeat`, `doneDays`), `goals` (`days`), `sleep` (`bed`, `wake`), `training` (`kind`, `min`), jeweils mit `who`.
+- Kopf überall gleich: Datum (Statistik: Zeitraum) → große Überschrift → ggf. Umschalter. Abstände stehen im CSS-Block „Einheitliche Abstände oben“ am Ende von `index.html`.
+- Start: Schlaf als Zeitstrahl (Jakob mag den, nicht entfernen), Eintragen (Training, Gegessen), Heute (To-dos + Ziele), Vorschlag (was noch fehlt, ohne KI über `suggestFoods`), Essen.
+- Statistik: Schlaf-Balken ab 0 mit 8-h-Linie, Training-Balken, Ziele als Tagesfelder, Kalorien groß, Nährstoffe als Menü mit Unterseiten (Sheets).
+- Einstellungen: Menü mit Unterseiten (`setSub`), zurück per Wischen.
+- Logo: weiß auf Schwarz, zwei Striche, Punkt rechts oberhalb der Mitte (`icons/`).
+- Offen: Nährstoff-Darstellung weiter verbessern (Jakob hat noch Punkte), Training in den Kalorienbedarf einrechnen, Erinnerungen (Web-Push) für To-dos mit Uhrzeit, News (RSS + KI), Uni-Bereich, CSS aufräumen (viele Überschreib-Blöcke), `app.js` in Module teilen.
+- `dev/screens.py` braucht Python-Playwright (`pip install playwright`), nutzt den vorinstallierten Chromium unter `/opt/pw-browsers/chromium`.
+
 ## Aufbau (Stand jetzt)
 
 - Reines HTML/CSS/JS ohne Build-Schritt, gehostet über **GitHub Pages** (Branch `main`, Push = live nach ca. 1 Minute). Kein Service-Worker-Cache für App-Dateien; nach Änderungen App einmal ganz schließen.
