@@ -1284,6 +1284,69 @@ html.dark .tabs,html .tabs{background:var(--bg)!important;box-shadow:none!import
 .form{display:flex;flex-direction:column;gap:14px;padding:4px 0 10px}
 .fl{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:15.5px}
 .fl .inp{max-width:60%}
+/* ===== Schritt 2: Essen und Nährstoffe im neuen Stil ===== */
+html.dark{--lv-low:#D08C8C;--lv-ok:#8A8A93;--lv-good:#8FB8A8;--lv-high:#D9A66B}
+html.dark .btn{border-radius:12px!important}
+html.dark .field,html.dark .inp{background:var(--card)!important;border:1px solid var(--line)!important;border-radius:12px!important;box-shadow:none!important;color:var(--ink)!important}
+/* Umschalter wie oben: Text mit Unterstrich */
+html.dark .seg{background:none!important;box-shadow:none!important;border:0!important;padding:0!important;gap:22px!important;justify-content:flex-start!important;width:auto!important}
+html.dark .seg .segi{display:none!important}
+html.dark .seg button,html.dark .seg>button{flex:none!important;width:auto!important;background:none!important;background-image:none!important;box-shadow:none!important;color:var(--ink3)!important;padding:0 0 5px!important;border-radius:0!important;border-bottom:2px solid transparent!important;font-size:15px!important}
+html.dark .seg button.on,html.dark .seg>button.on{color:var(--ink)!important;border-bottom-color:var(--ac)!important}
+/* Woche: Zeilen mit Linien */
+html.dark .week{gap:0!important;border-top:1px solid var(--line)}
+html.dark .day,html.dark .day.today,html.dark .day:not(.today){background:none!important;background-image:none!important;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:0!important;box-shadow:none!important;outline:0!important;margin:0!important;padding:14px 4px!important;min-height:0!important}
+html.dark .day .dlabel,html.dark .day.today .dlabel,html.dark .day:not(.today) .dlabel{background:none!important;background-image:none!important;box-shadow:none!important;border:0!important;width:38px!important;height:auto!important}
+html.dark .day .dlabel .wd{color:var(--ink3)!important;font-size:12.5px!important}
+html.dark .day .dlabel .dn{color:var(--ink)!important;font-size:19px!important;font-weight:650}
+html.dark .day.today .dlabel .wd,html.dark .day.today .dlabel .dn{color:var(--ac)!important}
+html.dark .day .empty,html.dark .day.today .empty,html.dark .day:not(.today) .empty{color:var(--ink3)!important}
+html.dark .day .ib.p,html.dark .day:not(.today) .ib.p{background:none!important;background-image:none!important;color:var(--ink3)!important;box-shadow:none!important;border:1px solid var(--line)!important}
+html.dark .chip{background:none!important;background-image:none!important;box-shadow:none!important;border:0!important;padding:2px 0!important}
+html.dark .chip .m{background:var(--card2)!important;color:var(--ink2)!important}
+/* Einkaufsliste */
+html.dark .item{background:none!important;background-image:none!important;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:0!important;box-shadow:none!important;margin:0!important}
+html.dark .flatlist{border-top:1px solid var(--line);gap:0!important}
+html.dark .item.gap{margin-top:0!important}
+html.dark .item .cb{border-color:#5A5A63!important;background:none!important}
+html.dark .donebox{background:none!important;border:0!important;border-radius:0!important}
+/* Rezepte: Kacheln als ruhige Auswahl */
+html.dark .tiles{display:flex!important;flex-wrap:wrap!important;gap:8px!important;overflow:visible!important;grid-template-columns:none!important}
+html.dark .tile{background:var(--card)!important;background-image:none!important;color:var(--ink)!important;box-shadow:none!important;border:1px solid var(--line)!important;border-radius:10px!important;width:auto!important;height:auto!important;min-height:0!important;padding:9px 12px!important;grid-column:auto!important;grid-row:auto!important;flex:none!important;display:inline-flex!important;align-items:center!important;gap:8px!important;font-size:14px!important}
+html.dark .tile::after{display:none!important}
+html.dark .tile .tcount,html.dark .tile span{position:static!important;background:none!important;color:var(--ink3)!important;font-size:13px!important;width:auto!important;height:auto!important;box-shadow:none!important}
+html.dark .tile span:first-child{color:var(--ink)!important;font-size:14px!important;font-weight:550}
+html.dark .tile.on{border-color:var(--ac)!important;background:var(--blue-l)!important}
+html.dark .rcard{background:none!important;background-image:none!important;box-shadow:none!important;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:0!important}
+/* Nährstoffe */
+html.dark .nutpage,html.dark .nuthero,html.dark .infocard,html.dark .nutpage .infocard{background:none!important;background-image:none!important;box-shadow:none!important;border:0!important;border-radius:0!important}
+html.dark .nutpage .infocard{border-top:1px solid var(--line)!important}
+html.dark .jar,html.dark .nuthero,html.dark .nutpage{--jc:var(--card)!important;--j1:var(--ac)!important;--j2:var(--ac)!important;--jg:var(--ac)!important}
+html.dark .jar.low,html.dark .nuthero.low,html.dark .nutpage.low{--j1:var(--lv-low)!important;--j2:var(--lv-low)!important;--jg:var(--lv-low)!important}
+html.dark .jar.high,html.dark .nuthero.high,html.dark .nutpage.high{--j1:var(--lv-high)!important;--j2:var(--lv-high)!important;--jg:var(--lv-high)!important}
+html.dark .rep .rbar i{background:var(--lv-ok)!important}
+html.dark .rep.low .rbar i{background:var(--lv-low)!important}
+html.dark .rep.good .rbar i{background:var(--lv-good)!important}
+html.dark .rep.high .rbar i{background:var(--lv-high)!important}
+html.dark .legend .lg.low i{background:var(--lv-low)!important}html.dark .legend .lg.ok i{background:var(--lv-ok)!important}
+html.dark .legend .lg.good i{background:var(--lv-good)!important}html.dark .legend .lg.high i{background:var(--lv-high)!important}
+html.dark .nutpage .pill,html.dark .nutpage .pill.t,html.dark .pill,html.dark .pill.t{background:var(--card2)!important;background-image:none!important;color:var(--ink2)!important;box-shadow:none!important}
+/* Schritt 2b: Nährstoff-Seite und Rest */
+html.dark .weekcard,html.dark .rephero,html.dark .rectop,html.dark .fsec,html.dark .calbar+.row .seg{background:none!important;background-image:none!important;box-shadow:none!important;border:0!important;border-radius:0!important}
+html.dark .weekcard,html.dark .rephero{border-top:1px solid var(--line)!important;border-bottom:1px solid var(--line)!important;padding-left:4px!important;padding-right:4px!important}
+html.dark .rephero::before{display:none!important}
+html.dark .weekcard .dj,html.dark .weekcard .dj.today{--dh:#8A8A93;background:none!important;background-image:none!important;box-shadow:inset 0 0 0 1px var(--line)!important}
+html.dark .weekcard .dj .djl{color:var(--ink2)!important;font-weight:600}
+html.dark .weekcard .dj.sel{box-shadow:inset 0 0 0 1.5px var(--ac)!important}
+html.dark .weekcard .dj.today .djl{color:var(--ac)!important}
+html.dark .weekcard .dj .jfill{background:var(--ac)!important;opacity:.25}
+html.dark .ph2ring{background:none!important}
+html.dark .ph2pct{background:none!important;-webkit-text-fill-color:var(--ink)!important;color:var(--ink)!important}
+html.dark .ph2ring circle:last-of-type,html.dark .ringarc{stroke:var(--ac)!important}
+html.dark .macbar{background:var(--line)!important;box-shadow:none!important}
+html.dark .mac i{background:var(--ac)!important}
+html.dark .tile{flex-direction:row!important;white-space:nowrap!important}
+html.dark .ph2ring circle:first-of-type{stroke:var(--line)!important}
 </style>
 </head>
 <body data-tab="start">
