@@ -1919,9 +1919,18 @@ function glideSeg(seg, anim) {
   if (!on || !on.offsetWidth) { if (!on) ind.style.opacity = '0'; else requestAnimationFrame(() => glideSeg(seg, anim)); return; }
   const to = [Math.round(on.offsetLeft), Math.round(on.offsetWidth)];
   const from = segMem.get(key);
-  if (!ind._placed && from && anim !== false) { ind.style.transition = 'none'; ind.style.width = from[1] + 'px'; ind.style.transform = `translateX(${from[0]}px)`; void ind.offsetWidth; }
-  ind.style.transition = ind._placed || (from && anim !== false) ? 'transform .32s cubic-bezier(.3,.8,.3,1.08), width .32s cubic-bezier(.3,.8,.3,1.08), opacity .2s' : 'none';
-  ind.style.opacity = '1'; ind.style.width = to[1] + 'px'; ind.style.transform = `translateX(${to[0]}px)`; ind._placed = true;
+  const moved = from && (from[0] !== to[0] || from[1] !== to[1]);
+  const fresh = !ind._placed;
+  if (fresh) {
+    // neu aufgebaut (z. B. nach Wischen): sofort an der richtigen Stelle, ohne Einblenden
+    ind.style.transition = 'none';
+    const p = moved && anim !== false ? from : to;
+    ind.style.width = p[1] + 'px'; ind.style.transform = `translateX(${p[0]}px)`; ind.style.opacity = '1'; void ind.offsetWidth;
+    ind._placed = true;
+    if (!(moved && anim !== false)) { segMem.set(key, to); return; }
+  }
+  ind.style.transition = 'transform .32s cubic-bezier(.3,.8,.3,1.08), width .32s cubic-bezier(.3,.8,.3,1.08)';
+  ind.style.opacity = '1'; ind.style.width = to[1] + 'px'; ind.style.transform = `translateX(${to[0]}px)`;
   segMem.set(key, to);
 }
 (() => {
@@ -1932,6 +1941,6 @@ function glideSeg(seg, anim) {
       if (m.type === 'attributes') { const t = m.target; if (t.tagName === 'BUTTON' && t.parentElement && t.parentElement.classList.contains('seg')) pend.add(t.parentElement); continue; }
       m.addedNodes.forEach(n => { if (n.nodeType !== 1) return; if (n.classList.contains('seg')) pend.add(n); n.querySelectorAll && n.querySelectorAll('.seg').forEach(s => pend.add(s)); });
     }
-    if (pend.size && !raf) raf = requestAnimationFrame(flush);
+    if (pend.size) flush();
   }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
 })();
