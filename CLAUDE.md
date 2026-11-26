@@ -31,16 +31,30 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - Start: Schlaf als Zeitstrahl (Jakob mag den, nicht entfernen), Eintragen (Training, Gegessen), Heute (To-dos + Ziele), Vorschlag (was noch fehlt, ohne KI über `suggestFoods`), Essen.
 - Statistik: Schlaf-Balken ab 0 mit 8-h-Linie, Training-Balken, Ziele als Tagesfelder, Kalorien groß, Nährstoffe als Menü mit Unterseiten (Sheets).
 - Einstellungen: Menü mit Unterseiten (`setSub`), zurück per Wischen.
-- Logo: weiß auf Schwarz, zwei Striche, Punkt rechts oberhalb der Mitte (`icons/`).
-- Offen: Nährstoff-Darstellung weiter verbessern (Jakob hat noch Punkte), Training in den Kalorienbedarf einrechnen, Erinnerungen (Web-Push) für To-dos mit Uhrzeit, News (RSS + KI), Uni-Bereich, CSS aufräumen (viele Überschreib-Blöcke), `app.js` in Module teilen.
+- Logo (Entwurf 3, mit Jakob ausgesucht Nov. 2026): zwei weiße Striche, rosa Punkt (`#ff7aa8`) rechts oberhalb, auf Schwarz. Quelle `icons/logo.svg`, PNGs daraus gerendert. Jakob mochte auch die flächige weiße Sonne mit Horizont-Schlitzen.
+- Offen: Nährstoff-Darstellung weiter verbessern (Jakob hat noch Punkte), Training in den Kalorienbedarf einrechnen, News (RSS + KI), Uni-Bereich, CSS aufräumen (viele Überschreib-Blöcke), `app.js` in Module teilen.
 - Nächste große Punkte (mit Jakob besprochen, Ende Nov. 2026):
   1. **News**: Bereiche KI, Wirtschaft (inkl. auffällige Kursbewegungen/boomende Firmen), Politik Deutschland und Welt, ganz unten Weiterbildung/Arbeitsmarkt. Seriöse Quellen (Tagesschau u. a.) per RSS über die Supabase-Funktion, kurze KI-Zusammenfassungen zum Lesen in der Bahn, wenn möglich mit Bild aus dem Artikel.
      Quellen-Wunsch: Handelsblatt, FAZ, Heise, Tagesschau „und die besten“ (seriös). Wichtig: Artikel wirklich aufbereiten, lesbar für Nicht-Fachleute: Fachbegriffe kurz erklären und Zahlen einordnen (z. B. „DAX +300 Punkte“ = wie viel Prozent, ist das viel, warum). Achtung Bezahlschranken (Handelsblatt/FAZ): per RSS oft nur Teaser; offen damit umgehen und frei lesbare Quellen ergänzen.
-  2. **Vorrat**: festhalten, was zu Hause ist; Vorschläge unterscheiden „hast du da“ und „bitte kaufen“.
-  3. **Start Essen**: Vorschläge, was man bald essen und was man einkaufen sollte (passend zu fehlenden Nährstoffen), evtl. per KI.
+  2. ~~Vorrat~~ und 3. ~~Start Essen~~: erledigt (Ende Nov. 2026), siehe unten „Vorrat und Vorschläge“.
   4. ~~Einkaufsliste neu~~ erledigt (Entwurf A): Überschrift „Einkaufsliste“, Eingabe ohne Plus mit Mikrofon, Bereiche als graue Namen, darunter „Fehlt deiner Woche“ (Plus rechts fügt hinzu, Name antippen zeigt Alternativen, Nährstoff antippen öffnet Karte `openNutInfo`), dann „Im Wagen“. Kein Personen-Punkt mehr. CSS-Block „Einkaufsliste (neu“ am Ende von `index.html`.
   5. Ladebildschirm beim Öffnen klären (Screenshot von Jakob abwarten; evtl. alter iOS-Startbildschirm, nach Neu-Hinzufügen weg).
+- **Mitteilungen** (Web Push): Einstellungen > Mitteilungen, je Gerät und Person (Sammlung `push`, Doc-ID in `ep_push`). To-dos haben `remind` (Minuten vorher, `'off'`, Standard 15). Die Datenbank ruft jede Minute `push_tick()` auf (pg_cron, `supabase-push.sql`), die Funktion `push` (`supabase/functions/push/index.ts`, Verify JWT aus, keine Secrets) entscheidet und verschickt: Erinnerungen und höchstens 2 Anstupser am Tag (ab ca. 12 und 17:30 Uhr, nicht wenn in der Stunde ein To-do mit Uhrzeit ansteht). Signier-Schlüssel erzeugt die App beim ersten Einschalten, er liegt in `push_config` (nur Datenbank). Rückmeldung per `push_mark` mit Einmal-Token gegen doppelte Meldungen.
 - `dev/screens.py` braucht Python-Playwright (`pip install playwright`), nutzt den vorinstallierten Chromium unter `/opt/pw-browsers/chromium`.
+
+## Vorrat und Vorschläge (`vorrat.js`)
+
+- Sammlung `pantry` (ganzer Haushalt): `name`, `qty`, `category`, `added`, `by`. Essen-Umschalter: Woche / Rezepte / Vorrat (Reiter-ID `pan`). Abgehakte Sachen der Einkaufsliste per „In den Vorrat“ übernehmen.
+- Start: „Bald essen“ (Vorrat, der Lücken der letzten 7 Tage füllt, dann frische Sachen ab 3 Tagen, eigenes Rezept mit den meisten Zutaten da, „Gericht-Ideen“) und „Einkaufen“ (Tippen setzt auf die Liste). Auswahl schrittweise (`greedy`), damit nicht drei Lebensmittel dieselbe Lücke füllen.
+- Rechnung ohne KI auf dem Gerät. Nur „Gericht-Ideen“ fragt die KI (Aufgabe `meal`), Ergebnis pro Tag und Vorrat in `localStorage` gemerkt. Ohne KI: passende eigene Rezepte.
+
+- Gewohnheiten (`habits()`): was in 30 Tagen oft gegessen, gekocht, gekauft wurde. Vertrautes wird bei „Einkaufen“ leicht bevorzugt und geht als Text an die KI (Gericht-Ideen); die KI hat kein Gedächtnis, sie weiß nur, was die App mitschickt.
+
+## Supplemente (`supplemente.js`)
+
+- Feste Regeln, keine KI. Prüft eingetragene Supplemente (Summe aller) gegen BfR-Höchstmengen für Supplemente (2024, belegt nur: D 20 µg, Jod 100 µg, Eisen 6 mg, Magnesium 250 mg, Zink 6,5 mg, Folsäure 200 µg; andere ohne Warnung) und meldet „eher unnötig“, wenn das Essen schon 100 % deckt.
+- Empfehlungen: Vitamin D 20 µg von Oktober bis März (DGE) bzw. bei wenig Sonne; Jod, B12 (vegan/vegetarisch), Omega-3, Eisen erst übers Essen, Eisen nur nach Bluttest. Prüfungen außer D erst ab 5 eingetragenen Tagen in 14 Tagen.
+- Rückfragen im Profil: `jodsalz`, `salz` (wenig/normal/viel = 1/2,5/4 g), `sonne`. Jodsalz zählt in `dayIntake` mit (20 µg Jod pro g). Gefragt wird auf Start (eine Zeile) und im Sheet „Supplemente“ (Statistik > Nährstoffe).
 
 ## Aufbau (Stand jetzt)
 

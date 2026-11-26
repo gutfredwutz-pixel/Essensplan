@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Essensplan">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=2">
+<link rel="icon" href="icons/icon-192.png?v=2">
 <title>Essensplan</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1554,6 +1554,7 @@ html .sl .swacts .sw.del{background:#E5484D!important;background-image:none!impo
 .sl .swipe .slrow{width:auto}
 .slrow.done .slt,.slrow.ticked .slt{color:#8E8E93;transition:color .16s}
 .sldone{margin:0 4px 44px}
+.slbtns{display:flex;gap:22px}
 .slclear{border:0;background:none;color:#8E8E93;font:inherit;font-size:15px;padding:0;cursor:pointer}
 .slempty{color:#8E8E93;font-size:15.5px;margin:0 4px 44px}
 .slideas{margin:0 4px 44px}
@@ -1571,6 +1572,24 @@ html .sl .swacts .sw.del{background:#E5484D!important;background-image:none!impo
 .sladdb:active,.slmic:active,.slclear:active,.slnut:active{transform:scale(.94);opacity:.8}
 .slinfo{font-size:15.5px;line-height:1.5;color:#D1D1D6;margin:0 4px 30px}
 .lr.slfood{align-items:center}.lr.slfood .n{margin-right:2px}
+/* Vorrat und Vorschläge */
+.lr .n.old{color:var(--ink2)}
+.lr.col{flex-direction:column;align-items:stretch;gap:6px}
+.lr.col .top{display:flex;align-items:baseline;gap:14px}
+.lr.col .sub{font-size:14.5px;color:var(--ink3);line-height:1.45;padding:0!important;margin:0!important}
+.lr .strong,.lr .n.strong{color:#F2F2F4;font-weight:600}
+.lr.ask .chips{margin-top:6px}
+.greytxt.sm{font-size:13px;margin:0 4px 20px}
+.lr.gap{margin-top:14px}
+.donebtns{display:flex;gap:8px}
+.ln.ideas{padding:4px 4px 0}
+.ln.ideas .links{padding-left:0}
+.idea{margin-bottom:30px}
+.idea .it{font-size:17px;font-weight:650;margin-bottom:6px}
+.idea .iw,.idea .iu,.idea .ib2{font-size:15px;color:var(--ink2);line-height:1.45;margin-bottom:4px}
+.idea .is{font-size:15px;color:var(--ink);line-height:1.5;margin-top:8px}
+.buyt{border:0;background:none;padding:0 4px 0 0;font:inherit;color:#8E8E93;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.buyt.on{color:#F2F2F4;text-decoration:none}
 </style>
 </head>
 <body data-tab="start">
@@ -1604,5 +1623,7 @@ html .sl .swacts .sw.del{background:#E5484D!important;background-image:none!impo
 <script src="diaryfoods.js"></script>
 <script src="tagebuch.js"></script>
 <script src="start.js"></script>
+<script src="vorrat.js"></script>
+<script src="supplemente.js"></script>
 </body>
 </html>

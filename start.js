@@ -50,6 +50,7 @@ function openSleep(d0) {
 
 /* ---------- To-dos ---------- */
 const REPEAT = [['', 'Nie'], ['daily', 'Täglich'], ['workdays', 'Werktags'], ['weekly', 'Wöchentlich'], ['monthly', 'Monatlich']];
+const REMIND = [['off', 'Nicht'], ['0', 'Zur Uhrzeit'], ['5', '5 Min. vorher'], ['15', '15 Min. vorher'], ['30', '30 Min. vorher'], ['60', '1 Std. vorher']];
 const repLabel = r => (REPEAT.find(x => x[0] === r) || ['', ''])[1];
 function dueOn(x, ds) { // gilt dieses wiederkehrende To-do an diesem Tag?
   const start = x.date || ds; if (!x.repeat || ds < start) return false;
@@ -97,13 +98,16 @@ function openTodo(x) {
   const up = o => { Object.assign(x, o); db.collection('todos').doc(x.id).update(o); };
   const ti = h('input', { class: 'inp', value: x.text, onchange: e => e.target.value.trim() && up({ text: e.target.value.trim() }) });
   const di = h('input', { class: 'inp', type: 'date', value: x.date || today(), onchange: e => up({ date: e.target.value || today() }) });
-  const hi = h('input', { class: 'inp', type: 'time', value: x.time || '', onchange: e => up({ time: e.target.value }) });
+  const rem = h('div', { class: 'chips' }), remL = h('div', { class: 'fl' }, h('span', { text: 'Erinnern' }));
+  const drawRem = () => { const cur = x.remind === undefined || x.remind === '' ? '15' : String(x.remind); remL.style.display = rem.style.display = x.time ? '' : 'none'; rem.replaceChildren(...REMIND.map(([k, l]) => h('button', { class: 'cp' + (cur === k ? ' on' : ''), onclick: () => { up({ remind: k === 'off' ? 'off' : +k }); drawRem(); } }, l))); };
+  const hi = h('input', { class: 'inp', type: 'time', value: x.time || '', onchange: e => { up({ time: e.target.value }); drawRem(); } });
+  drawRem();
   const rep = h('div', { class: 'chips' });
   const drawRep = () => rep.replaceChildren(...REPEAT.map(([k, l]) => h('button', { class: 'cp' + ((x.repeat || '') === k ? ' on' : ''), onclick: () => { up({ repeat: k }); drawRep(); } }, l)));
   drawRep();
   openSheet('To-do', [h('div', { class: 'form' }, ti,
     h('label', { class: 'fl' }, h('span', { text: 'Ab' }), di),
-    h('label', { class: 'fl' }, h('span', { text: 'Uhrzeit' }), hi),
+    h('label', { class: 'fl' }, h('span', { text: 'Uhrzeit' }), hi), remL, rem,
     h('div', { class: 'fl' }, h('span', { text: 'Wiederholen' })), rep,
     h('button', { class: 'btn danger', style: 'width:100%;margin-top:8px', onclick: () => { db.collection('todos').doc(x.id).delete(); closeSheet(); } }, 'Löschen'))]);
 }
@@ -195,7 +199,8 @@ PAGES.start = function () {
     ...inputBlock(),
     secHead('Heute', all ? `${all - open} von ${all}` : null),
     h('div', { class: 'ln todo' }, ...openT.map(x => todoRow(x)), ...openG.map(goalRow), addRow('Neues To-do', s => addTodo(s))),
-    ...mealTip(),
+    ...foodTips(),
+    ...suppTip(),
     secHead('Essen'),
     h('div', { class: 'ln food' }, ...meals.map(p => lrow({ class: 'lr tap', onclick: () => goTab('cal', 1) }, h('span', { class: 'tx', text: p.title || (recipeOf(p) || {}).title || '' }), p.meal ? h('span', { class: 'n', text: p.meal }) : null)),
       lrow({ class: 'lr tap', onclick: () => goTab('list', 1) }, h('span', { class: 'tx', text: 'Einkaufsliste' }), h('span', { class: 'n', text: shop ? String(shop) : 'leer' }))));
@@ -283,6 +288,7 @@ function nutStats(days) {
     h('span', { class: 'tx', text: title }),
     title === 'Fehlt am meisten' ? h('span', { class: 'n', text: rs[0] ? rs[0].nm : '' }) : (() => { const gp = groupPct(rs), lim = rs.every(r => LIMIT_KEYS.has(r.i)); return h('span', { class: 'gsum ' + lvl(gp, lim) }, h('i'), lim ? (gp <= 100 ? 'im Rahmen' : `${gp} %`) : `${gp} %`); })(),
     h('span', { class: 'chev', text: '›' }))),
+    (() => { const c = suppCheck(name), n = suppCount(c); return lrow({ class: 'lr tap', onclick: () => openSuppCheck() }, h('span', { class: 'tx', text: 'Supplemente' }), h('span', { class: 'n', text: n ? (n === 1 ? '1 Hinweis' : `${n} Hinweise`) : 'passt' }), h('span', { class: 'chev', text: '›' })); })(),
     lrow({ class: 'lr tap', onclick: () => { cachePage(); tab = 'nutri'; renderTabs(); render(); window.scrollTo(0, 0); } }, h('span', { class: 'tx', text: 'Einzelne Tage' }), h('span', { class: 'chev', text: '›' }))));
   return out;
 }
