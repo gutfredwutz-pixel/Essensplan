@@ -63,7 +63,7 @@ function catOf(name) {
 /* ============ Zustand ============ */
 let db = null, sample = null, dict = null, userCap = null, canWrite = true;
 let items = [], plan = [], recipes = [], known = new Map(), profiles = {}, diary = {};
-let todos = [], goals = [], sleeps = [], trainings = []; const PAGES = {}; // Seiten aus start.js
+let todos = [], goals = [], sleeps = [], trainings = [], pushes = null; const PAGES = {}; // Seiten aus start.js
 let tab = 'start', view = 'week', anchor = (() => { const t = dayOnly(new Date()); try { return localStorage.getItem('ep_weekstart') === 'mo' ? new Date(t.getFullYear(), t.getMonth(), t.getDate() - ((t.getDay() + 6) % 7)) : t; } catch (e) { return t; } })(), monthAnchor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 let loaded = { items: false, plan: false, recipes: false };
 try { const s = localStorage.getItem('ep_view'); if (s === 'month' || s === 'week') view = s; } catch (e) { }
@@ -125,6 +125,7 @@ function startData() {
   const sub = (name, set) => db.collection(name).onSnapshot(snap => { set(snap.docs.map(x => ({ id: x.id, ...x.data() }))); loaded[name] = true; done(); render(); }, e => { lastErr = (e && (e.message || e.code)) || ''; setStatus('Fehler beim Laden'); console.error(e); });
   sub('items', v => items = v); sub('plan', v => plan = v); sub('recipes', v => recipes = v);
   sub('todos', v => todos = v); sub('goals', v => goals = v); sub('sleep', v => sleeps = v); sub('training', v => trainings = v);
+  db.collection('push').onSnapshot(snap => { const first = pushes === null; pushes = snap.docs.map(x => ({ id: x.id, ...x.data() })); if (first) pushSync(); });
   db.collection('known').onSnapshot(snap => { known = new Map(snap.docs.map(x => [x.id, x.data()])); });
   db.collection('settings').onSnapshot(snap => { const d = snap.docs.find(x => x.id === 'household'); hhSet = d ? d.data() : {}; if (tab === 'set') render(); });
   db.collection('profiles').onSnapshot(snap => { profiles = Object.fromEntries(snap.docs.map(x => [x.id, x.data()])); });
@@ -275,6 +276,7 @@ function renderSettings() {
     ['Woche beginnt', ws, () => [seg('ep_weekstart', [['today', 'Mit heute'], ['mo', 'Am Montag']], 'today', () => { anchor = weekAnchor(); }), note('Gilt für die Essenswoche und die Nährstoffe.')]],
     ['Gewürze aus Rezepten', sp, () => [seg('ep_spices', [['ask', 'Nachfragen'], ['all', 'Immer'], ['none', 'Nie']], 'ask'), note('Ob Gewürze beim Einplanen eines Rezepts auf die Einkaufsliste kommen.')]],
     ['Nie auf die Liste', `${nv} Sachen`, () => SUBNEVER()],
+    ['Mitteilungen', pushDoc() ? 'An' : '', () => pushPage(note, seg)],
     ['KI', '', () => [aiCard()]],
     ['Spracherkennung', LS.get('ep_asr') ? 'Geladen' : '', () => [note('Fürs Diktieren und für Videos. Am besten einmal im WLAN laden, danach geht es auch offline.'), asrBtn, asrProg]]];
   const OLD_CARDS = () => [
@@ -1944,6 +1946,65 @@ async function ocrImages(images, onProg) {
   }
   return out.join('\n');
 }
+/* ---- Mitteilungen: Erinnerungen und Anstupser (Web Push über die Supabase-Funktion "push") ---- */
+const pushOk = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && window.isSecureContext;
+const pushHome = () => !/iPhone|iPad|iPod/.test(navigator.userAgent) || matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const b64u = b => btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), c => c.charCodeAt(0));
+const pushDoc = () => (pushes || []).find(x => x.id === LS.get('ep_push')) || null;
+let pushPub = null, pushErr = '';
+async function pushKey() { // Schlüssel zum Signieren: beim ersten Mal hier erzeugt, danach behält die Datenbank ihren
+  if (pushPub) return pushPub;
+  const kp = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign']);
+  const priv = await crypto.subtle.exportKey('jwk', kp.privateKey), pub = b64u(new Uint8Array(await crypto.subtle.exportKey('raw', kp.publicKey)));
+  const { data, error } = await sb.rpc('push_setup', { p_url: CFG.url, p_anon: CFG.key, p_site: location.origin, p_pub: pub, p_priv: priv });
+  if (error || !data) throw error || new Error('setup');
+  return (pushPub = data);
+}
+async function pushSave(s, extra) {
+  let id = LS.get('ep_push'); if (!id) { id = 'd' + Math.random().toString(36).slice(2, 12); LS.set('ep_push', id); }
+  const old = pushDoc() || {};
+  await db.collection('push').doc(id).set({ who: me(), sub: s.toJSON(), tz: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Berlin', nudge: old.nudge !== false, updated: Date.now(), ...extra });
+}
+async function pushOn() {
+  if (await Notification.requestPermission() !== 'granted') throw new Error('denied');
+  const pub = await pushKey(), reg = await navigator.serviceWorker.ready;
+  let s = await reg.pushManager.getSubscription();
+  if (s && s.options && s.options.applicationServerKey && b64u(new Uint8Array(s.options.applicationServerKey)) !== pub) { await s.unsubscribe(); s = null; }
+  if (!s) s = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: unb64u(pub) });
+  await pushSave(s);
+}
+async function pushOff() {
+  try { const reg = await navigator.serviceWorker.ready, s = await reg.pushManager.getSubscription(); if (s) await s.unsubscribe(); } catch (e) { }
+  const id = LS.get('ep_push'); if (id) await db.collection('push').doc(id).delete().catch(() => { });
+  LS.del('ep_push');
+}
+async function pushSync() { // beim Start: Gerät und Person aktuell halten
+  if (!pushOk() || !LS.get('ep_push')) return;
+  try {
+    const reg = await navigator.serviceWorker.ready, s = await reg.pushManager.getSubscription(), d = pushDoc();
+    if (!s || Notification.permission !== 'granted') { if (d) await pushOff(); return; }
+    if (!d || d.who !== me() || (d.sub && d.sub.endpoint) !== s.endpoint) await pushSave(s);
+  } catch (e) { console.warn(e); }
+}
+function pushPage(note, seg) {
+  if (!pushOk() || !pushHome()) return [note('Geht nur, wenn die App vom Home-Bildschirm geöffnet wird (ab iOS 16.4).')];
+  if (Notification.permission === 'denied') return [note('Mitteilungen sind für die App ausgeschaltet. Wieder an in den iPhone-Einstellungen unter Mitteilungen, dann Essensplan.')];
+  if (!pushPub && !pushErr) pushKey().catch(e => { pushErr = (e && e.message) || 'setup'; console.warn(e); if (setSub === 'Mitteilungen') refreshSet(); });
+  if (pushErr && !pushPub) return [note('Noch nicht eingerichtet. Dafür einmal in Supabase die Mitteilungen einrichten (Anleitung von Claude).')];
+  const d = pushDoc(), st = h('div', { class: 'muted setnote', style: 'display:none' }), say = t => { st.textContent = t; st.style.display = t ? '' : 'none'; };
+  const act = async (f, busy) => { say(busy); try { await f(); say(''); } catch (e) { say(e && e.message === 'denied' ? 'Nicht erlaubt. Wieder an in den iPhone-Einstellungen unter Mitteilungen.' : 'Hat nicht geklappt, bitte nochmal versuchen.'); console.warn(e); return; } refreshSet(); };
+  const two = (on, onOn, onOff) => h('div', { class: 'seg wide' }, h('button', { class: on ? 'on' : '', onclick: () => !on && onOn() }, 'An'), h('button', { class: on ? '' : 'on', onclick: () => on && onOff() }, 'Aus'));
+  const lab = (t, top) => h('div', { class: 'fl', style: `margin:${top}px 0 14px` }, h('span', { text: t }));
+  const out = [lab('Auf diesem iPhone', 4), two(!!d, () => act(pushOn, 'Schalte ein …'), () => act(pushOff, 'Schalte aus …')),
+    note(d ? 'Nur für ' + (d.who || me()) + '. Wann eine Erinnerung kommt, stellst du im To-do bei der Uhrzeit ein.' : 'Erinnerungen für To-dos mit Uhrzeit und kleine Anstupser, wenn gerade Zeit ist.'), st];
+  if (d) out.push(
+    lab('Anstupser', 36),
+    two(d.nudge !== false, () => db.collection('push').doc(d.id).update({ nudge: true }).then(refreshSet), () => db.collection('push').doc(d.id).update({ nudge: false }).then(refreshSet)),
+    note('Höchstens zweimal am Tag, mittags und abends, wenn gerade kein To-do mit Uhrzeit ansteht: was bei Zielen und To-dos ohne Uhrzeit heute noch offen ist.'),
+    h('button', { class: 'btn s', style: 'width:100%;margin-top:20px', onclick: async e => { e.target.disabled = true; const r = await sb.rpc('push_test', { p_id: d.id }); e.target.textContent = r.error ? 'Hat nicht geklappt' : 'Kommt gleich'; } }, 'Probe schicken'));
+  return out;
+}
 /* ---- KI über die Supabase-Funktion "ai" ---- */
 let aiState = LS.get('ep_ai') === 'off' ? false : null;
 async function aiCall(task, payload) {
@@ -2057,7 +2118,11 @@ async function transcribeLocal(file, onProg) {
   return text.trim();
 };
 
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => { });
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register('sw.js').catch(() => { });
+  navigator.serviceWorker.addEventListener('message', e => { const u = e.data && e.data.type === 'open' && new URL(e.data.url).searchParams.get('tab'); if (u && PAGES[u]) { if (topSheet || $('#ov').classList.contains('on')) closeSheet(); goTab(u, 1); } });
+}
+{ const qt = new URLSearchParams(location.search).get('tab'); if (qt) { if (PAGES[qt]) tab = qt; history.replaceState(null, '', location.pathname); } }
 init();
 
 /* Gleitender Marker in allen Umschaltern */

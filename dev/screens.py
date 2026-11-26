@@ -50,6 +50,9 @@ async def main():
             await pg.click('.setmenu >> text=Nie auf die Liste'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'einstellungen_nie.png'))
             await pg.evaluate("closeSheet()"); await pg.click('.tabs button >> nth=1'); await pg.wait_for_timeout(600); await pg.screenshot(path=str(OUT / 'statistik_oben.png')); await pg.click('.ln.menu >> text=Vitamine'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'vitamine.png'))
             await pg.evaluate("closeSheet();openSleep()"); await pg.wait_for_timeout(600); await pg.screenshot(path=str(OUT / 'schlaf_sheet.png'))
+            await pg.evaluate("closeSheet();openTodo(todos.find(x=>x.id==='t2'))"); await pg.wait_for_timeout(600); await pg.screenshot(path=str(OUT / 'todo_erinnern.png'))
+            await pg.evaluate("closeSheet();setSub='Mitteilungen';openTop('set')"); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'mitteilungen_aus.png'))
+            await pg.evaluate("(async()=>{LS.set('ep_push','dtest'); await db.collection('push').doc('dtest').set({who:'Jakob',sub:{endpoint:'https://web.push.apple.com/x'},nudge:true}); closeSheet(); setSub='Mitteilungen'; openTop('set');})()"); await pg.wait_for_timeout(800); await pg.screenshot(path=str(OUT / 'mitteilungen_an.png'))
             print('Fehler auf der Seite:', errs or 'keine'); print('Bilder in', OUT)
             await b.close()
     finally:
