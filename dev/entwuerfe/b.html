@@ -1,0 +1,49 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<script src="common.js"></script>
+<style>
+:root{--bg:#F3F4F8;--ink:#1A1D2B;--ink2:#6A6F82;--card:#fff;--sh:rgba(30,35,60,.12)}
+.dark{--bg:#101218;--ink:#F1F2F7;--ink2:#9095A8;--card:#1C1F29;--sh:rgba(0,0,0,.5)}
+body{margin:0;display:flex;gap:40px;padding:40px;background:#CFD2DA;font-family:Manrope,sans-serif}
+.ph{width:390px;height:844px;border-radius:48px;overflow:hidden;position:relative;background:var(--bg);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.18)}
+.sb{height:54px;display:flex;justify-content:space-between;align-items:center;padding:0 32px;font-weight:700;font-size:15px}
+.in{padding:18px 22px 0}
+h1{font-weight:800;font-size:30px;line-height:1.15;margin:0 0 6px;letter-spacing:-.02em}
+.d{color:var(--ink2);font-size:15px;font-weight:500;margin-bottom:26px}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.k{position:relative;overflow:hidden;color:#fff;padding:18px;height:136px;border-radius:44px 40px 46px 38px / 40px 44px 38px 46px;box-shadow:0 12px 26px var(--c2s)}
+.k::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,0) 45%);border-radius:inherit}
+.k>*{position:relative}
+.k .t{font-weight:700;font-size:16px;opacity:.92}
+.k .big{font-weight:800;font-size:30px;letter-spacing:-.03em;margin-top:22px}
+.k .s{font-size:13px;font-weight:600;opacity:.85;margin-top:2px}
+.sleep{background:linear-gradient(160deg,#6F7BFF,#4B4FD6);--c2s:rgba(75,79,214,.35)}
+.food{background:linear-gradient(160deg,#3FC79A,#1F9A79);--c2s:rgba(31,154,121,.35)}
+.todo{background:linear-gradient(160deg,#FF9A6B,#F0663F);--c2s:rgba(240,102,63,.35)}
+.news{background:linear-gradient(160deg,#E66BB0,#B8438A);--c2s:rgba(184,67,138,.35)}
+.dark .k{box-shadow:0 12px 26px rgba(0,0,0,.45)}
+.mini{height:8px;border-radius:99px;background:rgba(255,255,255,.3);margin-top:12px}.mini i{display:block;height:100%;border-radius:99px;background:#fff}
+h2{font-weight:800;font-size:20px;margin:30px 0 14px;letter-spacing:-.01em}
+.l{background:var(--card);border-radius:30px;box-shadow:0 8px 24px var(--sh);padding:6px 20px}
+.dark .l{background:linear-gradient(180deg,#232633,#1C1F29 40%)}
+.td{display:flex;gap:14px;align-items:center;padding:14px 0;font-size:15px;font-weight:600}
+.td+.td{border-top:1px solid color-mix(in srgb,var(--ink) 8%,transparent)}
+.ck{width:24px;height:24px;border-radius:50%;border:2.5px solid #F0663F;flex:none}
+.fade{position:absolute;left:0;right:0;bottom:0;height:130px;background:linear-gradient(transparent,var(--bg) 55%)}
+.tabs{position:absolute;left:22px;right:22px;bottom:26px;height:66px;border-radius:40px;background:var(--card);box-shadow:0 10px 30px var(--sh);display:flex;justify-content:space-around;align-items:center;font-size:12px;font-weight:700;color:var(--ink2)}
+.tabs .on{color:#fff;background:var(--ink);padding:10px 14px;border-radius:30px}
+.dark .tabs .on{color:#101218}
+</style></head><body>
+<script>
+for(const th of ['','dark']){const D=DATA;document.write(`<div class="ph ${th}"><div class="sb"><span>9:41</span><span>5G</span></div><div class="in">
+<h1>${D.hello}</h1><div class="d">${D.date}</div>
+<div class="g">
+ <div class="k sleep"><div class="t">Schlaf</div><div class="big">7 h 20</div><div class="s">bis 7:00 Uhr</div></div>
+ <div class="k food"><div class="t">Essen</div><div class="big">64 %</div><div class="s">Linsencurry</div></div>
+ <div class="k todo"><div class="t">To-dos</div><div class="big">3 / 5</div><div class="mini"><i style="width:60%"></i></div></div>
+ <div class="k news"><div class="t">Nachrichten</div><div class="big">6 neu</div><div class="s">Süddeutsche, Handelsblatt</div></div>
+</div>
+<h2>Heute noch</h2>
+<div class="l">${D.todos.open.map(x=>`<div class="td"><span class="ck"></span>${x}</div>`).join('')}</div>
+</div><div class="fade"></div><div class="tabs"><span class="on">Start</span><span>Essen</span><span>Schlaf</span><span>To-dos</span><span>News</span></div></div>`)}
+</script></body></html>

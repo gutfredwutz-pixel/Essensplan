@@ -1,0 +1,45 @@
+<!doctype html><html><head><meta charset="utf-8">
+<script src="common.js"></script>
+<style>
+:root{--bg:#EEF1F6;--bg2:#E4E9F2;--ink:#14213A;--ink2:#66728A;--card:#FAFBFD;--sh:rgba(20,33,58,.10);--line:rgba(20,33,58,.08);
+ --sleep:#5466E8;--food:#2E9E78;--todo:#E2703F;--news:#B4508D}
+.dark{--bg:#0D1424;--bg2:#121C31;--ink:#E9EEF8;--ink2:#8B97B0;--card:#16213A;--sh:rgba(0,0,0,.45);--line:rgba(255,255,255,.07);
+ --sleep:#8C9BFF;--food:#5FD1A6;--todo:#FF9C6E;--news:#E88BC3}
+body{margin:0;display:flex;gap:40px;padding:40px;background:#C9CFDB;font-family:'Inter Display',Inter,sans-serif}
+.ph{width:390px;height:844px;border-radius:48px;overflow:hidden;position:relative;background:linear-gradient(180deg,var(--bg2),var(--bg) 40%);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.18)}
+.sb{height:54px;display:flex;justify-content:space-between;align-items:center;padding:0 32px;font-weight:600;font-size:15px}
+.in{padding:18px 24px 0}
+.d{color:var(--ink2);font-size:15px;font-weight:500}
+h1{font-weight:600;font-size:32px;margin:4px 0 30px;letter-spacing:-.02em}
+.hero{display:flex;align-items:center;gap:22px;background:linear-gradient(180deg,color-mix(in srgb,var(--card),#fff 40%),var(--card) 45%);border-radius:999px;padding:18px 26px 18px 18px;box-shadow:0 12px 32px var(--sh);margin-bottom:30px}
+.dark .hero{background:linear-gradient(180deg,#1D2A47,var(--card) 45%)}
+.rt{stroke:var(--line)}.rf{stroke:var(--sleep)}
+.hero .big{font-size:34px;font-weight:600;letter-spacing:-.03em}
+.hero .s{color:var(--ink2);font-size:14px;margin-top:2px}
+.hero .t{color:var(--sleep);font-weight:600;font-size:14px}
+.sec{display:flex;align-items:baseline;justify-content:space-between;margin:0 4px 12px}
+.sec b{font-size:19px;font-weight:600}.sec span{font-size:14px;color:var(--ink2)}
+.row{display:flex;align-items:center;gap:14px;padding:13px 4px;font-size:15.5px}
+.row+.row{border-top:1px solid var(--line)}
+.dt{width:12px;height:12px;border-radius:50%;flex:none}
+.ck{width:22px;height:22px;border-radius:50%;border:2px solid var(--todo);flex:none}
+.blk{margin-bottom:28px}
+.pill{display:inline-flex;align-items:center;gap:10px;background:var(--card);border-radius:999px;padding:12px 18px;box-shadow:0 8px 22px var(--sh);font-weight:500;font-size:15px;margin:0 8px 0 0}
+.fade{position:absolute;left:0;right:0;bottom:0;height:130px;background:linear-gradient(transparent,var(--bg) 55%)}
+.tabs{position:absolute;left:22px;right:22px;bottom:26px;height:66px;border-radius:40px;background:var(--card);box-shadow:0 10px 30px var(--sh);display:flex;justify-content:space-around;align-items:center;font-size:12px;font-weight:600;color:var(--ink2)}
+.tabs .on{color:var(--ink)}
+.tabs span{display:flex;flex-direction:column;align-items:center;gap:5px}
+.tabs i{width:6px;height:6px;border-radius:50%;background:transparent}.tabs .on i{background:var(--sleep)}
+</style></head><body>
+<script>
+for(const th of ['','dark']){const D=DATA;document.write(`<div class="ph ${th}"><div class="sb"><span>9:41</span><span>5G</span></div><div class="in">
+<div class="d">${D.date}</div><h1>${D.hello}</h1>
+<div class="hero">${ring(D.sleep.pct,36,10)}<div><div class="t">Schlaf</div><div class="big">7 h 20 min</div><div class="s">23:40 bis 7:00 Uhr</div></div></div>
+<div class="blk"><div class="sec"><b>To-dos</b><span>3 von 5</span></div>
+${D.todos.open.map(x=>`<div class="row"><span class="ck"></span>${x}</div>`).join('')}</div>
+<div class="blk"><div class="sec"><b>Essen</b><span>64 % vom Bedarf</span></div>
+<div class="pill"><span class="dt" style="background:var(--food)"></span>Linsencurry</div><div class="pill"><span class="dt" style="background:var(--food);opacity:.5"></span>8 auf der Liste</div></div>
+<div class="blk"><div class="sec"><b>Nachrichten</b><span>6 neu</span></div>
+<div class="row"><span class="dt" style="background:var(--news)"></span>${D.news[0].t}</div></div>
+</div><div class="fade"></div><div class="tabs"><span class="on"><i></i>Start</span><span><i></i>Essen</span><span><i></i>Schlaf</span><span><i></i>To-dos</span><span><i></i>News</span></div></div>`)}
+</script></body></html>

@@ -1,0 +1,45 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="common.js"></script>
+<style>
+:root{--bg:#F6F0E6;--ink:#2E2620;--ink2:#7A6C60;--card:#FFFBF5;--sh:rgba(80,55,30,.10);
+ --sleep:#5B5BA8;--sleepL:#E6E4F6;--todo:#C8643C;--todoL:#F8E2D6;--food:#5E8A5A;--foodL:#E2EEDC;--news:#9A5A86;--newsL:#F1E0EB}
+.dark{--bg:#1C1815;--ink:#F3EBE1;--ink2:#A89A8C;--card:#2A2420;--sh:rgba(0,0,0,.35);
+ --sleep:#A7A6F0;--sleepL:#33304D;--todo:#F09A72;--todoL:#47302A;--food:#9CCB92;--foodL:#2C3A29;--news:#E0A0CB;--newsL:#43303D}
+body{margin:0;display:flex;gap:40px;padding:40px;background:#D9D4CC;font-family:Inter,sans-serif}
+.ph{width:390px;height:844px;border-radius:48px;overflow:hidden;position:relative;background:var(--bg);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.18)}
+.sb{height:54px;display:flex;justify-content:space-between;align-items:center;padding:0 32px;font-weight:600;font-size:15px}
+.in{padding:18px 22px 0}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:34px;line-height:1.1;margin:0 0 6px;letter-spacing:-.01em}
+.d{color:var(--ink2);font-size:15px;margin-bottom:28px}
+.c{background:linear-gradient(180deg,color-mix(in srgb,var(--card),#fff 35%) 0%,var(--card) 40%);border-radius:34px 30px 36px 28px / 30px 34px 28px 36px;box-shadow:0 10px 30px var(--sh);padding:20px 22px;margin-bottom:16px}
+.dark .c{background:linear-gradient(180deg,color-mix(in srgb,var(--card),#fff 6%) 0%,var(--card) 40%)}
+.row{display:flex;gap:16px}.row .c{flex:1 1 0;min-width:0;margin-bottom:16px}
+.hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.hd .t{margin:0}
+.t{font-family:Fraunces,serif;font-size:19px;font-weight:600;margin:0 0 14px}
+.big{font-size:26px;font-weight:600;letter-spacing:-.02em}
+.s{color:var(--ink2);font-size:14px;margin-top:4px;white-space:nowrap}
+.rt{stroke:var(--sleepL)}.rf{stroke:var(--sleep)}
+.f .rt{stroke:var(--foodL)}.f .rf{stroke:var(--food)}
+.sl{display:flex;align-items:center;gap:14px}
+.td{display:flex;gap:12px;align-items:center;padding:9px 0;font-size:15px}
+.ck{width:22px;height:22px;border-radius:50%;border:2px solid var(--todo);flex:none}
+.bar{height:10px;border-radius:99px;background:var(--todoL);margin:2px 0 8px}.bar i{display:block;height:100%;width:60%;border-radius:99px;background:linear-gradient(180deg,color-mix(in srgb,var(--todo),#fff 25%),var(--todo))}
+.nw{padding:0 0 16px}.nw:last-child{padding:0}.nw b{display:block;font-weight:500;font-size:15px;line-height:1.35}.nw span{color:var(--news);font-size:13px;font-weight:600}
+.fade{position:absolute;left:0;right:0;bottom:0;height:130px;background:linear-gradient(transparent,var(--bg) 55%)}
+.tabs{position:absolute;left:22px;right:22px;bottom:26px;height:66px;border-radius:40px;background:var(--card);box-shadow:0 10px 30px var(--sh);display:flex;justify-content:space-around;align-items:center;font-size:12px;font-weight:600;color:var(--ink2)}
+.tabs .on{color:var(--ink);background:var(--bg);padding:10px 14px;border-radius:30px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+</style></head><body>
+<script>
+for(const th of ['','dark']){const D=DATA;document.write(`<div class="ph ${th}"><div class="sb"><span>9:41</span><span>5G</span></div><div class="in">
+<h1>${D.hello}</h1><div class="d">${D.date}</div>
+<div class="row">
+ <div class="c"><div class="hd"><div class="t">Schlaf</div>${ring(D.sleep.pct,13,6)}</div><div class="big">7 h 20</div><div class="s">bis 7:00 Uhr</div></div>
+ <div class="c"><div class="hd"><div class="t">Essen</div>${ring(D.food.kcal,13,6,'f')}</div><div class="big">64 %</div><div class="s">vom Bedarf</div></div>
+</div>
+<div class="c"><div class="t">To-dos</div><div class="bar"><i></i></div><div class="s" style="margin-bottom:6px">3 von 5 erledigt</div>
+${D.todos.open.map(x=>`<div class="td"><span class="ck"></span>${x}</div>`).join('')}</div>
+<div class="c"><div class="t">Nachrichten</div>${D.news.map(n=>`<div class="nw"><span>${n.src}</span><b>${n.t}</b></div>`).join('')}</div>
+</div><div class="fade"></div><div class="tabs"><span class="on">Start</span><span>Essen</span><span>Schlaf</span><span>To-dos</span><span>News</span></div></div>`)}
+</script></body></html>
