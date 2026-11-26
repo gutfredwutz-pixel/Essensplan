@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0B0B0C">
+<meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -1431,12 +1431,57 @@ html.dark .tile{background:var(--cardbg)!important;border:0!important;border-rad
 .setsub .setcard{background:none!important;box-shadow:none!important;padding:4px 0!important;margin:0!important}
 .setsub>.muted{margin:4px 2px 14px}
 html.dark .sheet,html .sheet{background:#141416!important;background-image:none!important}
+/* ===== Schritt 4: schwarz wie Einstellungen/Notizen, gelber Akzent, weiße Haken ===== */
+:root,html.dark{--bg:#000;--bg0:rgba(0,0,0,0);--bg85:rgba(0,0,0,.92);--card:#1C1C1E;--card2:#2C2C2E;--sep:#2C2C2E;--line:#2C2C2E;
+ --ac:#F5C543;--blue:#F5C543;--blue-d:#F5C543;--blue-l:#3A3220;--grad:#F5C543;--c-food:#F5C543;--c-todo:#F2F2F4;--c-goal:#F2F2F4;--c-sleep:#9AA5FF;
+ --ink3:#8E8E93;--cardbg:#1C1C1E;--cardsh:none}
+html,body,header{background:#000!important}
+.ln,.mt,html.dark .week,html.dark .flatlist,html.dark .reclist,html.dark .weekcard,html.dark .rephero,html.dark .tile{border-radius:14px!important;box-shadow:none!important;background:#1C1C1E!important}
+.ln{padding:0 16px!important}.ln.pad{padding:14px 16px!important}
+.lr{min-height:24px;padding:12px 0!important}
+.kicker{font-size:15px;color:var(--ink3);padding:0 4px 2px;min-height:19px}
+header{padding-top:calc(var(--top) + 10px)!important}
+.sheet,html.dark .sheet{background:#000!important}
+/* Haken: weißer Kreis, schwarzer Haken */
+.ckb,.ln.todo .ckb,.ln.goals .ckb,.lr.goal .ckb{border:1.6px solid #636366!important;background:none!important;position:relative}
+.ckb.x,.ln.todo .ckb.x,.ln.goals .ckb.x,.lr.goal .ckb.x{background:#F2F2F4!important;border-color:#F2F2F4!important}
+.ckb.x::after{content:'';position:absolute;left:7px;top:3.5px;width:5px;height:10px;border:solid #000;border-width:0 2.2px 2.2px 0;transform:rotate(45deg)}
+.lr.done .tx{color:#636366}
+.wk i.y,.lr.goal .wk i.y,.ln.goals .wk i.y{background:#F2F2F4!important}
+.rp{color:var(--ink3)}
+.cp{background:#2C2C2E}.cp.on{background:#3A3220;box-shadow:inset 0 0 0 1.5px var(--ac)}
+.tabs button.on{color:var(--ac)!important}
+.useg button.on{border-bottom-color:var(--ac)}
+/* Statistik */
+.bars{position:relative;height:128px}
+.bars .eight{position:absolute;left:0;right:0;height:0;border-top:1px dashed #48484A;pointer-events:none}
+.bars .eight span{position:absolute;right:0;top:-17px;font-size:11px;color:var(--ink3);height:auto;line-height:1}
+.sleep .bars b{background:#48484A!important}
+.sleep .bars b.ok{background:var(--c-sleep)!important}
+.lr.gr{flex-direction:column;align-items:stretch;gap:10px}
+.gtop{display:flex;align-items:center;gap:12px}
+.gstrip{display:flex;gap:6px}.gstrip i{flex:1;height:22px;border-radius:6px;background:#2C2C2E}
+.gstrip i.y{background:#F2F2F4}.gstrip i.pre{background:transparent;box-shadow:inset 0 0 0 1px #2C2C2E}
+.gstrip.m{gap:3px}.gstrip.m i{height:14px;border-radius:3px}
+.kcal .big{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
+.kcal .big b{font-size:30px;font-weight:700;letter-spacing:-.02em}.kcal .big span{color:var(--ink3);font-size:14.5px}
+.mb.wide{width:100%;margin:0;height:8px;border-radius:4px}
+.ln.menu .dots{display:flex;gap:4px;margin-left:auto}.ln.menu .dots i{width:8px;height:8px;border-radius:50%;background:var(--lv-ok)}
+.ln.menu .dots i.good{background:var(--lv-good)}.ln.menu .dots i.low{background:var(--lv-low)}.ln.menu .dots i.high{background:var(--lv-high)}
+.sheetnote{color:var(--ink3);font-size:14px;margin:0 4px 12px}
+html.dark{--lv-good:#F2F2F4;--lv-ok:#8E8E93;--lv-low:#D08C8C;--lv-high:#E0B05A}
+/* Vorschlag */
+.tip .tipt{font-size:15.5px;font-weight:600}
+.tip .tips{font-size:14px;color:var(--ink3);margin:4px 0 12px}
+.tip .chips{margin-top:2px}
+.sleep .bars b{background:var(--c-sleep)!important;opacity:.5}.sleep .bars b.ok{opacity:1}
 </style>
 </head>
 <body data-tab="start">
 <div class="blobs"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i></div>
 <div id="stage">
 <header>
+  <div class="kicker" id="kicker"></div>
   <div class="hrow">
     <div id="art"></div>
     <h1 id="title">Essenswoche</h1>

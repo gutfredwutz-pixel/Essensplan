@@ -36,6 +36,8 @@ async def main():
               await db.collection('todos').doc('t5').set({who:'Jakob',text:'Zähne Zahnseide',date:t,time:'',repeat:'daily',doneDays:{},created:5});
               await db.collection('todos').doc('t4').set({who:'Jakob',text:'Fahrrad zur Werkstatt',date:tm,time:'',done:false,created:4});
               const d={}; d[t]=true; await db.collection('goals').doc('g1').set({who:'Jakob',title:'10 Seiten lesen',days:{},created:1});
+              const nv=window.NUTRI['haferflocken']||Object.values(window.NUTRI)[0]; await db.collection('diary').doc('Jakob_'+t).set({foods:[{name:'Haferflocken',gr:80,v:nv}]});
+              const dd2={}; for(let i=0;i<7;i+=2) dd2[ymd(addDays(new Date(),-i))]=true; await db.collection('goals').doc('g3').set({who:'Jakob',title:'30 min Statistik',days:dd2,created:1});
               await db.collection('goals').doc('g2').set({who:'Jakob',title:'2 Liter trinken',days:d,created:2});
             })()"""); await pg.wait_for_timeout(500)
             for i, name in enumerate(['start', 'statistik', 'essen', 'todos', 'news']):
@@ -45,6 +47,7 @@ async def main():
                 await pg.click(f'#fseg >> text={name}'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / f'essen_{name.lower()}.png'))
             await pg.click('.tabs button >> nth=0'); await pg.wait_for_timeout(600); await pg.click('#gear'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'einstellungen.png'))
             await pg.click('.setmenu >> text=Nie auf die Liste'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'einstellungen_nie.png'))
+            await pg.evaluate("closeSheet()"); await pg.click('.tabs button >> nth=1'); await pg.wait_for_timeout(600); await pg.click('.ln.menu >> text=Vitamine'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'vitamine.png'))
             print('Fehler auf der Seite:', errs or 'keine'); print('Bilder in', OUT)
             await b.close()
     finally:

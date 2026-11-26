@@ -230,7 +230,7 @@ function showWho() {
   $('#ov').dataset.locked = '1';
 }
 function isDark() { return true; } // neues Design: vorerst nur dunkel
-function barColor(off) { const m = document.querySelector('meta[name=theme-color]'); if (!m) return; const d = isDark(), dim = !off && $('#ov') && $('#ov').classList.contains('on'); const col = d ? (dim ? '#050506' : '#0B0B0C') : (dim ? '#C4CFE4' : '#E8F0FF'); m.content = col; document.documentElement.style.backgroundColor = col; }
+function barColor(off) { const m = document.querySelector('meta[name=theme-color]'); if (!m) return; const d = isDark(), dim = !off && $('#ov') && $('#ov').classList.contains('on'); const col = d ? (dim ? '#000000' : '#000000') : (dim ? '#C4CFE4' : '#E8F0FF'); m.content = col; document.documentElement.style.backgroundColor = col; }
 function applyTheme() { const d = isDark(); document.documentElement.classList.toggle('dark', d); barColor(); }
 // Hintergrund festhalten, solange ein Blatt offen ist
 let lockY = null;
@@ -444,7 +444,7 @@ function grey(text) { return h('div', { class: 'greytxt', text }); }
 
 /* ============ Kopf & Tabs ============ */
 function renderHead() {
-  const a = $('#art'); a.replaceChildren(); if (ART[tab]) a.append(svgEl(ART[tab])); $('#title').textContent = tab === 'start' && window.startTitle ? startTitle() : TITLES[tab] || ''; renderFoodSeg();
+  const a = $('#art'); a.replaceChildren(); if (ART[tab]) a.append(svgEl(ART[tab])); $('#title').textContent = tab === 'start' && window.startTitle ? startTitle() : TITLES[tab] || ''; renderFoodSeg(); const kk = $('#kicker'); if (kk) { const n = statRange === 'week' ? 7 : statRange === 'month' ? 30 : 365; kk.textContent = tab === 'stat' ? (n === 365 ? 'Letzte 12 Monate' : `Letzte ${n} Tage`) : longDate(ymd(new Date())); }
   const w = $('#who'); const m = me(); w.classList.toggle('hidden', !household); w.style.background = colorOf(m); w.textContent = (m || '?')[0];
   const gr = $('#gear'); if (gr && !gr.firstChild) gr.append(ic('gear')); if (gr) gr.classList.toggle('hidden', !household || tab !== 'start');
   document.body.dataset.tab = tab;
@@ -485,7 +485,7 @@ const TAB_DEF = [
 function renderFoodSeg() {
   let f = $('#fseg'); if (!f) { f = h('div', { id: 'fseg', class: 'useg' }); $('header').append(f); }
   f.classList.toggle('hidden', !FOOD.includes(tab) && tab !== 'stat');
-  if (tab === 'stat') { f.replaceChildren(...[['week', 'Woche'], ['month', 'Monat'], ['year', 'Jahr']].map(([k, l]) => h('button', { class: k === statRange ? 'on' : '', onclick: () => { statRange = k; renderFoodSeg(); render(); } }, l))); return; }
+  if (tab === 'stat') { f.replaceChildren(...[['week', 'Woche'], ['month', 'Monat'], ['year', 'Jahr']].map(([k, l]) => h('button', { class: k === statRange ? 'on' : '', onclick: () => { statRange = k; renderHead(); render(); } }, l))); return; }
   if (!FOOD.includes(tab)) return;
   f.replaceChildren(...[['list', 'Liste'], ['cal', 'Woche'], ['rec', 'Rezepte']].map(([id, l]) => h('button', { class: id === tab ? 'on' : '', onclick: () => { if (id !== tab) goTab(id, FOOD.indexOf(id) - FOOD.indexOf(tab)); } }, l)));
 }

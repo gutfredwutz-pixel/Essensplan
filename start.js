@@ -115,6 +115,22 @@ function openGoal(g) {
     h('button', { class: 'btn danger', style: 'width:100%', onclick: () => { db.collection('goals').doc(g.id).delete(); closeSheet(); } }, 'Löschen'))]);
 }
 
+
+/* ---------- Vorschlag: was heute noch passt ---------- */
+function mealTip() {
+  const name = me(), pf = profiles[name]; if (!pf) return [];
+  const t = today(), d = dayIntake(name, t); if (!d.logged) return [];
+  const refs = allRefs(needsOf(pf)), kcal = Math.round(refs[0][0] - d.tot[0]), prot = Math.round(refs[1][0] - d.tot[1]);
+  if (kcal < 150) return [secHead('Vorschlag'), h('div', { class: 'ln pad tip' }, h('div', { class: 'tipt', text: 'Kalorien sind für heute gedeckt.' }))];
+  // welcher Nährstoff fehlt heute am meisten (ohne Makros und ohne „nicht zu viel“)
+  let worst = null; for (const [, keys] of NUT_GROUPS) for (const i of keys) { if (MACRO.has(i) || LIMIT_KEYS.has(i) || i === 1 || !refs[i]) continue; const p = d.tot[i] / refs[i][0]; if (!worst || p < worst.p) worst = { i, p, nm: refs[i][1] }; }
+  const foods = [...new Set([...(prot > 15 ? suggestFoods(1).slice(0, 2) : []), ...(worst ? suggestFoods(worst.i).slice(0, 3) : [])])].slice(0, 4);
+  return [secHead('Vorschlag'), h('div', { class: 'ln pad tip' },
+    h('div', { class: 'tipt' }, `Heute noch offen: ${de(kcal)} kcal` + (prot > 5 ? ` und ${de(prot)} g Eiweiß` : '')),
+    worst ? h('div', { class: 'tips', text: `Am wenigsten bisher: ${worst.nm}` }) : null,
+    foods.length ? h('div', { class: 'chips' }, ...foods.map(f => h('span', { class: 'cp', text: f }))) : null)];
+}
+
 /* ---------- Start, To-dos, News ---------- */
 PAGES.start = function () {
   const t = today(), td = todayTodos(), gl = mine(goals);
@@ -122,10 +138,10 @@ PAGES.start = function () {
   const all = td.length + gl.length, open = openT.length + openG.length;
   const meals = planOn(t), shop = items.filter(i => !i.checked).length;
   return h('div', { class: 'pg' },
-    h('div', { class: 'dt', text: longDate(t) }),
     ...sleepBlock(),
     secHead('Heute', all ? `${all - open} von ${all}` : null),
     h('div', { class: 'ln todo' }, ...openT.map(x => todoRow(x)), ...openG.map(goalRow), addRow('Neues To-do', s => addTodo(s))),
+    ...mealTip(),
     secHead('Essen'),
     h('div', { class: 'ln food' }, ...meals.map(p => lrow({ class: 'lr tap', onclick: () => goTab('cal', 1) }, h('span', { class: 'tx', text: p.title || (recipeOf(p) || {}).title || '' }), p.meal ? h('span', { class: 'n', text: p.meal }) : null)),
       lrow({ class: 'lr tap', onclick: () => openDiary(me(), t, render) }, h('span', { class: 'tx', text: 'Gegessen eintragen' }), h('span', { class: 'n', text: '›' })),
@@ -158,10 +174,12 @@ function sleepBars(days) {
   } else groups = days.map((d, i) => ({ lbl: statRange === 'week' ? WD[(parseYmd(d).getDay() + 6) % 7] : (i % 5 === 4 ? String(parseYmd(d).getDate()) : ''), days: [d] }));
   const avgOf = ds => { const v = ds.map(d => sleepMinutes(sleepOf(d))).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
   const vals = groups.map(g => avgOf(g.days)), all = vals.filter(x => x != null);
-  const avg = all.length ? Math.round(avgOf(days)) : null, max = Math.max(600, ...all);
+  const avg = all.length ? Math.round(avgOf(days)) : null, max = Math.max(600, ...all), y = m => Math.max(4, (m - 240) / (max - 240) * 96);
   return [secHead('Schlaf', avg != null ? `im Schnitt ${hm(avg)}` : null),
     h('div', { class: 'ln pad tap sleep', onclick: openSleep },
-      all.length ? h('div', { class: 'bars' + (statRange === 'month' ? ' thin' : '') }, ...groups.map((g, k) => h('div', {}, h('b', { style: `height:${vals[k] != null ? Math.max(4, (vals[k] - 240) / (max - 240) * 84) : 0}px` }), h('span', { text: g.lbl }))))
+      all.length ? h('div', { class: 'bars' + (statRange === 'month' ? ' thin' : '') },
+        h('div', { class: 'eight', style: `bottom:${22 + y(480)}px` }, h('span', { text: '8 h' })),
+        ...groups.map((g, k) => h('div', {}, h('b', { class: vals[k] != null && vals[k] >= 480 ? 'ok' : '', style: `height:${vals[k] != null ? y(vals[k]) : 0}px` }), h('span', { text: g.lbl }))))
         : h('div', { class: 'add', text: 'Noch kein Schlaf eingetragen' }))];
 }
 function goalStats(days) {
@@ -170,44 +188,35 @@ function goalStats(days) {
   const rows = gl.map(g => {
     const from = g.created ? ymd(new Date(g.created)) : days[0]; const ds = days.filter(d => d >= from);
     const n = ds.filter(d => (g.days || {})[d]).length; hit += n; tot += ds.length;
-    return lrow({}, h('span', { class: 'tx', text: g.title }), h('span', { class: 'n', text: `${n} von ${ds.length}` }), h('span', { class: 'mb goal' }, h('i', { style: `width:${ds.length ? n / ds.length * 100 : 0}%` })));
+    const strip = statRange === 'year' ? null : h('div', { class: 'gstrip' + (statRange === 'month' ? ' m' : '') }, ...days.map(d => h('i', { class: d < from ? 'pre' : (g.days || {})[d] ? 'y' : '' })));
+    return h('div', { class: 'lr gr' }, h('div', { class: 'gtop' }, h('span', { class: 'tx', text: g.title }), h('span', { class: 'n', text: `${n} von ${ds.length}` })), strip);
   });
   return [secHead('Ziele', tot ? `${Math.round(hit / tot * 100)} % geschafft` : null), h('div', { class: 'ln goals' }, ...rows)];
 }
+function nutRowsList(rs) { return rs.map(r => lrow({}, h('span', { class: 'tx', text: r.nm }), h('span', { class: 'n', text: `${r.pct} %` }), h('span', { class: 'mb ' + r.st }, h('i', { style: `width:${Math.min(100, r.pct)}%` })))); }
+function openNutList(title, rs, note) { openSheet(title, [note ? h('div', { class: 'sheetnote', text: note }) : null, h('div', { class: 'ln' }, ...nutRowsList(rs))]); }
 function nutStats(days) {
   const name = me(), pf = profiles[name];
   if (!pf) return [secHead('Nährstoffe'), lines(lrow({ class: 'lr tap', onclick: () => openProfileEdit(name, render) }, h('span', { class: 'add', text: 'Angaben machen, damit dein Bedarf berechnet wird' })))];
   const d = rangeData(name, days), refs = allRefs(needsOf(pf));
-  const out = [secHead('Nährstoffe', d.n ? (d.n === 1 ? 'an 1 Tag erfasst' : `Schnitt aus ${d.n} Tagen`) : null)];
-  if (!d.n) { out.push(lines(lrow({ class: 'lr tap', onclick: () => openDiary(name, today(), render) }, h('span', { class: 'add', text: 'Noch nichts gegessen eingetragen' })))); return out; }
+  if (!d.n) return [secHead('Kalorien'), lines(lrow({ class: 'lr tap', onclick: () => openDiary(name, today(), render) }, h('span', { class: 'add', text: 'Noch nichts gegessen eingetragen' })))];
   const rows = {};
   for (const [, keys] of NUT_GROUPS) for (const i of keys) if (refs[i]) {
     const [ref, nm, unit] = refs[i], v = d.total[i] / d.n, pct = Math.round(v / ref * 100), st0 = nutState(i, pct);
     rows[i] = { i, nm, unit, v, ref, pct, st: st0 === 'sun' ? 'low' : st0 };
   }
-  const list = Object.values(rows), plain = list.filter(r => !LIMIT_KEYS.has(r.i));
-  const cover = Math.round(plain.reduce((a, r) => a + Math.min(100, r.pct), 0) / plain.length);
-  const cnt = s => list.filter(r => r.st === s).length;
-  const bar = h('div', { class: 'stack' }, ...['good', 'ok', 'low', 'high'].map(s => cnt(s) ? h('i', { class: s, style: `flex:${cnt(s)}` }) : null));
-  const legend = h('div', { class: 'leg' }, ...[['good', 'gut'], ['ok', 'ordentlich'], ['low', 'wenig'], ['high', 'zu viel']].filter(([s]) => cnt(s)).map(([s, l]) => h('span', { class: s }, h('i'), `${cnt(s)} ${l}`)));
-  const lack = plain.filter(r => !MACRO.has(r.i)).sort((a, b) => a.pct - b.pct).slice(0, 3);
-  out.push(h('div', { class: 'ln pad nsum' },
-    h('div', { class: 'big' }, h('b', { text: `${cover} %` }), h('span', { text: 'deines Bedarfs gedeckt' })), bar, legend,
-    lack.length ? h('div', { class: 'lack' }, h('span', { class: 'lt', text: 'Fehlt am meisten' }), h('div', { class: 'chips' }, ...lack.map(r => h('span', { class: 'cp low' }, `${r.nm} ${r.pct} %`)))) : null));
-  // Makros als Kacheln
-  out.push(h('div', { class: 'macgrid' }, ...[0, 1, 3, 2].filter(i => rows[i]).map(i => { const r = rows[i];
-    return h('div', { class: 'mt ' + r.st }, h('span', { class: 'mn', text: r.nm }), h('b', { text: `${r.pct} %` }),
-      h('span', { class: 'mv', text: `${de(r.v)} von ${de(r.ref)} ${r.unit}` }), h('span', { class: 'mb ' + r.st }, h('i', { style: `width:${Math.min(100, r.pct)}%` }))); })));
-  // Gruppen zum Aufklappen
-  for (const [title, keys] of NUT_GROUPS) {
-    const rs = keys.map(i => rows[i]).filter(r => r && !MACRO.has(r.i) && r.i !== 1); if (!rs.length) continue;
-    const open = openGroups.has(title), good = rs.filter(r => r.st === 'good').length;
-    out.push(h('div', { class: 'ln grp' + (open ? ' open' : '') },
-      lrow({ class: 'lr tap gh', onclick: () => { open ? openGroups.delete(title) : openGroups.add(title); render(); } },
-        h('span', { class: 'tx', text: title }), h('span', { class: 'dots' }, ...rs.map(r => h('i', { class: r.st }))), h('span', { class: 'chev', text: '›' })),
-      ...(open ? rs.map(r => lrow({}, h('span', { class: 'tx', text: r.nm }), h('span', { class: 'n', text: `${r.pct} %` }), h('span', { class: 'mb ' + r.st }, h('i', { style: `width:${Math.min(100, r.pct)}%` })))) : [])));
-  }
-  out.push(lines(lrow({ class: 'lr tap', onclick: () => { cachePage(); tab = 'nutri'; renderTabs(); render(); window.scrollTo(0, 0); } }, h('span', { class: 'tx', text: 'Einzelne Tage ansehen' }), h('span', { class: 'n', text: '›' }))));
+  const k = rows[0], out = [];
+  out.push(secHead('Kalorien', d.n === 1 ? 'an 1 Tag erfasst' : `Schnitt aus ${d.n} Tagen`));
+  out.push(h('div', { class: 'ln pad kcal' }, h('div', { class: 'big' }, h('b', { text: `${de(k.v)} kcal` }), h('span', { text: `von ${de(k.ref)} am Tag` })), h('span', { class: 'mb wide ' + k.st }, h('i', { style: `width:${Math.min(100, k.pct)}%` }))));
+  const lack = Object.values(rows).filter(r => !MACRO.has(r.i) && !LIMIT_KEYS.has(r.i) && r.i !== 1).sort((a, b) => a.pct - b.pct).slice(0, 5);
+  const groups = [['Fehlt am meisten', lack, 'Die Nährstoffe, von denen du im Schnitt am wenigsten hattest.'], ['Makros', [1, 3, 2].map(i => rows[i]).filter(Boolean)]];
+  for (const [title, keys] of NUT_GROUPS) { const rs = keys.map(i => rows[i]).filter(r => r && !MACRO.has(r.i) && r.i !== 1); if (rs.length) groups.push([title, rs]); }
+  out.push(secHead('Nährstoffe'));
+  out.push(h('div', { class: 'ln menu' }, ...groups.map(([title, rs, note]) => lrow({ class: 'lr tap', onclick: () => openNutList(title, rs, note) },
+    h('span', { class: 'tx', text: title }),
+    title === 'Fehlt am meisten' ? h('span', { class: 'n', text: rs[0] ? rs[0].nm : '' }) : h('span', { class: 'dots' }, ...rs.map(r => h('i', { class: r.st }))),
+    h('span', { class: 'chev', text: '›' }))),
+    lrow({ class: 'lr tap', onclick: () => { cachePage(); tab = 'nutri'; renderTabs(); render(); window.scrollTo(0, 0); } }, h('span', { class: 'tx', text: 'Einzelne Tage' }), h('span', { class: 'chev', text: '›' }))));
   return out;
 }
 PAGES.stat = function () { const days = statDays(); return h('div', { class: 'pg' }, ...sleepBars(days), ...goalStats(days), ...nutStats(days)); };
