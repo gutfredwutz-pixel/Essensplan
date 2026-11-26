@@ -268,8 +268,16 @@ function renderSettings() {
     try { await getAsr((m, fr) => { asrProg.textContent = fr != null ? `Lädt … ${Math.round(fr * 100)} %` : m; }); LS.set('ep_asr', '1'); asrProg.textContent = 'Fertig, Diktieren geht jetzt auch ohne Internet.'; asrBtn.textContent = 'Ist auf diesem Handy geladen'; }
     catch (e) { asrProg.textContent = 'Laden hat nicht geklappt, bitte später im WLAN nochmal versuchen.'; asrBtn.disabled = false; }
   });
-  return h('div', { class: 'setpage' },
-    
+  const nv = never.length + 4, ws = LS.get('ep_weekstart') === 'mo' ? 'Am Montag' : 'Mit heute', sp = { ask: 'Nachfragen', all: 'Immer', none: 'Nie' }[LS.get('ep_spices') || 'ask'];
+  const ENTRIES = [
+    ['Meine Angaben', profiles[who] ? '' : 'Fehlt noch', () => [note(profiles[who] ? 'Körper, Alltag, Sport, Ziel und Supplemente' : 'Noch nichts eingetragen'), h('button', { class: 'btn grad', style: 'width:100%', onclick: () => openProfileEdit(who, () => openTop('set')) }, profiles[who] ? 'Bearbeiten' : 'Angaben machen')]],
+    ['Haushalt', '', null, () => { setSub = null; topSheet = null; openProfile(); }],
+    ['Woche beginnt', ws, () => [seg('ep_weekstart', [['today', 'Mit heute'], ['mo', 'Am Montag']], 'today', () => { anchor = weekAnchor(); }), note('Gilt für die Essenswoche und die Nährstoffe.')]],
+    ['Gewürze aus Rezepten', sp, () => [seg('ep_spices', [['ask', 'Nachfragen'], ['all', 'Immer'], ['none', 'Nie']], 'ask'), note('Ob Gewürze beim Einplanen eines Rezepts auf die Einkaufsliste kommen.')]],
+    ['Nie auf die Liste', `${nv} Sachen`, () => SUBNEVER()],
+    ['KI', '', () => [aiCard()]],
+    ['Spracherkennung', LS.get('ep_asr') ? 'Geladen' : '', () => [note('Fürs Diktieren und für Videos. Am besten einmal im WLAN laden, danach geht es auch offline.'), asrBtn, asrProg]]];
+  const OLD_CARDS = () => [
     card('b', 'Meine Angaben', note(profiles[who] ? 'Körper, Alltag, Sport, Ziel und Supplemente' : 'Noch nichts eingetragen'),
       h('button', { class: 'btn grad', style: 'width:100%', onclick: () => openProfileEdit(who, () => openTop('set')) }, profiles[who] ? 'Bearbeiten' : 'Angaben machen')),
     card('b', 'Haushalt', note('Mitglieder, Code und Einladungslink für neue Leute.'), h('button', { class: 'btn s', style: 'width:100%', onclick: () => { topSheet = null; openProfile(); } }, 'Haushalt öffnen')),
@@ -280,6 +288,12 @@ function renderSettings() {
       h('div', { class: 'row', style: 'gap:8px' }, nin, h('button', { class: 'ib p', 'aria-label': 'Hinzufügen', onclick: addNever }, ic('plus')))),
     aiCard(),
     card('b', 'Spracherkennung', note('Fürs Diktieren und für Videos. Am besten einmal im WLAN laden, danach geht es auch offline.'), asrBtn, asrProg),
+    ];
+  const SUBNEVER = () => { const c = OLD_CARDS()[4]; c.querySelector('.settitle')?.remove(); return [c]; };
+  const cur = setSub && ENTRIES.find(e => e[0] === setSub);
+  if (cur && cur[2]) return h('div', { class: 'setpage setsub' }, ...cur[2]());
+  return h('div', { class: 'setpage' },
+    h('div', { class: 'ln setmenu' }, ...ENTRIES.map(([t, v, f, act]) => h('div', { class: 'lr tap', onclick: act || (() => { setSub = t; openTop('set'); }) }, h('span', { class: 'tx', text: t }), v ? h('span', { class: 'n', text: v }) : null, h('span', { class: 'chev', text: '›' })))),
     h('div', { class: 'setfoot' }, h('div', { class: 'greytxt', text: 'Nährwerte: Bundeslebensmittelschlüssel (BLS) 4.0, Max Rubner-Institut. Markenprodukte: Open Food Facts. Alle Werte sind Schätzungen und ersetzen keine Ernährungsberatung.' })));
 }
 function openProfile() {
@@ -475,10 +489,10 @@ function renderFoodSeg() {
   if (!FOOD.includes(tab)) return;
   f.replaceChildren(...[['list', 'Liste'], ['cal', 'Woche'], ['rec', 'Rezepte']].map(([id, l]) => h('button', { class: id === tab ? 'on' : '', onclick: () => { if (id !== tab) goTab(id, FOOD.indexOf(id) - FOOD.indexOf(tab)); } }, l)));
 }
-let topSheet = null;
+let topSheet = null, setSub = null;
 function openTop(id) {
   topSheet = id;
-  if (id === 'set') { const sc = $('#ov').classList.contains('on') ? $('#sheet').scrollTop : 0; openSheet('Einstellungen', [renderSettings()]); $('#sheet').scrollTop = sc; }
+  if (id === 'set') { const sc = $('#ov').classList.contains('on') ? $('#sheet').scrollTop : 0; openSheet(setSub || 'Einstellungen', [renderSettings()]); $('#sheet').scrollTop = sc; if (setSub) sheetBack = () => { setSub = null; openTop('set'); }; }
   else { resetNutriState(); nutriWho = null; nutriFn = null; nutriHome(); }
 }
 function refreshSet() { if (topSheet === 'set' && $('#ov').classList.contains('on')) openTop('set'); else render(); }
@@ -1184,7 +1198,7 @@ function openSheet(title, content) {
   s.classList.toggle('full', !!topSheet); ov.classList.add('on'); s.scrollTop = 0; lockBody(true); barColor();
   if (!was) { s.classList.remove('rise'); void s.offsetWidth; s.classList.add('rise'); }
 }
-function closeSheet() { sheetBack = null; $('#ov').classList.remove('on'); lockBody(false); barColor(); topSheet = null; $('#sheet').classList.remove('full'); }
+function closeSheet() { sheetBack = null; setSub = null; $('#ov').classList.remove('on'); lockBody(false); barColor(); topSheet = null; $('#sheet').classList.remove('full'); }
 function dismissSheet() {
   const s = $('#sheet'), ov = $('#ov'); if (ov.dataset.locked) return;
   ov.dataset.locked = '1'; barColor(true);

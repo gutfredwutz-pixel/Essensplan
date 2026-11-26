@@ -43,6 +43,8 @@ async def main():
             await pg.click('.tabs button >> nth=2'); await pg.wait_for_timeout(500)
             for name in ['Liste', 'Rezepte']:
                 await pg.click(f'#fseg >> text={name}'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / f'essen_{name.lower()}.png'))
+            await pg.click('.tabs button >> nth=0'); await pg.wait_for_timeout(600); await pg.click('#gear'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'einstellungen.png'))
+            await pg.click('.setmenu >> text=Nie auf die Liste'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'einstellungen_nie.png'))
             print('Fehler auf der Seite:', errs or 'keine'); print('Bilder in', OUT)
             await b.close()
     finally:
