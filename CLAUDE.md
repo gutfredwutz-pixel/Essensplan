@@ -33,6 +33,12 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - Einstellungen: Menü mit Unterseiten (`setSub`), zurück per Wischen.
 - Logo: weiß auf Schwarz, zwei Striche, Punkt rechts oberhalb der Mitte (`icons/`).
 - Offen: Nährstoff-Darstellung weiter verbessern (Jakob hat noch Punkte), Training in den Kalorienbedarf einrechnen, Erinnerungen (Web-Push) für To-dos mit Uhrzeit, News (RSS + KI), Uni-Bereich, CSS aufräumen (viele Überschreib-Blöcke), `app.js` in Module teilen.
+- Nächste große Punkte (mit Jakob besprochen, Ende Nov. 2026):
+  1. **News**: Bereiche KI, Wirtschaft (inkl. auffällige Kursbewegungen/boomende Firmen), Politik Deutschland und Welt, ganz unten Weiterbildung/Arbeitsmarkt. Seriöse Quellen (Tagesschau u. a.) per RSS über die Supabase-Funktion, kurze KI-Zusammenfassungen zum Lesen in der Bahn, wenn möglich mit Bild aus dem Artikel.
+  2. **Vorrat**: festhalten, was zu Hause ist; Vorschläge unterscheiden „hast du da“ und „bitte kaufen“.
+  3. **Start Essen**: Vorschläge, was man bald essen und was man einkaufen sollte (passend zu fehlenden Nährstoffen), evtl. per KI.
+  4. **Einkaufsliste neu**: wirkt unübersichtlich; Kauf-Ideen für fehlende Nährstoffe direkt dort statt schwebender Pille.
+  5. Ladebildschirm beim Öffnen klären (Screenshot von Jakob abwarten; evtl. alter iOS-Startbildschirm, nach Neu-Hinzufügen weg).
 - `dev/screens.py` braucht Python-Playwright (`pip install playwright`), nutzt den vorinstallierten Chromium unter `/opt/pw-browsers/chromium`.
 
 ## Aufbau (Stand jetzt)
