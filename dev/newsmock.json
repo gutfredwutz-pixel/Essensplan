@@ -1,0 +1,336 @@
+{
+"at": "2026-11-26T23:09:55.000Z",
+"bereiche": [
+{
+"key": "ki",
+"titel": "KI",
+"artikel": [
+{
+"id": "a1",
+"bereich": "ki",
+"wichtig": 4,
+"titel": "Nvidia verdient so viel wie nie zuvor",
+"kurz": "Der Chiphersteller Nvidia hat im letzten Quartal 62 Milliarden Dollar Umsatz gemacht, deutlich mehr als erwartet. Treiber ist die Nachfrage nach Chips für KI-Rechenzentren.",
+"absaetze": [
+"Nvidia baut Grafikprozessoren, kurz GPUs. Diese Chips sind besonders gut darin, viele Rechnungen gleichzeitig zu erledigen, und werden deshalb für das Training von KI-Modellen gebraucht.",
+"Im dritten Quartal stieg der Umsatz um 58 % im Vergleich zum Vorjahr. Fast neun von zehn Dollar kamen aus dem Geschäft mit Rechenzentren.",
+"Analysten hatten mit etwas weniger gerechnet. Die Aktie stieg nachbörslich um rund 6 %."
+],
+"zahlen": [
+{
+"zahl": "62 Milliarden Dollar Umsatz",
+"einordnung": "Das ist mehr, als Siemens in einem halben Jahr umsetzt, und das in nur drei Monaten."
+},
+{
+"zahl": "+6 % Aktienkurs",
+"einordnung": "Bei einem Börsenwert von über 4 Billionen Dollar entspricht das rund 250 Milliarden Dollar Wertzuwachs an einem Tag."
+}
+],
+"begriffe": [
+{
+"begriff": "Quartal",
+"erklaerung": "Ein Vierteljahr. Börsennotierte Firmen legen alle drei Monate Zahlen vor."
+},
+{
+"begriff": "nachbörslich",
+"erklaerung": "Handel nach dem offiziellen Börsenschluss, oft mit größeren Ausschlägen."
+}
+],
+"warum": "Nvidia ist in vielen ETFs stark gewichtet, auch im MSCI World. Die Zahlen bewegen also auch breite Sparpläne.",
+"bild": "https://images.example/1.jpg",
+"zeit": 1795732795547.0,
+"quellen": [
+{
+"name": "Handelsblatt",
+"titel": "Nvidia übertrifft erneut die Erwartungen",
+"url": "https://example.org/8260748835235474179",
+"bezahl": true
+},
+{
+"name": "Tagesschau",
+"titel": "Nvidia mit Rekordumsatz",
+"url": "https://example.org/1949776046032745588",
+"bezahl": false
+},
+{
+"name": "Heise",
+"titel": "Nvidia Q3: Rechenzentren bringen 90 Prozent",
+"url": "https://example.org/8589989144739820616",
+"bezahl": false
+}
+],
+"anriss": false
+},
+{
+"id": "a2",
+"bereich": "ki",
+"wichtig": 3,
+"titel": "EU-Kommission lockert Teile des KI-Gesetzes",
+"kurz": "Die EU will kleine Firmen bei den Pflichten aus dem KI-Gesetz entlasten. Kritiker fürchten, dass damit der Schutz von Verbraucherdaten schwächer wird.",
+"absaetze": [
+"Text"
+],
+"zahlen": [],
+"begriffe": [
+{
+"begriff": "AI Act",
+"erklaerung": "Das KI-Gesetz der EU. Es teilt KI-Anwendungen nach Risiko ein."
+}
+],
+"warum": "",
+"bild": "https://images.example/2.jpg",
+"zeit": 1795718395547.0,
+"quellen": [
+{
+"name": "FAZ",
+"titel": "Brüssel rudert beim AI Act zurück",
+"url": "https://example.org/2733076876834190553",
+"bezahl": true
+},
+{
+"name": "Tagesschau",
+"titel": "EU will KI-Regeln vereinfachen",
+"url": "https://example.org/4734083271761462376",
+"bezahl": false
+}
+],
+"anriss": false
+}
+]
+},
+{
+"key": "wirtschaft",
+"titel": "Wirtschaft",
+"artikel": [
+{
+"id": "a3",
+"bereich": "wirtschaft",
+"wichtig": 5,
+"titel": "Inflation in Deutschland sinkt auf 2,1 Prozent",
+"kurz": "Die Preise sind im November langsamer gestiegen als im Vormonat. Vor allem Energie wurde günstiger, Lebensmittel bleiben teuer.",
+"absaetze": [
+"A"
+],
+"zahlen": [
+{
+"zahl": "2,1 %",
+"einordnung": "Die Europäische Zentralbank strebt 2 % an. Das Ziel ist damit fast erreicht."
+}
+],
+"begriffe": [],
+"warum": "",
+"bild": "https://images.example/3.jpg",
+"zeit": 1795732795547.0,
+"quellen": [
+{
+"name": "Tagesschau",
+"titel": "Inflationsrate sinkt",
+"url": "https://example.org/7574230992751353120",
+"bezahl": false
+},
+{
+"name": "Handelsblatt",
+"titel": "Teuerung schwächt sich ab",
+"url": "https://example.org/3859972522438246883",
+"bezahl": true
+}
+],
+"anriss": false
+},
+{
+"id": "a4",
+"bereich": "wirtschaft",
+"wichtig": 4,
+"titel": "Rheinmetall erhält Großauftrag über 3 Milliarden Euro",
+"kurz": "Der Rüstungskonzern liefert Munition an mehrere EU-Staaten. Die Aktie gehört seit zwei Jahren zu den stärksten im DAX.",
+"absaetze": [
+"Nur Anriss."
+],
+"zahlen": [],
+"begriffe": [],
+"warum": "",
+"bild": "",
+"zeit": 1795707595547.0,
+"quellen": [
+{
+"name": "Handelsblatt",
+"titel": "Rheinmetall: Milliardenauftrag aus Europa",
+"url": "https://example.org/3114707559357219461",
+"bezahl": true
+}
+],
+"anriss": true
+}
+]
+},
+{
+"key": "deutschland",
+"titel": "Deutschland",
+"artikel": [
+{
+"id": "a5",
+"bereich": "deutschland",
+"wichtig": 3,
+"titel": "Bundestag beschließt Haushalt für 2027",
+"kurz": "Der Bundestag hat den Haushalt mit Ausgaben von 489 Milliarden Euro beschlossen. Gestritten wurde vor allem über neue Schulden für Verteidigung.",
+"absaetze": [
+"A"
+],
+"zahlen": [],
+"begriffe": [],
+"warum": "",
+"bild": "https://images.example/5.jpg",
+"zeit": 1795732795547.0,
+"quellen": [
+{
+"name": "Tagesschau",
+"titel": "Bundestag beschließt Haushalt",
+"url": "https://example.org/5066853930453584944",
+"bezahl": false
+},
+{
+"name": "FAZ",
+"titel": "Haushalt steht",
+"url": "https://example.org/2810431389946308745",
+"bezahl": true
+}
+],
+"anriss": false
+}
+]
+},
+{
+"key": "welt",
+"titel": "Welt",
+"artikel": [
+{
+"id": "a6",
+"bereich": "welt",
+"wichtig": 5,
+"titel": "Waffenruhe im Sudan vorerst verlängert",
+"kurz": "Die Konfliktparteien haben sich auf weitere zwei Wochen ohne Kämpfe geeinigt. Hilfsorganisationen wollen die Zeit für Lieferungen nutzen.",
+"absaetze": [
+"A"
+],
+"zahlen": [],
+"begriffe": [],
+"warum": "",
+"bild": "https://images.example/6.jpg",
+"zeit": 1795725595547.0,
+"quellen": [
+{
+"name": "Deutschlandfunk",
+"titel": "Waffenruhe verlängert",
+"url": "https://example.org/4638928291060559579",
+"bezahl": false
+}
+],
+"anriss": false
+}
+]
+},
+{
+"key": "arbeit",
+"titel": "Arbeit und Weiterbildung",
+"artikel": [
+{
+"id": "a7",
+"bereich": "arbeit",
+"wichtig": 4,
+"titel": "Weniger Ausbildungsplätze als im Vorjahr",
+"kurz": "Unternehmen haben 3 % weniger Ausbildungsstellen gemeldet. Besonders im Handwerk bleiben viele Plätze unbesetzt.",
+"absaetze": [
+"A"
+],
+"zahlen": [],
+"begriffe": [],
+"warum": "",
+"bild": "",
+"zeit": 1795664395547.0,
+"quellen": [
+{
+"name": "Zeit",
+"titel": "Ausbildungsmarkt schrumpft",
+"url": "https://example.org/4755111324757175504",
+"bezahl": true
+},
+{
+"name": "Tagesschau",
+"titel": "Bilanz Ausbildungsjahr",
+"url": "https://example.org/7089150819329551941",
+"bezahl": false
+}
+],
+"anriss": false
+}
+]
+}
+],
+"maerkte": {
+"kurse": [
+{
+"name": "DAX",
+"wert": 23512.4,
+"einheit": "Punkte",
+"prozent": 1.24
+},
+{
+"name": "S&P 500",
+"wert": 6712.1,
+"einheit": "Punkte",
+"prozent": 0.41
+},
+{
+"name": "Nasdaq",
+"wert": 22803.0,
+"einheit": "Punkte",
+"prozent": -0.32
+},
+{
+"name": "Euro in Dollar",
+"wert": 1.0812,
+"einheit": "$",
+"prozent": 0.12
+},
+{
+"name": "Gold",
+"wert": 4012.5,
+"einheit": "$ je Unze",
+"prozent": -0.8
+},
+{
+"name": "Bitcoin",
+"wert": 81230,
+"einheit": "€",
+"prozent": -3.4
+}
+],
+"auffaellig": [
+{
+"name": "Nvidia",
+"wert": 212.3,
+"prozent": 6.1
+}
+],
+"text": {
+"kurz": "Ein guter Tag für den DAX: Er stieg um 1,2 %, angetrieben von Tech-Werten nach den starken Nvidia-Zahlen.",
+"absaetze": [
+"Der DAX schloss bei 23.512 Punkten, rund 290 Punkte höher als gestern. Das sind 1,2 %. An einem normalen Tag bewegt sich der Index um weniger als 1 %, das war also ein deutliches Plus.",
+"Bitcoin verlor 3,4 %. Für Kryptowährungen ist das ein eher normaler Ausschlag."
+],
+"begriffe": [
+{
+"begriff": "Index",
+"erklaerung": "Ein Korb aus Aktien, dessen Wert zusammengefasst wird. Der DAX enthält die 40 größten deutschen Börsenfirmen."
+}
+]
+}
+},
+"status": [],
+"usage": {
+"calls": 20,
+"in": 120000,
+"out": 25000
+},
+"ms": 48000
+}

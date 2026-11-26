@@ -223,8 +223,101 @@ PAGES.todo = function () {
     rep.length ? h('div', { class: 'ln todo' }, ...rep.map(x => todoRow(x, 'rep'))) : null,
     h('div', { class: 'links' }, h('button', { onclick: () => openAdd('goal') }, 'Neues Ziel'), h('button', { onclick: () => openAdd('later') }, 'Für später')));
 };
+/* ---------- News ----------
+   Die Supabase-Funktion "news" holt Artikel (Tagesschau, Handelsblatt, FAZ, Heise u. a.), wählt die wichtigsten Themen
+   und lässt sie verständlich aufbereiten. Das Ergebnis liegt für beide in der Sammlung news (Doc digest). */
+const NEWS_MAX_AGE = 3 * 3600e3;
+let newsBusy = false, newsErr = '';
+const newsDigest = () => (newsDocs.find(x => x.id === 'digest') || null);
+const newsRead = () => { try { return new Set(JSON.parse(LS.get('ep_news_read') || '[]')); } catch (e) { return new Set(); } };
+function markRead(id) { const r = [...newsRead()].filter(x => x !== id); r.push(id); LS.set('ep_news_read', JSON.stringify(r.slice(-400))); }
+const clock = ms => { const d = new Date(ms); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+function whenTxt(ms) { const d = new Date(ms), t = ymd(d); return t === today() ? `${clock(ms)} Uhr` : t === ymd(addDays(new Date(), -1)) ? `gestern ${clock(ms)} Uhr` : `${d.getDate()}. ${MON[d.getMonth()]}`; }
+const pct = p => `${p >= 0 ? '+' : '−'}${de(Math.abs(p), 1).replace(/^(\d+)$/, '$1,0')}\u00a0%`;
+const nb = s => String(s || '').replace(/(\d) (%|€|\$|Uhr|Prozent|Punkte|Mrd\.|Mio\.|Milliarden|Millionen|Billionen)/g, '$1\u00a0$2'); // Zahl und Einheit nicht trennen
+async function refreshNews(force) {
+  if (newsBusy || !sb) return;
+  const st = newsDocs.find(x => x.id === 'state') || {};
+  if (!force && st.pending && Date.now() - st.pending < 4 * 60e3) return; // läuft schon (z. B. bei Frieda)
+  newsBusy = true; newsErr = ''; if (tab === 'news') render();
+  try {
+    db.collection('news').doc('state').set({ pending: Date.now() });
+    const { data, error } = await sb.functions.invoke('news', { body: {} });
+    if (error) { const code = error.context && error.context.status; throw new Error(code === 404 ? 'fehlt' : (error.message || 'Fehler')); }
+    if (!data || !data.ok || !data.data || !data.data.bereiche) throw new Error((data && data.error) || 'Fehler');
+    await db.collection('news').doc('digest').set(data.data);
+  } catch (e) {
+    console.warn('News', e); newsErr = String(e.message || e) === 'fehlt' ? 'Die News-Funktion ist in Supabase noch nicht eingerichtet.' : 'Gerade konnten keine Nachrichten geholt werden.';
+  } finally {
+    newsBusy = false; db.collection('news').doc('state').set({ pending: 0 }); if (tab === 'news') render();
+  }
+}
+function newsImg(src, cls) {
+  if (!src) return null;
+  return h('img', { class: cls, src, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer', decoding: 'async', onerror: e => e.target.remove() });
+}
+function articleRow(a, read) {
+  const names = [...new Set((a.quellen || []).map(q => q.name))];
+  return lrow({ class: 'lr tap nw' + (read.has(a.id) ? ' read' : ''), onclick: () => openArticle(a) },
+    h('div', { class: 'tx' },
+      h('div', { class: 'nt', text: a.titel }),
+      h('div', { class: 'nk', text: nb(a.kurz) }),
+      h('div', { class: 'nm', text: `${names.slice(0, 2).join(', ')} / ${whenTxt(a.zeit)}` })),
+    newsImg(a.bild, 'thumb'));
+}
+function marketBlock(m) {
+  if (!m || !(m.kurse || []).length) return [];
+  const show = m.kurse.filter(k => ['DAX', 'S&P 500', 'Nasdaq', 'Euro in Dollar'].includes(k.name));
+  const val = k => k.name === 'Euro in Dollar' ? de(k.wert, 4).replace(/(,\d{2})\d+$/, '$1') + ' $' : de(k.wert);
+  return [secHead('Börse', 'gestern zu heute'), h('div', { class: 'ln mk' },
+    ...show.map(k => lrow({ class: 'lr tap', onclick: () => openMarket(m) }, h('span', { class: 'tx', text: k.name }), h('span', { class: 'n', text: val(k) }), h('span', { class: 'pc ' + (k.prozent >= 0 ? 'up' : 'dn'), text: pct(k.prozent) }))),
+    ...(m.auffaellig || []).slice(0, 3).map(k => lrow({ class: 'lr tap', onclick: () => openMarket(m) }, h('span', { class: 'tx', text: k.name }), h('span', { class: 'n', text: 'auffällig' }), h('span', { class: 'pc ' + (k.prozent >= 0 ? 'up' : 'dn'), text: pct(k.prozent) }))),
+    m.text ? lrow({ class: 'lr tap', onclick: () => openMarket(m) }, h('span', { class: 'tx add', text: 'Was an der Börse los war' }), h('span', { class: 'chev', text: '›' })) : null)];
+}
+function explainList(title, rows, a, b) { return rows && rows.length ? [secHead(title), h('div', { class: 'ln ex' }, ...rows.map(r => h('div', { class: 'lr col' }, h('b', { text: nb(r[a]) }), h('span', { text: nb(r[b]) }))))] : []; }
+function openMarket(m) {
+  const t = m.text || {};
+  const all = [...(m.kurse || []), ...(m.auffaellig || [])];
+  openSheet('Börse', [h('div', { class: 'art' },
+    t.kurz ? h('p', { class: 'lead', text: nb(t.kurz) }) : null,
+    ...(t.absaetze || []).map(x => h('p', { text: nb(x) })),
+    secHead('Kurse', 'Veränderung zum Vortag'),
+    h('div', { class: 'ln mk' }, ...all.map(k => lrow({}, h('span', { class: 'tx', text: k.name }), h('span', { class: 'n', text: k.einheit === 'Punkte' ? de(k.wert) : de(k.wert, 2) }), h('span', { class: 'pc ' + (k.prozent >= 0 ? 'up' : 'dn'), text: pct(k.prozent) })))),
+    ...explainList('Begriffe', t.begriffe, 'begriff', 'erklaerung'),
+    h('p', { class: 'fine', text: 'Kurse von Yahoo Finance, ohne Gewähr. Keine Anlageempfehlung.' }))]);
+}
+function openArticle(a) {
+  markRead(a.id);
+  openSheet(a.titel, [h('div', { class: 'art' },
+    newsImg(a.bild, 'hero'),
+    h('div', { class: 'meta', text: `${[...new Set((a.quellen || []).map(q => q.name))].join(', ')} / ${whenTxt(a.zeit)}` }),
+    h('p', { class: 'lead', text: nb(a.kurz) }),
+    ...(a.absaetze || []).map(x => h('p', { text: nb(x) })),
+    a.anriss ? h('p', { class: 'fine', text: 'Die Quellen waren nur als Anriss lesbar, der ganze Artikel steht hinter einer Bezahlschranke. Deshalb ist diese Zusammenfassung kürzer.' }) : null,
+    ...explainList('Zahlen eingeordnet', a.zahlen, 'zahl', 'einordnung'),
+    ...explainList('Begriffe', a.begriffe, 'begriff', 'erklaerung'),
+    a.warum ? secHead('Für dich') : null, a.warum ? h('p', { class: 'why', text: nb(a.warum) }) : null,
+    secHead('Quellen'),
+    h('div', { class: 'ln nsrc' }, ...(a.quellen || []).map(q => h('a', { class: 'lr tap', href: q.url, target: '_blank', rel: 'noopener' }, h('div', { class: 'tx' }, h('b', { text: q.name }), h('span', { text: q.titel })), h('span', { class: 'n', text: q.bezahl ? 'Bezahlschranke' : 'frei' })))),
+    h('p', { class: 'fine', text: 'Zusammengefasst von einer KI aus den genannten Quellen. Bei Wichtigem bitte das Original lesen.' }))]);
+  // Gelesen-Markierung auf der Seite dahinter
+  const pg = $('#main'); if (tab === 'news' && pg) pg.querySelectorAll('.lr.nw').forEach(r => { if (r.dataset.id === a.id) r.classList.add('read'); });
+}
 PAGES.news = function () {
-  return h('div', { class: 'pg' }, h('div', { class: 'ln pad' }, h('p', { class: 'soon', text: 'Hier stehen bald Nachrichten aus Quellen, die du aussuchst, kurz zusammengefasst.' })));
+  const d = newsDigest(), read = newsRead();
+  if (tab === 'news' && (!d || Date.now() - Date.parse(d.at) > NEWS_MAX_AGE) && !newsBusy && !newsErr) setTimeout(() => refreshNews(), 0);
+  const foot = h('div', { class: 'links nf' },
+    h('span', { text: newsBusy ? 'Wird aktualisiert' : d ? `Stand ${whenTxt(Date.parse(d.at))}` : '' }),
+    newsBusy ? null : h('button', { onclick: () => refreshNews(true) }, 'Neu laden'));
+  if (!d) return h('div', { class: 'pg' }, lines(lrow({}, h('span', { class: 'add', text: newsErr || 'Die Nachrichten werden gerade zusammengestellt. Das dauert etwa eine Minute.' }))), foot);
+  const out = [];
+  if (newsErr) out.push(h('p', { class: 'sheetnote', text: newsErr }));
+  for (const b of d.bereiche || []) {
+    out.push(secHead(b.titel), h('div', { class: 'ln news' }, ...b.artikel.map(a => { const r = articleRow(a, read); r.dataset.id = a.id; return r; })));
+    if (b.key === 'wirtschaft') out.push(...marketBlock(d.maerkte));
+  }
+  if (!(d.bereiche || []).some(b => b.key === 'wirtschaft')) out.push(...marketBlock(d.maerkte));
+  return h('div', { class: 'pg' }, ...out, foot);
 };
 
 /* ---------- Statistik ---------- */
