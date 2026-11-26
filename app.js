@@ -803,7 +803,56 @@ function drawListBody() {
         confirmBtn('Leeren', 'Sicher?', () => done.forEach(i => queue('items/' + i.id, () => db.collection('items').doc(i.id).delete())), 'btn g sm')),
       h('div', { class: 'donechips' }, ...done.sort((a, b) => (b.checkedAt || 0) - (a.checkedAt || 0)).map(itemRow))));
   }
+  const pill = listTipPill(); if (pill) frag.push(pill, h('div', { class: 'tipspace' }));
   body.replaceChildren(...frag);
+}
+/* ---- Was der Liste noch fehlt ---- */
+function listNutrition() {
+  const tot = new Array(24).fill(0); let counted = 0;
+  for (const it of items) {
+    const v = nutOf({ name: it.name, variant: it.variant }); if (!v) continue;
+    let g = gramsOf(it.name, it.qty || ''); if (g == null) g = PIECE[canon(it.name)] || 250;
+    for (let i = 0; i < 24; i++) tot[i] += (v[i] || 0) * g / 100; counted++;
+  }
+  const persons = Math.max(1, people.length || 2);
+  const nd = profiles[me()] && window.needsOf ? needsOf(profiles[me()]) : avgNeeds();
+  const keys = [4, 23, 9, 15, 14, 16, 8, 10, 11, 12, 13, 20, 22, 18, 19, 21, 17, 1];
+  const ref = i => (nd.R[i] || REF[i])[0] * 7 * persons;
+  const rows = keys.filter(i => nd.R[i] || REF[i]).map(i => ({ i, name: (nd.R[i] || REF[i])[1], pct: Math.min(100, tot[i] / ref(i) * 100) }));
+  const cov = rows.reduce((s, r) => s + r.pct, 0) / rows.length;
+  const low = rows.filter(r => r.pct < 60).sort((x, y) => x.pct - y.pct);
+  // Lebensmittel, die mehrere Lücken auf einmal schließen
+  const onList = n => items.some(it => canon(it.name) === canon(n));
+  const score = new Map();
+  low.forEach((r, k) => (GOOD_SRC[r.i] || []).forEach(([n], j) => { if (onList(n)) return; const s = score.get(n) || { n, w: 0, for: [] }; s.w += (6 - Math.min(5, j)) * (1 + (60 - r.pct) / 60); s.for.push(r.name); score.set(n, s); }));
+  const best = [...score.values()].sort((x, y) => y.w - x.w).slice(0, 8);
+  return { cov, rows, low, best, counted };
+}
+function listTipPill() {
+  if (!items.length || typeof GOOD_SRC === 'undefined') return null;
+  const d = listNutrition(); if (!d.counted) return null;
+  const n = Math.min(d.best.length, 6);
+  return h('button', { class: 'tippill', onclick: () => openListTips() },
+    h('span', { class: 'tring' }, ring(d.cov, 'good', 34)),
+    h('span', { class: 'ttxt' }, h('b', { text: n ? `${n} Ideen für die Liste` : 'Liste ist gut aufgestellt' }), h('span', { text: `${fmtInt(d.cov)} % vom Wochenbedarf drin` })),
+    h('span', { class: 'tgo' }, ic('chevron-right')));
+}
+function openListTips() {
+  const d = listNutrition();
+  const card = (n, sub) => { const b = h('button', { class: 'gsrc' + (items.some(it => !it.checked && canon(it.name) === canon(n)) ? ' on' : '') }, h('span', { class: 'gn', text: n }), sub ? h('span', { class: 'gw', text: sub }) : null, h('span', { class: 'gp' }, ic('plus')));
+    b.onclick = () => { if (b.classList.contains('on')) return; addItem(n); b.classList.add('on'); b.querySelector('.gp').replaceChildren(ic('check')); toast(n + ' steht jetzt auf der Liste'); }; return b; };
+  const parts = [
+    h('div', { class: 'rephero phero2 tiphero' },
+      h('div', { class: 'ph2top' }, h('div', { class: 'ph2ring' }, ring(d.cov, 'good', 104), h('span', { class: 'ph2pct', text: fmtInt(d.cov) + ' %' })),
+        h('div', { class: 'ph2txt' }, h('b', { text: 'Eure Liste' }), h('span', { text: (k => `deckt so viel vom Wochenbedarf für ${k} ${k === 1 ? 'Person' : 'Personen'}`)(Math.max(1, people.length || 2)) })))),
+  ];
+  if (d.best.length) parts.push(h('div', { class: 'infocard' }, h('h3', { text: 'Bringt am meisten' }), h('div', { class: 'muted', style: 'margin:-4px 0 12px;font-size:13px', text: 'Schließt gleich mehrere Lücken. Antippen setzt es auf die Liste.' }),
+    h('div', { class: 'gsrcs' }, ...d.best.slice(0, 6).map(b => card(b.n, b.for.slice(0, 2).join(', '))))));
+  if (d.low.length) parts.push(h('div', { class: 'infocard' }, h('h3', { text: 'Hier fehlt noch was' }),
+    h('div', { class: 'tiplows' }, ...d.low.slice(0, 6).map(r => h('div', { class: 'tiplow' }, h('div', { class: 'macl' }, h('span', { text: r.name }), h('span', { class: 'macv' }, h('b', { text: fmtInt(r.pct) + ' %' }))), h('div', { class: 'macbar' }, h('i', { style: `width:${Math.max(3, r.pct)}%` })))))));
+  else parts.push(h('div', { class: 'infocard' }, h('h3', { text: 'Sieht gut aus' }), h('div', { class: 'muted', text: 'Für die wichtigsten Nährstoffe ist genug auf der Liste.' })));
+  parts.push(h('div', { class: 'muted', style: 'font-size:12.5px;margin:0 6px', text: 'Grobe Schätzung aus den Einträgen. Ohne Menge rechnet die App mit einer üblichen Packung.' }));
+  openSheet('Was noch fehlt', [h('div', { class: 'npage' }, ...parts)]);
 }
 function emptyArt(text) {
   return h('div', { class: 'emptyart' }, svgEl(`<svg viewBox="0 0 120 90"><ellipse cx="60" cy="40" rx="46" ry="8" fill="var(--blue-l)"/><path d="M14 40h92c0 24-20 40-46 40S14 64 14 40z" fill="var(--card2)" stroke="var(--line)" stroke-width="2"/><path d="M30 52c4 10 14 17 28 19" stroke="var(--rosa)" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="92" cy="18" r="5" fill="var(--rosa)"/><circle cx="24" cy="14" r="3" fill="var(--blue-l)"/></svg>`), h('div', { text }));
