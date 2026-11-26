@@ -38,7 +38,7 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
      Quellen-Wunsch: Handelsblatt, FAZ, Heise, Tagesschau „und die besten“ (seriös). Wichtig: Artikel wirklich aufbereiten, lesbar für Nicht-Fachleute: Fachbegriffe kurz erklären und Zahlen einordnen (z. B. „DAX +300 Punkte“ = wie viel Prozent, ist das viel, warum). Achtung Bezahlschranken (Handelsblatt/FAZ): per RSS oft nur Teaser; offen damit umgehen und frei lesbare Quellen ergänzen.
   2. **Vorrat**: festhalten, was zu Hause ist; Vorschläge unterscheiden „hast du da“ und „bitte kaufen“.
   3. **Start Essen**: Vorschläge, was man bald essen und was man einkaufen sollte (passend zu fehlenden Nährstoffen), evtl. per KI.
-  4. **Einkaufsliste neu**: wirkt unübersichtlich; Kauf-Ideen für fehlende Nährstoffe direkt dort statt schwebender Pille.
+  4. ~~Einkaufsliste neu~~ erledigt (Entwurf A): Überschrift „Einkaufsliste“, Eingabe ohne Plus mit Mikrofon, Bereiche als graue Namen, darunter „Fehlt deiner Woche“ (Plus rechts fügt hinzu, Name antippen zeigt Alternativen, Nährstoff antippen öffnet Karte `openNutInfo`), dann „Im Wagen“. Kein Personen-Punkt mehr. CSS-Block „Einkaufsliste (neu“ am Ende von `index.html`.
   5. Ladebildschirm beim Öffnen klären (Screenshot von Jakob abwarten; evtl. alter iOS-Startbildschirm, nach Neu-Hinzufügen weg).
 - `dev/screens.py` braucht Python-Playwright (`pip install playwright`), nutzt den vorinstallierten Chromium unter `/opt/pw-browsers/chromium`.
 
@@ -66,6 +66,7 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - `backdrop-filter` auf Dingen, die sich bewegen oder über bewegtem Inhalt liegen, kostet pro Bild viel und ruckelt. Sparsam einsetzen.
 - Seitenwechsel per Wischen: Transforms auf dem Inhalt wurden während `touchmove` auf iOS nicht zuverlässig gezeichnet, daher folgt ein Schnappschuss-Klon (`stageClone`) dem Finger; die neue Seite kommt aus einem Zwischenspeicher (`pageCache`) und wird erst nach der Animation neu aufgebaut.
 - Elemente mit `position:fixed` innerhalb eines Containers mit Transform springen. Schwebende Bedienelemente (z. B. Vorschlags-Pille) außerhalb von `#stage` halten.
+- `stageClone` übernimmt Größen/Abstände der Elemente mit `id` als Inline-Stil vom Original, weil alte CSS-Regeln die Kopie sonst anders zeichnen (Überschrift kleiner, Inhalt 30 px höher, Rahmen um Knöpfe) und beim Loslassen alles springt.
 - Neu aufgebaute Umschalter-Marker sofort vor dem ersten Zeichnen setzen, sonst „ploppen“ sie auf.
 - Beim offenen Sheet die Seite dahinter festhalten (`lockBody`), sonst lässt sie sich mitwischen.
 

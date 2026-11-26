@@ -45,7 +45,7 @@ async def main():
                 await pg.click(f'.tabs button >> nth={i}'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / f'{name}.png'), full_page=(name in ('statistik', 'todos')))
             await pg.click('.tabs button >> nth=2'); await pg.wait_for_timeout(500)
             await pg.click('#cart'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'essen_liste.png'))
-            await pg.click('#fseg >> text=Rezepte'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'essen_rezepte.png'))
+            await pg.click('#cart'); await pg.wait_for_timeout(700); await pg.click('#fseg >> text=Rezepte'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'essen_rezepte.png'))
             await pg.click('.tabs button >> nth=0'); await pg.wait_for_timeout(600); await pg.click('#gear'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'einstellungen.png'))
             await pg.click('.setmenu >> text=Nie auf die Liste'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'einstellungen_nie.png'))
             await pg.evaluate("closeSheet()"); await pg.click('.tabs button >> nth=1'); await pg.wait_for_timeout(600); await pg.screenshot(path=str(OUT / 'statistik_oben.png')); await pg.click('.ln.menu >> text=Vitamine'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'vitamine.png'))

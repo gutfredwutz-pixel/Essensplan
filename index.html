@@ -1207,12 +1207,6 @@ html.dark .weekcard .dj:not(.today){background:color-mix(in srgb,var(--dh,#6B5BF
 html.dark .tippill{background:linear-gradient(160deg,rgba(60,66,96,.8),rgba(40,44,70,.6));box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 12px 28px -12px rgba(0,0,0,.6)}
 .tiplows{display:flex;flex-direction:column;gap:14px}
 .tiplow .macbar i{background:linear-gradient(90deg,#F2A65C,#EE6A9A)}
-#tipdock{position:fixed;left:0;right:0;bottom:calc(var(--bot) + 104px);z-index:7;display:flex;justify-content:center;pointer-events:none;transition:opacity .2s ease,transform .25s cubic-bezier(.3,.8,.3,1);opacity:0;transform:translateY(10px)}
-#tipdock.show{opacity:1;transform:none}
-#tipdock.show .tippill{pointer-events:auto}
-body.moving #tipdock,body.swiping #tipdock,body:has(#ov.on) #tipdock{opacity:0!important;transform:translateY(10px)!important;transition-duration:.08s}
-#tipdock .tippill{position:static;transform:none;left:auto;bottom:auto}
-#tipdock .tippill:active{transform:scale(.96)}
 .tiplow{display:block;width:100%;border:0;background:none;padding:0;text-align:left;font-family:inherit;color:var(--ink)}
 .tchev{display:inline-grid;place-items:center;margin-left:8px;color:var(--ink3);transition:transform .2s}.tchev svg{width:10px;height:10px}
 .tiplow.open .tchev{transform:rotate(90deg)}
@@ -1533,6 +1527,50 @@ html.dark{--lv-g:#7CC48A;--lv-y:#E3C65A;--lv-o:#E59A55;--lv-r:#E06B6B}
 .mb.g i{background:var(--lv-g)!important}.mb.y i{background:var(--lv-y)!important}.mb.o i{background:var(--lv-o)!important}.mb.r i{background:var(--lv-r)!important}
 .gsum{margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--ink2);font-size:14.5px}.gsum i{width:9px;height:9px;border-radius:50%}
 .gsum.g i{background:var(--lv-g)}.gsum.y i{background:var(--lv-y)}.gsum.o i{background:var(--lv-o)}.gsum.r i{background:var(--lv-r)}
+/* ===== Einkaufsliste (neu, Nov. 2026): Bereiche als graue Namen, Ideen für fehlende Nährstoffe darunter ===== */
+.sl .sladd{display:flex;align-items:center;gap:12px;margin:0 4px;padding:6px 0;min-height:36px}
+.sl .slin{flex:1;min-width:0;background:none!important;border:0!important;outline:0;box-shadow:none!important;font:inherit;font-size:15.5px;color:#F2F2F4;padding:0}
+.sl .slmic{width:40px;height:40px;margin-right:-10px;border:0;background:none;color:#8E8E93;display:grid;place-items:center;flex:none;padding:0;cursor:pointer}
+.sl .slmic svg{width:17px;height:17px;fill:currentColor}
+.sl .slmic.rec{color:#F2F2F4}
+.sl .schips{margin:4px 4px 0}
+.sl .slbody{padding-top:30px}
+.slopen{margin-bottom:44px}
+.slgrp{margin:0 4px}
+.slgrp+.slgrp{margin-top:24px}
+.sllbl{font-size:14px;color:#8E8E93;margin-bottom:2px}
+.sl .swipe{margin:0!important;border-radius:0!important}
+html .sl .swipe .swacts{border-radius:999px;box-shadow:none!important}
+html .sl .swacts .sw.amt{background:#3A3A3C!important;background-image:none!important;color:#F2F2F4!important;box-shadow:none!important}
+html .sl .swacts .sw.del{background:#E5484D!important;background-image:none!important;color:#fff!important;box-shadow:none!important}
+.slrow{display:flex;align-items:center;gap:14px;padding:10px 0;font-size:15.5px;color:#F2F2F4;background:#000;width:100%;border:0;text-align:left;font-family:inherit;box-sizing:border-box;position:relative;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sl .slck{width:22px;height:22px;border-radius:50%;border:1.6px solid #636366;background:none;padding:0;margin:0;flex:none;position:relative;box-sizing:border-box;box-shadow:none;transition:background .16s,border-color .16s}
+.sl .slck.x,.sl .slrow.ticked .slck{background:#F2F2F4;border-color:#F2F2F4}
+.sl .slck.x::after,.sl .slrow.ticked .slck::after{content:'';position:absolute;left:6.5px;top:3px;width:5px;height:10px;border:solid #000;border-width:0 2.2px 2.2px 0;transform:rotate(45deg)}
+.slname{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.slt{font-size:15.5px}
+.slq{margin-left:auto;color:#8E8E93;font-size:14.5px;white-space:nowrap;padding-left:12px}
+.slsub{font-size:13.5px;color:#8E8E93;margin-top:2px}
+.sl .swipe .slrow{width:auto}
+.slrow.done .slt,.slrow.ticked .slt{color:#8E8E93;transition:color .16s}
+.sldone{margin:0 4px 44px}
+.slclear{border:0;background:none;color:#8E8E93;font:inherit;font-size:15px;padding:0;cursor:pointer}
+.slempty{color:#8E8E93;font-size:15.5px;margin:0 4px 44px}
+.slideas{margin:0 4px 44px}
+.slidea{display:flex;align-items:center;gap:14px;padding:9px 0}
+.slidea .slname{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.slwhy{font-size:13.5px;color:#8E8E93;margin-top:3px}
+.slnut{border:0;background:none;padding:0;margin:0;font:inherit;color:#8E8E93;cursor:pointer}
+.slchev{display:inline-block;margin-left:8px;color:#636366;transition:transform .2s}
+.slchev.open{transform:rotate(90deg)}
+.slalts{padding-left:18px}
+.slalts.hidden{display:none}
+.sladdb{width:30px;height:30px;border-radius:50%;border:1.5px solid #636366;background:none;color:#F2F2F4;display:grid;place-items:center;flex:none;padding:0;cursor:pointer;transition:background .15s,border-color .15s,transform .1s}
+.sladdb svg{width:12px;height:12px;fill:currentColor}
+.sladdb.on{background:#F2F2F4;border-color:#F2F2F4;color:#000}
+.sladdb:active,.slmic:active,.slclear:active,.slnut:active{transform:scale(.94);opacity:.8}
+.slinfo{font-size:15.5px;line-height:1.5;color:#D1D1D6;margin:0 4px 30px}
+.lr.slfood{align-items:center}.lr.slfood .n{margin-right:2px}
 </style>
 </head>
 <body data-tab="start">
@@ -1552,7 +1590,6 @@ html.dark{--lv-g:#7CC48A;--lv-y:#E3C65A;--lv-o:#E59A55;--lv-r:#E06B6B}
 <main id="main"></main>
 </div>
 <div class="tabfade"></div>
-<div id="tipdock"></div>
 <nav class="tabs" id="tabs"></nav>
 <div class="ov" id="ov"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast"></div>
