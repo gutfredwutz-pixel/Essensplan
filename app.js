@@ -124,7 +124,7 @@ function startData() {
   const done = () => { if (loaded.items && loaded.plan && loaded.recipes) { clearTimeout(timer); setStatus(''); } };
   const sub = (name, set) => db.collection(name).onSnapshot(snap => { set(snap.docs.map(x => ({ id: x.id, ...x.data() }))); loaded[name] = true; done(); render(); }, e => { lastErr = (e && (e.message || e.code)) || ''; setStatus('Fehler beim Laden'); console.error(e); });
   sub('items', v => items = v); sub('plan', v => plan = v); sub('recipes', v => recipes = v);
-  sub('todos', v => todos = v); sub('goals', v => goals = v); sub('sleep', v => sleeps = v); sub('training', v => trainings = v);
+  sub('todos', v => todos = v); sub('goals', v => goals = v); sub('sleep', v => sleeps = v); sub('training', v => trainings = v); sub('pantry', v => pantry = v);
   db.collection('known').onSnapshot(snap => { known = new Map(snap.docs.map(x => [x.id, x.data()])); });
   db.collection('settings').onSnapshot(snap => { const d = snap.docs.find(x => x.id === 'household'); hhSet = d ? d.data() : {}; if (tab === 'set') render(); });
   db.collection('profiles').onSnapshot(snap => { profiles = Object.fromEntries(snap.docs.map(x => [x.id, x.data()])); });
@@ -474,7 +474,7 @@ function tabInd(i, prog, anim) {
   bs.forEach((b, k) => b.classList.toggle('near', k === (p > 0.5 ? j : i)));
 }
 let listUI = null, recUI = null;
-const FOOD = ['list', 'cal', 'rec']; let foodSub = 'cal', statRange = 'week';
+const FOOD = ['list', 'cal', 'rec', 'pan']; let foodSub = 'cal', statRange = 'week';
 const TABS = () => ['start', 'stat', foodSub, 'todo', 'news'];
 const TAB_DEF = [
   ['start', 'Start', 'M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z'],
@@ -488,7 +488,7 @@ function renderFoodSeg() {
   f.classList.toggle('hidden', !FOOD.includes(tab) && tab !== 'stat');
   if (tab === 'stat') { f.replaceChildren(...[['day', 'Tag'], ['week', 'Woche'], ['month', 'Monat'], ['year', 'Jahr']].map(([k, l]) => h('button', { class: k === statRange ? 'on' : '', onclick: () => { statRange = k; renderHead(); render(); } }, l))); return; }
   if (!FOOD.includes(tab)) return;
-  f.replaceChildren(...[['cal', 'Woche'], ['rec', 'Rezepte']].map(([id, l]) => h('button', { class: id === tab ? 'on' : '', onclick: () => { if (id !== tab) goTab(id, FOOD.indexOf(id) - FOOD.indexOf(tab)); } }, l)));
+  f.replaceChildren(...[['cal', 'Woche'], ['rec', 'Rezepte'], ['pan', 'Vorrat']].map(([id, l]) => h('button', { class: id === tab ? 'on' : '', onclick: () => { if (id !== tab) goTab(id, FOOD.indexOf(id) - FOOD.indexOf(tab)); } }, l)));
 }
 let topSheet = null, setSub = null;
 function openTop(id) {
@@ -838,7 +838,7 @@ function drawListBody() {
   if (done.length) {
     frag.push(h('div', { class: 'donebox' },
       h('div', { class: 'donehead' }, h('div', { class: 'cat', text: `Im Wagen (${done.length})` }),
-        confirmBtn('Leeren', 'Sicher?', () => done.forEach(i => queue('items/' + i.id, () => db.collection('items').doc(i.id).delete())), 'btn g sm')),
+        h('span', { class: 'donebtns' }, h('button', { class: 'btn g sm', onclick: () => cartToPantry() }, 'In den Vorrat'), confirmBtn('Leeren', 'Sicher?', () => done.forEach(i => queue('items/' + i.id, () => db.collection('items').doc(i.id).delete())), 'btn g sm'))),
       h('div', { class: 'donechips' }, ...done.sort((a, b) => (b.checkedAt || 0) - (a.checkedAt || 0)).map(itemRow))));
   }
   const pill = listTipPill(); $('#tipdock').replaceChildren(...(pill ? [pill] : [])); if (pill) frag.push(h('div', { class: 'tipspace' })); syncDock();

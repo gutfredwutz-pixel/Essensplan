@@ -33,6 +33,20 @@ const TOOLS: Record<string, { system: string; tool: Record<string, unknown> }> =
       }, required: ['foods'] },
     },
   },
+  meal: {
+    system: 'Du schlägst einem Studenten in Deutschland 3 einfache Gerichte für die nächsten Tage vor. Nutze vor allem, was im Vorrat ist, und frische Sachen, die schon länger da sind, zuerst. Die Gerichte sollen die Nährstoffe liefern, die zuletzt gefehlt haben. Pro Gericht höchstens 3 Sachen dazukaufen, am besten aus den genannten Kauf-Ideen, mit einfachen deutschen Supermarkt-Namen in Grundform. Alltagstauglich, 10 bis 30 Minuten, normale Küche, keine exotischen Zutaten. Passt ein eigenes Rezept, nimm es mit genau diesem Titel. Nichts vorschlagen, was unter „Mögen wir nicht“ steht. Antworte auf Deutsch, kurz und ohne Fachjargon: why ist ein Satz, welche fehlenden Nährstoffe das Gericht bringt; steps sind 2 bis 4 kurze Sätze.',
+    tool: {
+      name: 'ideen', description: 'Gericht-Ideen',
+      input_schema: { type: 'object', properties: {
+        ideas: { type: 'array', items: { type: 'object', properties: {
+          title: { type: 'string' }, why: { type: 'string' },
+          use: { type: 'array', items: { type: 'string' }, description: 'Zutaten aus dem Vorrat' },
+          buy: { type: 'array', items: { type: 'string' }, description: 'Was dazu gekauft werden muss' },
+          steps: { type: 'array', items: { type: 'string' } },
+        }, required: ['title', 'use', 'buy'] } },
+      }, required: ['ideas'] },
+    },
+  },
 };
 
 Deno.serve(async (req) => {
@@ -56,7 +70,7 @@ Deno.serve(async (req) => {
     const context = String(body.context || '').slice(0, 4000);
     const content = [
       ...frames.flatMap((data, k) => [{ type: 'text', text: `Bild ${k + 1} von ${frames.length}` }, { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } }]),
-      { type: 'text', text: (context ? context + '\n\n' : '') + (text ? 'Text:\n' + text : 'Lies das Rezept aus den Bildern.') },
+      { type: 'text', text: (context ? context + '\n\n' : '') + (text ? (task === 'meal' ? text : 'Text:\n' + text) : 'Lies das Rezept aus den Bildern.') },
     ];
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
