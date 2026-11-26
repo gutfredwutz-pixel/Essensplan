@@ -1,0 +1,22 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{margin:0;padding:30px;background:#1A1A1C;font-family:Inter,sans-serif;color:#C9CBD1;width:900px}
+.g{display:grid;grid-template-columns:repeat(4,1fr);gap:34px 20px}
+.l{display:flex;flex-direction:column;align-items:center;gap:10px;font-size:15px}
+.ic{width:130px;height:130px;border-radius:30px;overflow:hidden;background:linear-gradient(180deg,#232327,#000)}
+svg{width:130px;height:130px}
+</style></head><body><div class="g">
+<script>
+const W='#F2F2F4',Y='#F5C543';
+const L=(x,y,w,c)=>`<rect x="${x}" y="${y}" width="${w}" height="7" rx="3.5" fill="${c||W}"/>`;
+const D=(x,y,r,c)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${c||Y}"/>`;
+const V=[
+['1 Punkt vor der Liste',D(38,43.5,5)+L(50,40,38)+L(50,57,30)+L(50,74,34)],
+['2 Drei Punkte, drei Striche',D(38,43.5,4.5)+D(38,60.5,4.5,W)+D(38,77.5,4.5,W)+L(50,40,36)+L(50,57,28)+L(50,74,32)],
+['3 Punkt oben, zwei Striche',D(40,40,7)+L(34,60,52)+L(34,77,36)],
+['4 Strich, Punkt, Strich',L(26,56.5,30)+D(60,60,6)+L(72,56.5,22)],
+['5 Punkt am Ende',L(34,40,52)+L(34,57,30)+D(74,60.5,5)+L(34,74,42)],
+['6 Großer Punkt, ein Strich',D(60,50,13)+L(40,76,40,W)],
+['7 Zwei Striche, Punkt darunter',L(34,42,52)+L(34,59,40)+D(40,80,5)],
+['8 Punkt über der Mitte',D(60,36,6)+L(30,56,60)+L(40,73,40)]];
+document.write(V.map(([n,s])=>`<div class="l"><div class="ic"><svg viewBox="0 0 120 120">${s}</svg></div>${n}</div>`).join(''));
+</script></div></body></html>
