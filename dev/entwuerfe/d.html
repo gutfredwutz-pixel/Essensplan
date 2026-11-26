@@ -1,0 +1,29 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{margin:0;display:flex;gap:32px;padding:32px;background:#2A2B2E;font-family:Inter,sans-serif;-webkit-font-smoothing:antialiased}
+.cap{font:600 15px Inter;color:#C9CBD1;margin:0 0 10px 6px}
+.ph{width:390px;height:844px;border-radius:48px;overflow:hidden;position:relative;background:var(--bg);color:#F2F2F4}
+.sb{height:54px;display:flex;justify-content:space-between;align-items:center;padding:0 32px;font-weight:600;font-size:15px}
+.in{padding:14px 20px 0}.d{font-size:15px;color:#8E8E96}h1{font-size:32px;font-weight:700;letter-spacing:-.025em;margin:2px 0 28px}
+.h{display:flex;justify-content:space-between;align-items:baseline;margin:0 4px 10px;font-size:18px;font-weight:650}.h span{font-size:14px;font-weight:500;color:#8E8E96}
+.g{background:var(--g);border-radius:var(--rad);padding:4px 16px;margin-bottom:28px}
+.r{display:flex;gap:14px;align-items:center;padding:13px 0;font-size:15.5px}.r+.r{border-top:1px solid var(--ln)}
+.ck{width:20px;height:20px;border-radius:50%;border:1.5px solid #5A5A63;flex:none}
+.tl{height:8px;border-radius:4px;background:var(--ln);position:relative;margin:14px 0 8px}.tl i{position:absolute;left:16.7%;right:16.7%;top:0;bottom:0;border-radius:4px;background:var(--ac)}
+.ax{position:relative;height:16px;font-size:12.5px;color:#8E8E96}.ax span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.tabs{position:absolute;left:0;right:0;bottom:0;height:84px;padding-bottom:22px;background:var(--g);border-top:1px solid var(--ln);display:flex;justify-content:space-around;align-items:center;font-size:12px;font-weight:600;color:#7A7A83}
+.tabs .on{color:var(--ac)}
+.n{margin-left:auto;color:#8E8E96}
+.p1{--bg:#000;--g:#1C1C1E;--ln:#2C2C30;--ac:#E8E8EC;--rad:14px}
+.p2{--bg:#121212;--g:#1E1E1F;--ln:#2E2E30;--ac:#E9A26A;--rad:12px}
+.p3{--bg:#0B0B0C;--g:transparent;--ln:#26262A;--ac:#8FB8A8;--rad:0}
+.p3 .g{padding:0 4px;border-top:1px solid var(--ln);border-bottom:1px solid var(--ln)}.p3 .tabs{background:#0B0B0C}
+</style></head><body>
+<script>
+const ph=(c,t)=>`<div><div class="cap">${t}</div><div class="ph ${c}"><div class="sb"><span>9:41</span><span>5G</span></div><div class="in">
+<div class="d">Donnerstag, 26. November</div><h1>Guten Morgen, Jakob</h1>
+<div class="h">Schlaf<span>7 h 20 min</span></div><div class="g" style="padding-top:12px;padding-bottom:14px"><div class="tl"><i></i></div><div class="ax"><span style="left:16.7%">23:40</span><span style="left:83.3%">7:00</span></div></div>
+<div class="h">To-dos<span>3 von 5</span></div><div class="g"><div class="r"><span class="ck"></span>Statistik-Skript abholen</div><div class="r"><span class="ck"></span>Frieda wegen Samstag schreiben</div></div>
+<div class="h">Essen<span>64 % vom Bedarf</span></div><div class="g"><div class="r">Heute: Linsencurry</div><div class="r">Einkaufsliste<span class="n">8</span></div></div>
+</div><div class="tabs"><span class="on">Start</span><span>Essen</span><span>Schlaf</span><span>To-dos</span><span>News</span></div></div></div>`;
+document.write(ph('p1','D1 Schwarz, neutral')+ph('p2','D2 Graphit, warmer Akzent')+ph('p3','D3 Ohne Kästen, nur Linien'));
+</script></body></html>
