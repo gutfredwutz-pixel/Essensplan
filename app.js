@@ -1865,18 +1865,19 @@ function buildImporter(onResult) {
       for (const v of videos) {
         try { const t = await window.transcribeVideo(v, setProg); if (t) text += '\n' + t; } catch (e) { console.warn(e); }
         setProg('Nehme Standbilder aus dem Video …');
-        try { images.push(...await videoFrames(v, 6)); } catch (e) { console.warn(e); }
+        // für eingeblendete Untertitel: etwa alle 1,5 Sekunden ein Bild, höchstens 40
+        try { const dur = await videoDuration(v); images.push(...await videoFrames(v, Math.max(6, Math.min(40, Math.round((dur || 30) / 1.5))))); } catch (e) { console.warn(e); }
       }
       // Zuerst die KI: liest Text, Ton und Bilder zusammen
       let res = null;
       if (aiState !== false) {
         setProg('KI liest das Rezept …');
-        const frames = []; for (const im of images.slice(0, 8)) { try { frames.push(await toJpeg64(im)); } catch (e) { } }
+        const frames = []; for (const im of images.slice(0, 48)) { try { frames.push(await toJpeg64(im, images.length > 12 ? 640 : 768)); } catch (e) { } }
         const d = await aiCall('recipe', { text, frames });
         if (d && (d.ingredients || []).length) res = { title: d.title || '', servings: d.servings ? String(d.servings) : '', ingredients: d.ingredients.map(g => ({ name: cap(g.name || ''), amount: g.amount || '' })).filter(g => g.name), steps: (d.steps || []).filter(Boolean), ai: true };
       }
       if (!res) {
-        if (images.length) { const ocr = await ocrImages(images, setProg); if (ocr) text += '\n' + ocr; }
+        if (images.length) { const ocr = await ocrImages(images.length > 8 ? images.filter((_, k) => k % Math.ceil(images.length / 8) === 0) : images, setProg); if (ocr) text += '\n' + ocr; }
         res = recipeFromText(text);
       }
       if (text.trim() && text.trim() !== txt.value.trim()) txt.value = text.trim();
@@ -1929,6 +1930,9 @@ async function toJpeg64(src, max = 768) {
   const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
   c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
   return c.toDataURL('image/jpeg', 0.8).split(',')[1];
+}
+function videoDuration(file) {
+  return new Promise(res => { const v = document.createElement('video'); v.preload = 'metadata'; v.muted = true; const u = URL.createObjectURL(file); v.onloadedmetadata = () => { res(isFinite(v.duration) ? v.duration : 0); URL.revokeObjectURL(u); }; v.onerror = () => res(0); v.src = u; });
 }
 async function videoFrames(file, n) {
   const url = URL.createObjectURL(file);

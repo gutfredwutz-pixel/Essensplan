@@ -11,7 +11,7 @@ const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { sta
 
 const TOOLS: Record<string, { system: string; tool: Record<string, unknown> }> = {
   recipe: {
-    system: 'Du liest Rezepte aus Text, Untertiteln, gesprochener Sprache und Bildern (Standbilder aus Kochvideos, Fotos von Rezepten). Antworte immer auf Deutsch. Zutaten mit deutschen Supermarkt-Namen in Grundform (z. B. "Zwiebeln", "Hackfleisch", "Sahne"), Mengen in g, ml, EL, TL oder Stück. Fehlt eine Menge, schätze eine übliche. Schritte kurz und klar. Erfinde nichts, was nicht zum Rezept passt. Wenn es eine Spracheingabe ist, korrigiere offensichtliche Hörfehler.',
+    system: 'Du liest Rezepte aus Text, Untertiteln, gesprochener Sprache und Bildern (Standbilder aus Kochvideos in zeitlicher Reihenfolge, Fotos von Rezepten). Eingeblendete Untertitel und Texte in den Bildern gehören zum Rezept, lies sie alle. Antworte immer auf Deutsch. Zutaten mit deutschen Supermarkt-Namen in Grundform (z. B. "Zwiebeln", "Hackfleisch", "Sahne"), Mengen in g, ml, EL, TL oder Stück. Fehlt eine Menge, schätze eine übliche. Schritte kurz und klar. Erfinde nichts, was nicht zum Rezept passt. Wenn es eine Spracheingabe ist, korrigiere offensichtliche Hörfehler.',
     tool: {
       name: 'rezept', description: 'Das erkannte Rezept',
       input_schema: { type: 'object', properties: {
@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     if (task === 'ping') return json({ ok: true, data: 'ok' });
     const cfg = TOOLS[task]; if (!cfg) return json({ ok: false, error: 'Unbekannte Aufgabe' }, 400);
     const text = String(body.text || '').slice(0, 20000);
-    const frames: string[] = Array.isArray(body.frames) ? body.frames.slice(0, 8) : [];
+    const frames: string[] = Array.isArray(body.frames) ? body.frames.slice(0, 48) : [];
     if (frames.some((f) => typeof f !== 'string' || f.length > 700000)) return json({ ok: false, error: 'Bild zu groß' }, 400);
     const context = String(body.context || '').slice(0, 4000);
     const content = [
