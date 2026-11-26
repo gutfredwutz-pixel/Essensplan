@@ -63,6 +63,20 @@ PAGES.pan = function () {
     !pantry.length ? h('div', { class: 'greytxt', text: 'Abgehakte Sachen aus der Einkaufsliste kannst du mit einem Tipp übernehmen.' }) : null);
 };
 
+/* ---------- Gewohnheiten: was du oft isst, kochst und kaufst (letzte 30 Tage) ---------- */
+function habits() {
+  const name = me(), eat = new Map(), cook = new Map(), buy = new Map(), inc = (m, k, n = 1) => k && m.set(k, (m.get(k) || 0) + n);
+  for (let i = 0; i < 30; i++) {
+    const ds = ymd(addDays(new Date(), -i)), e = diary[name + '_' + ds];
+    if (e) for (const f of e.foods || []) inc(eat, canonName(f.name));
+    for (const p of planOn(ds)) inc(cook, p.title || (recipeOf(p) || {}).title);
+  }
+  for (const k of known.values()) if (k.count > 1 && k.name) inc(buy, canonName(k.name), k.count);
+  const top = (m, n) => [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, n).map(x => x[0]);
+  const fam = new Map(); for (const [k, v] of eat) fam.set(canon(k), (fam.get(canon(k)) || 0) + v); for (const [k, v] of buy) fam.set(canon(k), (fam.get(canon(k)) || 0) + v);
+  return { eaten: top(eat, 10), cooked: top(cook, 6), bought: top(buy, 10), fam };
+}
+
 /* ---------- Was fehlt dir? ---------- */
 // Nährstoffe, die in den letzten 7 Tagen im Schnitt unter 80 % lagen (wie „Fehlt am meisten“ in der Statistik)
 function gapState() {
@@ -102,10 +116,12 @@ function buyCandidates(st) {
 }
 // Nacheinander auswählen: nach jedem Treffer gilt dessen Lücke als kleiner, damit nicht dreimal dasselbe kommt
 function greedy(names, st, n) {
+  const fam = habits().fam;
   const s2 = { refs: st.refs, lack: st.lack.map(l => Object.assign({}, l)) }, out = [], seen = new Set();
   let pool = [...new Set(names)].filter(x => { const c = canon(x); if (seen.has(c)) return false; seen.add(c); return true; });
   while (out.length < n && pool.length) {
-    const fits = pool.map(x => foodFit(x, s2)).filter(f => f && f.score > 0.02 && f.parts.length).sort((a, b) => b.score - a.score);
+    const fits = pool.map(x => foodFit(x, s2)).filter(f => f && f.score > 0.02 && f.parts.length)
+      .map(f => Object.assign(f, { rank: f.score * (1 + 0.35 * Math.min(1, (fam.get(canon(f.name)) || 0) / 4)) })).sort((a, b) => b.rank - a.rank);
     if (!fits.length) break;
     const f = fits[0]; out.push(foodFit(f.name, st)); pool = pool.filter(x => x !== f.name);
     for (const l of s2.lack) { const v = nutOf({ name: f.name }), sh = (v[l.i] || 0) * f.g / 100 / st.refs[l.i][0]; l.gap = Math.max(0, l.gap - sh); }
@@ -167,6 +183,8 @@ function mealContext(st) {
     buy.length ? 'Gute Kauf-Ideen laut Nährwerttabelle: ' + buy.join('; ') : '',
     recipes.length ? 'Eigene Rezepte: ' + recipes.slice(0, 40).map(r => r.title).join('; ') : '',
     (hhSet.never || []).length ? 'Mögen wir nicht: ' + hhSet.never.join(', ') : '',
+    ...(hb => [hb.eaten.length ? 'Isst oft: ' + hb.eaten.join(', ') : '', hb.cooked.length ? 'Kocht oft: ' + hb.cooked.join(', ') : '', hb.bought.length ? 'Kauft oft: ' + hb.bought.join(', ') : '',
+      (hb.eaten.length || hb.cooked.length) ? 'Bevorzuge Gerichte und Zutaten, die oft gegessen werden. Höchstens eine Idee darf etwas Neues sein.' : ''])(habits()),
   ].filter(Boolean).join('\n');
 }
 async function openMealIdeas(fresh) {

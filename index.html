@@ -1535,6 +1535,12 @@ html.dark{--lv-g:#7CC48A;--lv-y:#E3C65A;--lv-o:#E59A55;--lv-r:#E06B6B}
 .gsum.g i{background:var(--lv-g)}.gsum.y i{background:var(--lv-y)}.gsum.o i{background:var(--lv-o)}.gsum.r i{background:var(--lv-r)}
 /* Vorrat und Vorschläge */
 .lr .n.old{color:var(--ink2)}
+.lr.col{flex-direction:column;align-items:stretch;gap:6px}
+.lr.col .top{display:flex;align-items:baseline;gap:14px}
+.lr.col .sub{font-size:14.5px;color:var(--ink3);line-height:1.45;padding:0!important;margin:0!important}
+.lr .strong,.lr .n.strong{color:#F2F2F4;font-weight:600}
+.lr.ask .chips{margin-top:6px}
+.greytxt.sm{font-size:13px;margin:0 4px 20px}
 .lr.gap{margin-top:14px}
 .donebtns{display:flex;gap:8px}
 .ln.ideas{padding:4px 4px 0}
@@ -1580,5 +1586,6 @@ html.dark{--lv-g:#7CC48A;--lv-y:#E3C65A;--lv-o:#E59A55;--lv-r:#E06B6B}
 <script src="tagebuch.js"></script>
 <script src="start.js"></script>
 <script src="vorrat.js"></script>
+<script src="supplemente.js"></script>
 </body>
 </html>
