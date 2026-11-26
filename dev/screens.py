@@ -29,6 +29,7 @@ async def main():
               for (const n of ['500 g Nudeln','Tomaten','Milch']) addItem(n);
               const t=ymd(new Date()), tm=ymd(addDays(new Date(),2));
               await db.collection('sleep').doc('jakob_'+t).set({who:'Jakob',date:t,bed:'23:40',wake:'07:00'});
+              const bb=['23:10','00:30','22:50','23:55','23:20','01:10'], ww=['06:50','08:10','06:40','07:30','07:05','09:00']; for(let i=1;i<7;i++){const d=ymd(addDays(new Date(),-i)); await db.collection('sleep').doc('jakob_'+d).set({who:'Jakob',date:d,bed:bb[i-1],wake:ww[i-1]});}
               await db.collection('todos').doc('t1').set({who:'Jakob',text:'Statistik-Skript abholen',date:t,time:'',done:false,created:1});
               await db.collection('todos').doc('t2').set({who:'Jakob',text:'Frieda wegen Samstag schreiben',date:t,time:'18:00',done:false,created:2});
               await db.collection('todos').doc('t3').set({who:'Jakob',text:'Miete überweisen',date:t,time:'',done:true,doneOn:t,created:3});

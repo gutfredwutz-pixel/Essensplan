@@ -45,7 +45,7 @@ const ART = {
   list: `<svg viewBox="0 0 64 64"><defs><linearGradient id="gb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5B8CFF"/><stop offset="1" stop-color="#FF8DBA"/></linearGradient></defs><path d="M30 2C48 0 63 13 62 31 62 49 49 63 31 62 14 62 1 50 2 32 2 15 13 4 30 2Z" fill="url(#gb)"/><path d="M28 21c-1-5 2-9 6-10" stroke="#3FA34D" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M33 13c4-3 8-2 9 0-3 3-7 3-9 0z" fill="#5DBB63"/><path d="M22 26c-2-6 1-11 5-12l3 12z" fill="#FF9F43"/><path d="M38 26c0-5 3-9 7-9 3 2 3 6 1 9z" fill="#E8473E"/><path d="M15 26h34l-3 22c-1 3-3 5-6 5H24c-3 0-5-2-6-5z" fill="#fff"/><path d="M23 33v12M32 33v12M41 33v12" stroke="#DDE6FF" stroke-width="2.6" stroke-linecap="round"/></svg>`,
   rec: `<svg viewBox="0 0 64 64"><defs><linearGradient id="gc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F6BFF"/><stop offset="1" stop-color="#FF8DBA"/></linearGradient></defs><path d="M33 2C51 3 63 15 62 33 61 51 48 63 30 62 12 61 1 48 2 30 3 13 16 1 33 2Z" fill="url(#gc)"/><path d="M12 20c7-3 14-3 20 2v26c-6-5-13-5-20-2z" fill="#fff"/><path d="M52 20c-7-3-14-3-20 2v26c6-5 13-5 20-2z" fill="#F4F7FF"/><path d="M17 27c3-1 7-1 10 1M17 33c3-1 7-1 10 1M17 39c3-1 7-1 10 1" stroke="#C9D6FF" stroke-width="2" stroke-linecap="round"/><path d="M37 27c3-1 7-1 10 1M37 33c3-1 7-1 10 1" stroke="#FFC2DA" stroke-width="2" stroke-linecap="round"/><circle cx="44" cy="41" r="4" fill="#FFC23D"/></svg>`
 };
-const TITLES = { start: '', nutri: '', list: '', cal: '', rec: '', todo: 'To-dos', news: 'News', set: 'Einstellungen' };
+const TITLES = { start: '', stat: '', nutri: '', list: '', cal: '', rec: '', todo: 'To-dos', news: 'News', set: 'Einstellungen' };
 window.FA = window.FA || {};
 window.FA['jar'] = [512, 512, 'M176 32h160c13 0 24 11 24 24v24c0 9-5 17-13 21 66 28 109 88 109 159 0 107-74 220-200 220S56 367 56 260c0-71 43-131 109-159-8-4-13-12-13-21V56c0-13 11-24 24-24zm-48 248c0 78 52 168 128 168s128-90 128-168c0-6 0-12-1-18-33 18-75 18-110 2-38-17-80-16-144 2z'];
 
@@ -443,7 +443,7 @@ function renderTabs() {
     t.append(h('span', { class: 'tind' }), ...TAB_DEF.map(([id, label, path]) => h('button', { 'data-t': id, 'aria-label': label, onclick: () => goTab(id === 'food' ? foodSub : id, TABS().indexOf(id === 'food' ? foodSub : id) - TABS().indexOf(tab)) }, svgEl(`<svg class="ti" viewBox="0 0 24 24"><path d="${path}"/></svg>`), h('span', { text: label }))));
   }
   if (FOOD.includes(tab)) foodSub = tab;
-  t.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.t === (FOOD.includes(tab) ? 'food' : tab)));
+  t.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.t === (FOOD.includes(tab) ? 'food' : tab === 'nutri' ? 'stat' : tab)));
   tabInd(TABS().indexOf(tab), 0, true);
   renderHead(); syncDock();
 }
@@ -460,10 +460,10 @@ function tabInd(i, prog, anim) {
 }
 let listUI = null, recUI = null;
 const FOOD = ['list', 'cal', 'rec']; let foodSub = 'cal';
-const TABS = () => ['start', 'nutri', foodSub, 'todo', 'news'];
+const TABS = () => ['start', 'stat', foodSub, 'todo', 'news'];
 const TAB_DEF = [
   ['start', 'Start', 'M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z'],
-  ['nutri', 'Statistik', 'M5 20V13M10 20V8M15 20v-6M20 20V5'],
+  ['stat', 'Statistik', 'M5 20V13M10 20V8M15 20v-6M20 20V5'],
   ['food', 'Essen', 'M7 4v7m-2-7v4a2 2 0 0 0 4 0V4M7 11v9M16.5 4c-1.8 0-3 2.2-3 5 0 2 1.2 3 3 3v8'],
   ['todo', 'To-dos', 'm4.5 7 1.8 1.8L9.5 5.5M4.5 15.5l1.8 1.8 3.2-3.3M13 7.5h7M13 16h7'],
   ['news', 'News', 'M5 5h11v14H6a1 1 0 0 1-1-1zM16 9h3v9a1 1 0 0 1-2 0M8 9h5M8 12.5h5M8 16h3']];

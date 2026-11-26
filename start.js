@@ -106,6 +106,7 @@ PAGES.start = function () {
     lines(...td.filter(x => !x.done).map(x => todoRow(x)), ...gl.filter(g => !(g.days || {})[t]).map(goalRow), addRow('Neues To-do', s => addTodo(s))),
     secHead('Essen'),
     lines(...meals.map(p => lrow({ class: 'lr tap', onclick: () => goTab('cal', 1) }, h('span', { text: (p.meal ? p.meal + ': ' : '') + (p.title || (recipeOf(p) || {}).title || '') }))),
+      lrow({ class: 'lr tap', onclick: () => openDiary(me(), t, render) }, h('span', { text: 'Gegessen eintragen' })),
       lrow({ class: 'lr tap', onclick: () => goTab('list', 1) }, h('span', { text: 'Einkaufsliste' }), h('span', { class: 'n', text: shop ? String(shop) : 'leer' }))));
 };
 PAGES.todo = function () {
@@ -120,4 +121,56 @@ PAGES.todo = function () {
 };
 PAGES.news = function () {
   return h('div', { class: 'pg' }, h('p', { class: 'soon', text: 'Hier stehen bald Nachrichten aus Quellen, die du aussuchst, kurz zusammengefasst.' }));
+};
+
+/* ---------- Statistik ---------- */
+let statRange = 'week';
+function statDays() { const n = statRange === 'week' ? 7 : statRange === 'month' ? 30 : 365; return [...Array(n)].map((_, i) => ymd(addDays(new Date(), i - n + 1))); }
+function sleepBars(days) {
+  let groups;
+  if (statRange === 'year') {
+    const by = {}; days.forEach(d => { const k = d.slice(0, 7); (by[k] = by[k] || []).push(d); });
+    groups = Object.keys(by).sort().slice(-12).map(k => ({ lbl: MON[+k.slice(5) - 1][0], days: by[k] }));
+  } else groups = days.map((d, i) => ({ lbl: statRange === 'week' ? WD[(parseYmd(d).getDay() + 6) % 7] : (i % 5 === 4 ? String(parseYmd(d).getDate()) : ''), days: [d] }));
+  const avgOf = ds => { const v = ds.map(d => sleepMinutes(sleepOf(d))).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+  const vals = groups.map(g => avgOf(g.days)), all = vals.filter(x => x != null);
+  const avg = all.length ? Math.round(avgOf(days)) : null;
+  const max = Math.max(600, ...all);
+  return [secHead('Schlaf', avg != null ? `im Schnitt ${hm(avg)}` : null),
+    h('div', { class: 'ln tap', onclick: openSleep },
+      all.length ? h('div', { class: 'bars' + (statRange === 'month' ? ' thin' : '') }, ...groups.map((g, k) => h('div', {}, h('b', { style: `height:${vals[k] != null ? Math.max(4, (vals[k] - 240) / (max - 240) * 84) : 0}px` }), h('span', { text: g.lbl }))))
+        : h('div', { class: 'lr' }, h('span', { class: 'add', text: 'Noch kein Schlaf eingetragen' })))];
+}
+function goalStats(days) {
+  const gl = mine(goals); if (!gl.length) return [];
+  let hit = 0, tot = 0;
+  const rows = gl.map(g => {
+    const from = g.created ? ymd(new Date(g.created)) : days[0]; const ds = days.filter(d => d >= from);
+    const n = ds.filter(d => (g.days || {})[d]).length; hit += n; tot += ds.length;
+    return lrow({}, h('span', { class: 'tx', text: g.title }), h('span', { class: 'n', text: `${n} von ${ds.length}` }));
+  });
+  return [secHead('Ziele', tot ? `${Math.round(hit / tot * 100)} % geschafft` : null), lines(...rows)];
+}
+function nutStats(days) {
+  const name = me(), pf = profiles[name];
+  if (!pf) return [secHead('Nährstoffe'), lines(lrow({ class: 'lr tap', onclick: () => openProfileEdit(name, render) }, h('span', { class: 'add', text: 'Angaben machen, damit dein Bedarf berechnet wird' })))];
+  const d = rangeData(name, days), refs = allRefs(needsOf(pf));
+  const out = [secHead('Nährstoffe', d.n ? (d.n === 1 ? 'an 1 Tag erfasst' : `Schnitt aus ${d.n} Tagen`) : null)];
+  if (!d.n) { out.push(lines(lrow({ class: 'lr tap', onclick: () => openDiary(name, today(), render) }, h('span', { class: 'add', text: 'Noch nichts gegessen eingetragen' })))); return out; }
+  for (const [title, keys] of NUT_GROUPS) {
+    out.push(h('div', { class: 'sub', text: title }));
+    out.push(lines(...keys.filter(i => refs[i]).map(i => {
+      const [ref, nm] = refs[i], pct = Math.round(d.total[i] / d.n / ref * 100), st = nutState(i, pct);
+      return lrow({}, h('span', { class: 'tx', text: nm }), h('span', { class: 'n', text: `${pct} %` }),
+        h('span', { class: 'mb ' + (st === 'sun' ? 'low' : st) }, h('i', { style: `width:${Math.min(100, pct)}%` })));
+    })));
+  }
+  out.push(lines(lrow({ class: 'lr tap', onclick: () => { cachePage(); tab = 'nutri'; renderTabs(); render(); window.scrollTo(0, 0); } }, h('span', { text: 'Einzelne Tage ansehen' }), h('span', { class: 'n', text: '›' }))));
+  return out;
+}
+PAGES.stat = function () {
+  const days = statDays();
+  return h('div', { class: 'pg' },
+    h('div', { class: 'useg' }, ...[['week', 'Woche'], ['month', 'Monat'], ['year', 'Jahr']].map(([k, l]) => h('button', { class: k === statRange ? 'on' : '', onclick: () => { statRange = k; render(); } }, l))),
+    ...sleepBars(days), ...goalStats(days), ...nutStats(days));
 };

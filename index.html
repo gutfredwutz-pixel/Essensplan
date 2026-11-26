@@ -1347,6 +1347,19 @@ html.dark .macbar{background:var(--line)!important;box-shadow:none!important}
 html.dark .mac i{background:var(--ac)!important}
 html.dark .tile{flex-direction:row!important;white-space:nowrap!important}
 html.dark .ph2ring circle:first-of-type{stroke:var(--line)!important}
+/* Statistik neu */
+.pg>.useg{margin:0 0 26px;padding-left:4px}
+.bars{display:flex;align-items:flex-end;gap:10px;height:110px;padding:14px 0 2px}
+.bars.thin{gap:3px}
+.bars div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;height:100%;font-size:11.5px;color:var(--ink3)}
+.bars span{height:14px;line-height:14px}
+.bars b{width:100%;border-radius:3px;background:var(--ac);display:block}
+.sub{font-size:14px;color:var(--ink3);margin:0 4px 6px}
+.ln+.sub{margin-top:-12px}
+.mb{flex:none;width:84px;height:6px;border-radius:3px;background:var(--line);position:relative;margin-left:12px}
+.mb i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--lv-ok)}
+.mb.low i{background:var(--lv-low)}.mb.good i{background:var(--lv-good)}.mb.high i{background:var(--lv-high)}
+.lr .n+.mb{margin-left:12px}
 </style>
 </head>
 <body data-tab="start">
