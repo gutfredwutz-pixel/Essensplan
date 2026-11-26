@@ -241,6 +241,12 @@ try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', appl
 function weekAnchor() { const t = dayOnly(new Date()); return LS.get('ep_weekstart') === 'mo' ? addDays(t, -((t.getDay() + 6) % 7)) : t; }
 applyTheme();
 function openSettings() { openTop('set'); }
+function aiCard() {
+  const st = h('span', { class: 'aist', text: aiState === true ? 'Verbunden' : aiState === false ? 'Aus' : 'Noch nicht geprüft' });
+  const test = h('button', { class: 'btn s sm', onclick: async () => { st.textContent = 'Prüfe …'; const was = aiState; if (aiState === false && LS.get('ep_ai') !== 'off') aiState = null; const d = await aiCall('ping', {}); st.textContent = d ? 'Verbunden' : 'Nicht erreichbar'; if (!d && was !== false) aiState = null; } }, 'Prüfen');
+  const sw = h('div', { class: 'seg wide' }, ...[['an', 'An'], ['off', 'Aus']].map(([k, t]) => h('button', { class: (LS.get('ep_ai') === 'off') === (k === 'off') ? 'on' : '', onclick: () => { LS.set('ep_ai', k); aiState = k === 'off' ? false : null; refreshSet(); } }, t)));
+  return h('div', { class: 'setcard b' }, h('div', { class: 'settitle', text: 'KI' }), h('div', { class: 'muted setnote', text: 'Liest Rezepte aus Videos, Fotos und Sprache und versteht, was du ins Tagebuch sprichst. Ohne KI arbeitet die App mit festen Regeln.' }), sw, h('div', { class: 'row', style: 'justify-content:space-between;margin-top:12px' }, st, test));
+}
 function renderSettings() {
   const seg = (key, opts, def, after) => { const cur = LS.get(key) || def; return h('div', { class: 'seg wide' }, ...opts.map(([v, t]) => h('button', { class: cur === v ? 'on' : '', onclick: () => { LS.set(key, v); after && after(v); refreshSet(); } }, t))); };
   const card = (cls, title, ...kids) => h('div', { class: 'setcard ' + cls }, h('div', { class: 'settitle', text: title }), ...kids);
@@ -270,6 +276,7 @@ function renderSettings() {
     card('a', 'Nie auf die Liste', note('Salz, Pfeffer, Öl und Wasser kommen nie aus Rezepten auf die Liste. Hier könnt ihr weitere Sachen ergänzen, die ihr immer daheim habt.'),
       never.length ? h('div', { class: 'tagbox', style: 'justify-content:center;margin-bottom:10px' }, ...never.map(x => h('button', { class: 'pill addp', onclick: () => { hhSet = { ...hhSet, never: never.filter(y => y !== x) }; saveNever(hhSet.never); refreshSet(); } }, x + '  ×'))) : null,
       h('div', { class: 'row', style: 'gap:8px' }, nin, h('button', { class: 'ib p', 'aria-label': 'Hinzufügen', onclick: addNever }, ic('plus')))),
+    aiCard(),
     card('b', 'Spracherkennung', note('Fürs Diktieren und für Videos. Am besten einmal im WLAN laden, danach geht es auch offline.'), asrBtn, asrProg),
     h('div', { class: 'setfoot' }, h('div', { class: 'greytxt', text: 'Nährwerte: Bundeslebensmittelschlüssel (BLS) 4.0, Max Rubner-Institut. Markenprodukte: Open Food Facts. Alle Werte sind Schätzungen und ersetzen keine Ernährungsberatung.' })));
 }
@@ -1860,15 +1867,22 @@ function buildImporter(onResult) {
         setProg('Nehme Standbilder aus dem Video …');
         try { images.push(...await videoFrames(v, 6)); } catch (e) { console.warn(e); }
       }
-      if (images.length) {
-        const ocr = await ocrImages(images, setProg);
-        if (ocr) text += '\n' + ocr;
+      // Zuerst die KI: liest Text, Ton und Bilder zusammen
+      let res = null;
+      if (aiState !== false) {
+        setProg('KI liest das Rezept …');
+        const frames = []; for (const im of images.slice(0, 8)) { try { frames.push(await toJpeg64(im)); } catch (e) { } }
+        const d = await aiCall('recipe', { text, frames });
+        if (d && (d.ingredients || []).length) res = { title: d.title || '', servings: d.servings ? String(d.servings) : '', ingredients: d.ingredients.map(g => ({ name: cap(g.name || ''), amount: g.amount || '' })).filter(g => g.name), steps: (d.steps || []).filter(Boolean), ai: true };
+      }
+      if (!res) {
+        if (images.length) { const ocr = await ocrImages(images, setProg); if (ocr) text += '\n' + ocr; }
+        res = recipeFromText(text);
       }
       if (text.trim() && text.trim() !== txt.value.trim()) txt.value = text.trim();
-      const res = recipeFromText(text);
       if (!res.ingredients.length && !res.steps.length && !res.title) { endProg('Keine Zutaten erkannt', true); return; }
       onResult(res);
-      endProg(`${res.ingredients.length} Zutaten erkannt, bitte prüfen`);
+      endProg(`${res.ingredients.length} Zutaten erkannt${res.ai ? ' (mit KI)' : ''}, bitte prüfen`);
     } catch (e) { console.error(e); endProg('Hat nicht geklappt, bitte nochmal versuchen', true); }
     finally { go.disabled = false; }
   });
@@ -1897,6 +1911,24 @@ async function ocrImages(images, onProg) {
     } catch (e) { console.warn(e); }
   }
   return out.join('\n');
+}
+/* ---- KI über die Supabase-Funktion "ai" ---- */
+let aiState = LS.get('ep_ai') === 'off' ? false : null;
+async function aiCall(task, payload) {
+  if (!sb || aiState === false) return null;
+  try {
+    const { data, error } = await sb.functions.invoke('ai', { body: { task, ...payload } });
+    if (error) { const st = error.context && error.context.status; if (st === 404) aiState = false; throw error; }
+    if (!data || !data.ok) throw new Error((data && data.error) || 'KI');
+    aiState = true; return data.data;
+  } catch (e) { console.warn('KI nicht verfügbar', e); return null; }
+}
+async function toJpeg64(src, max = 768) {
+  const bmp = await createImageBitmap(src);
+  const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', 0.8).split(',')[1];
 }
 async function videoFrames(file, n) {
   const url = URL.createObjectURL(file);

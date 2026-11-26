@@ -370,7 +370,24 @@ function openDiary(name, ds, back) {
   };
   const evalText = async () => {
     await loadBls().catch(() => { });
-    const r = parseDiary(txt.value, ds);
+    let r = null;
+    if (typeof aiCall === 'function' && aiState !== false && txt.value.trim()) {
+      const ps = planOn(ds), rs = recipes.filter(x => recipeNutrition(x).ok);
+      const ctx = (ps.length ? 'Geplant für diesen Tag:\n' + ps.map(p => `- ${p.title} (id ${p.id})`).join('\n') + '\n' : '') + (rs.length ? 'Eigene Rezepte: ' + rs.map(x => x.title).slice(0, 80).join(', ') : '');
+      toast('KI liest …');
+      const d = await aiCall('diary', { text: txt.value, context: ctx });
+      if (d) {
+        r = { foods: [], plans: {} };
+        for (const p of d.plans || []) if (ps.some(x => x.id === p.id)) r.plans[p.id] = Math.max(0, +p.factor || 1);
+        for (const x of d.recipes || []) { const rr = rs.find(y => norm(y.title) === norm(x.title || '')); if (!rr) continue; const fac = +x.factor || 1; const n = recipeNutrition(rr); r.foods.push({ name: rr.title, amt: (fac === 1 ? '1' : String(fac).replace('.', ',')) + ' Portion', gr: Math.round(100 * fac), v: n.per, src: 'Euer Rezept', portion: 100, recipe: true }); }
+        for (const x of d.foods || []) {
+          const g = Math.max(1, Math.round(+x.grams || 100));
+          const f = parseFoodChunk(`${g} g ${x.name}`, false);
+          if (f) { f.amt = x.label || `${g} g`; f.gr = g; r.foods.push(f); }
+        }
+      }
+    }
+    if (!r) r = parseDiary(txt.value, ds);
     Object.assign(e.plans, r.plans); e.foods.push(...r.foods); e.text = [e.text, txt.value.trim()].filter(Boolean).join('\n'); txt.value = '';
     drawPlans(); drawList(); drawSum();
     const n = r.foods.length + Object.keys(r.plans).length;
