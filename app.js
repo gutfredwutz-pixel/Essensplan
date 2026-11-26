@@ -438,7 +438,7 @@ function renderTabs() {
   }
   t.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
   tabInd(TAB_ORDER.indexOf(tab), 0, true);
-  renderHead();
+  renderHead(); syncDock();
 }
 // Gleitender Kreis in der Tab-Leiste; folgt beim Wischen dem Finger
 function tabInd(i, prog, anim) {
@@ -803,10 +803,11 @@ function drawListBody() {
         confirmBtn('Leeren', 'Sicher?', () => done.forEach(i => queue('items/' + i.id, () => db.collection('items').doc(i.id).delete())), 'btn g sm')),
       h('div', { class: 'donechips' }, ...done.sort((a, b) => (b.checkedAt || 0) - (a.checkedAt || 0)).map(itemRow))));
   }
-  const pill = listTipPill(); if (pill) frag.push(pill, h('div', { class: 'tipspace' }));
+  const pill = listTipPill(); $('#tipdock').replaceChildren(...(pill ? [pill] : [])); if (pill) frag.push(h('div', { class: 'tipspace' })); syncDock();
   body.replaceChildren(...frag);
 }
 /* ---- Was der Liste noch fehlt ---- */
+function syncDock() { const d = $('#tipdock'); if (d) d.classList.toggle('show', tab === 'list' && !!d.firstChild); }
 function listNutrition() {
   const tot = new Array(24).fill(0); let counted = 0;
   for (const it of items) {
