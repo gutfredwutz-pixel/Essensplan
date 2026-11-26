@@ -1213,6 +1213,11 @@ html.dark .tippill{background:linear-gradient(160deg,rgba(60,66,96,.8),rgba(40,4
 body.moving #tipdock,body.swiping #tipdock,body:has(#ov.on) #tipdock{opacity:0!important;transform:translateY(10px)!important;transition-duration:.08s}
 #tipdock .tippill{position:static;transform:none;left:auto;bottom:auto}
 #tipdock .tippill:active{transform:scale(.96)}
+.tiplow{display:block;width:100%;border:0;background:none;padding:0;text-align:left;font-family:inherit;color:var(--ink)}
+.tchev{display:inline-grid;place-items:center;margin-left:8px;color:var(--ink3);transition:transform .2s}.tchev svg{width:10px;height:10px}
+.tiplow.open .tchev{transform:rotate(90deg)}
+.tipfoods{margin-top:12px}
+.tipgrp{padding-bottom:2px}
 .hidden{display:none!important}
 </style>
 </head>

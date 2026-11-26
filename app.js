@@ -840,7 +840,7 @@ function listTipPill() {
 }
 function openListTips() {
   const d = listNutrition();
-  const card = (n, sub) => { const b = h('button', { class: 'gsrc' + (items.some(it => !it.checked && canon(it.name) === canon(n)) ? ' on' : '') }, h('span', { class: 'gn', text: n }), sub ? h('span', { class: 'gw', text: sub }) : null, h('span', { class: 'gp' }, ic('plus')));
+  const card = (n, sub) => { const has = items.some(it => !it.checked && canon(it.name) === canon(n)); const b = h('button', { class: 'gsrc' + (has ? ' on' : '') }, h('span', { class: 'gn', text: n }), sub ? h('span', { class: 'gw', text: sub }) : null, h('span', { class: 'gp' }, ic(has ? 'check' : 'plus')));
     b.onclick = () => { if (b.classList.contains('on')) return; addItem(n); b.classList.add('on'); b.querySelector('.gp').replaceChildren(ic('check')); toast(n + ' steht jetzt auf der Liste'); }; return b; };
   const parts = [
     h('div', { class: 'rephero phero2 tiphero' },
@@ -849,8 +849,18 @@ function openListTips() {
   ];
   if (d.best.length) parts.push(h('div', { class: 'infocard' }, h('h3', { text: 'Bringt am meisten' }), h('div', { class: 'muted', style: 'margin:-4px 0 12px;font-size:13px', text: 'Schließt gleich mehrere Lücken. Antippen setzt es auf die Liste.' }),
     h('div', { class: 'gsrcs' }, ...d.best.slice(0, 6).map(b => card(b.n, b.for.slice(0, 2).join(', '))))));
-  if (d.low.length) parts.push(h('div', { class: 'infocard' }, h('h3', { text: 'Hier fehlt noch was' }),
-    h('div', { class: 'tiplows' }, ...d.low.slice(0, 6).map(r => h('div', { class: 'tiplow' }, h('div', { class: 'macl' }, h('span', { text: r.name }), h('span', { class: 'macv' }, h('b', { text: fmtInt(r.pct) + ' %' }))), h('div', { class: 'macbar' }, h('i', { style: `width:${Math.max(3, r.pct)}%` })))))));
+  if (d.low.length) {
+    const fmtV = (x, u) => (x >= 10 ? fmtInt(x) : String(Math.round(x * 10) / 10).replace('.', ',')) + ' ' + u;
+    const rowsEl = d.low.map(r => {
+      const unit = (REF[r.i] || [0, '', 'g'])[2];
+      const foods = (GOOD_SRC[r.i] || []).map(([n]) => { const v = nutOf({ name: n }); return { n, x: v ? v[r.i] || 0 : null }; }).sort((p, q) => (q.x ?? -1) - (p.x ?? -1));
+      const box = h('div', { class: 'tipfoods hidden' }, h('div', { class: 'gsrcs' }, ...foods.map(f => card(f.n, f.x != null ? fmtV(f.x, unit) + ' in 100 g' : ''))));
+      const head = h('button', { class: 'tiplow' }, h('div', { class: 'macl' }, h('span', { text: r.name }), h('span', { class: 'macv' }, h('b', { text: fmtInt(r.pct) + ' %' }), h('span', { class: 'tchev' }, ic('chevron-right')))), h('div', { class: 'macbar' }, h('i', { style: `width:${Math.max(3, r.pct)}%` })));
+      head.onclick = () => { const open = box.classList.toggle('hidden') === false; head.classList.toggle('open', open); };
+      return h('div', { class: 'tipgrp' }, head, box);
+    });
+    parts.push(h('div', { class: 'infocard' }, h('h3', { text: 'Hier fehlt noch was' }), h('div', { class: 'muted', style: 'margin:-4px 0 14px;font-size:13px', text: 'Antippen zeigt Lebensmittel mit viel davon.' }), h('div', { class: 'tiplows' }, ...rowsEl)));
+  }
   else parts.push(h('div', { class: 'infocard' }, h('h3', { text: 'Sieht gut aus' }), h('div', { class: 'muted', text: 'Für die wichtigsten Nährstoffe ist genug auf der Liste.' })));
   parts.push(h('div', { class: 'muted', style: 'font-size:12.5px;margin:0 6px', text: 'Grobe Schätzung aus den Einträgen. Ohne Menge rechnet die App mit einer üblichen Packung.' }));
   openSheet('Was noch fehlt', [h('div', { class: 'npage' }, ...parts)]);
