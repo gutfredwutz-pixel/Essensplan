@@ -1706,6 +1706,11 @@ html,body{overscroll-behavior:none}
 .dy .dyacts{display:flex;gap:24px;margin:16px 0 0}
 .dy .dyact{border:0;background:none;padding:6px 0;font:inherit;font-size:15px;color:#8E8E93;cursor:pointer}
 .dy .dyact:active{transform:scale(.95);opacity:.8}
+/* ===== Fester Kopf (Nov. 2026): Datum, Überschrift und Umschalter bleiben stehen, nur der Inhalt darunter scrollt ===== */
+html header,html.dark header{position:sticky!important;top:0!important;z-index:6!important;background:#000!important}
+html header::after{content:'';position:absolute;left:0;right:0;top:100%;height:22px;background:linear-gradient(#000,rgba(0,0,0,0));pointer-events:none}
+.dnav{margin:4px 2px 30px!important}
+.dnbody{padding:0 2px}
 </style>
 </head>
 <body data-tab="start">

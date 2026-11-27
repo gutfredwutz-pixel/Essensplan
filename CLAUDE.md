@@ -29,6 +29,8 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - Neue Seiten in `start.js` (`PAGES.start/stat/todo/news`). Neue Sammlungen: `todos` (mit `repeat`, `doneDays`), `goals` (`days`), `sleep` (`bed`, `wake`), `training` (`kind`, `min`), jeweils mit `who`.
 - Kopf überall gleich: Datum (Statistik: Zeitraum) → große Überschrift → ggf. Umschalter. Abstände stehen im CSS-Block „Einheitliche Abstände oben“ am Ende von `index.html`.
 - Start: Schlaf als Zeitstrahl (Jakob mag den, nicht entfernen), Eintragen (Training, Gegessen), Heute (To-dos + Ziele), Vorschlag (was noch fehlt, ohne KI über `suggestFoods`), Essen.
+- Kopf (Datum, Überschrift, Umschalter) steht beim Scrollen fest (`position:sticky`, CSS-Block „Fester Kopf“ am Ende von `index.html`); `stageClone` setzt ihn in der Wisch-Kopie an dieselbe Stelle.
+- Nährwerte einzelner Tage: eigenes Fenster `openDayNut(tageZurück, zurück)` in `start.js` mit Pfeilen; Unterseiten führen per Wischen dorthin zurück (`ctx.home`). Erreichbar über Statistik > Nährstoffe > „Einzelne Tage“, Antippen der Kalorien, Essen > Woche > „Nährwerte“ und das Eintragen-Fenster. Den Umschalter „Tag“ in der Statistik gibt es nicht mehr (nur Woche/Monat/Jahr).
 - Statistik: Schlaf-Balken ab 0 mit 8-h-Linie, Training-Balken, Ziele als Tagesfelder, Kalorien groß, Nährstoffe als Menü mit Unterseiten (Sheets).
 - Einstellungen: Menü mit Unterseiten (`setSub`), zurück per Wischen.
 - Logo (Entwurf 3, mit Jakob ausgesucht Nov. 2026): zwei weiße Striche, rosa Punkt (`#ff7aa8`) rechts oberhalb, auf Schwarz. Quelle `icons/logo.svg`, PNGs daraus gerendert. Jakob mochte auch die flächige weiße Sonne mit Horizont-Schlitzen.

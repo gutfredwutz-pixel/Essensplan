@@ -505,7 +505,7 @@ const TAB_DEF = [
 function renderFoodSeg() {
   let f = $('#fseg'); if (!f) { f = h('div', { id: 'fseg', class: 'useg' }); $('header').append(f); }
   f.classList.toggle('hidden', (!FOOD.includes(tab) && tab !== 'stat') || tab === 'list');
-  if (tab === 'stat') { f.replaceChildren(...[['day', 'Tag'], ['week', 'Woche'], ['month', 'Monat'], ['year', 'Jahr']].map(([k, l]) => h('button', { class: k === statRange ? 'on' : '', onclick: () => { statRange = k; statDay = 0; renderHead(); render(); } }, l))); return; }
+  if (tab === 'stat') { f.replaceChildren(...[['week', 'Woche'], ['month', 'Monat'], ['year', 'Jahr']].map(([k, l]) => h('button', { class: k === statRange ? 'on' : '', onclick: () => { statRange = k; statDay = 0; renderHead(); render(); } }, l))); return; }
   if (!FOOD.includes(tab)) return;
   f.replaceChildren(...[['cal', 'Woche'], ['rec', 'Rezepte'], ['pan', 'Vorrat']].map(([id, l]) => h('button', { class: id === tab ? 'on' : '', onclick: () => { if (id !== tab) switchNow(id); } }, l)));
 }
@@ -543,7 +543,8 @@ function stageClone(id, node) {
     orig.forEach((o, i) => { const b = o.getBoundingClientRect(); if (b.top > H && cl[i] && cl[i].parentNode) cl[i].remove(); });
   }
   Object.assign(c.style, { position: 'fixed', left: '0', top: (id ? 0 : r.top) + 'px', width: r.width + 'px', margin: '0', pointerEvents: 'none', willChange: 'transform', transition: 'none' });
-  c.querySelectorAll('header').forEach(hd => { hd.style.position = 'relative'; });
+  // Der Kopf steht beim Scrollen fest; in der Kopie an dieselbe Stelle setzen
+  c.querySelectorAll('header').forEach(hd => { hd.style.setProperty('position', 'relative', 'important'); if (!id && r.top < 0) { hd.style.setProperty('top', -r.top + 'px', 'important'); hd.style.setProperty('z-index', '6', 'important'); hd.style.setProperty('background', '#000', 'important'); } });
   peekLayer().appendChild(c); return c;
 }
 // erst raus, dann die neue Seite von der anderen Seite rein
@@ -676,7 +677,7 @@ function renderCal() {
   if (typeof openDiary === 'function' && typeof lrow === 'function') {
     const who = me(), t = ymd(new Date()); const logged = !!diary[who + '_' + t]; const kc = logged && profiles[who] ? Math.round(dayIntake(who, t).tot[0]) : 0;
     wrap.append(h('div', { class: 'ln calate' }, lrow({ class: 'lr tap', onclick: () => openDiary(who, t, render) }, h('span', { class: 'tx', text: 'Heute gegessen' }), h('span', { class: 'n', text: logged ? `${fmtInt(kc)} kcal` : 'Eintragen' }), h('span', { class: 'chev', text: '›' })),
-      lrow({ class: 'lr tap', onclick: () => { statRange = 'day'; statDay = 0; switchNow('stat'); renderHead(); } }, h('span', { class: 'tx', text: 'Nährwerte' }), h('span', { class: 'chev', text: '›' }))));
+      lrow({ class: 'lr tap', onclick: () => openDayNut(0) }, h('span', { class: 'tx', text: 'Nährwerte' }), h('span', { class: 'chev', text: '›' }))));
   }
   wrap.append(h('div', { class: 'calbar' },
     h('button', { class: 'ib', 'aria-label': 'Zurück', onclick: () => shift(-1) }, ic('chevron-left')),

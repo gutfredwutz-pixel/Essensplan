@@ -516,7 +516,7 @@ function openDiary(name, ds, back) {
     listBox,
     planBox,
     sumBox,
-    h('div', { class: 'ln dylink' }, h('div', { class: 'lr tap', onclick: () => { flush(); closeSheet(); statRange = 'day'; statDay = Math.round((parseYmd(today) - parseYmd(ds)) / 864e5); if (tab === 'stat') { renderHead(); render(); } else switchNow('stat'); } }, h('span', { class: 'tx', text: 'Nährstoffe an diesem Tag' }), h('span', { class: 'chev', text: '›' }))))]);
+    h('div', { class: 'ln dylink' }, h('div', { class: 'lr tap', onclick: () => { flush(); openDayNut(Math.max(0, Math.round((parseYmd(today) - parseYmd(ds)) / 864e5)), () => openDiary(name, ds, back)); } }, h('span', { class: 'tx', text: 'Nährstoffe an diesem Tag' }), h('span', { class: 'chev', text: '›' }))))]);
   // Immer gleich hoch, egal wie viel eingetragen ist: beim Blättern zwischen Tagen springt nichts
   $('#sheet').classList.add('fixh');
   $('#sheet .xclose').onclick = () => { flush(); closeSheet(); back(); };
