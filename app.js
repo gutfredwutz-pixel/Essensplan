@@ -1256,7 +1256,7 @@ function openRecipeView(r) {
 let sheetStack = []; let sheetBack = null;
 function openSheet(title, content) {
   sheetBack = null;
-  const s = $('#sheet'); const ov = $('#ov'); const was = ov.classList.contains('on'); s.classList.remove('haspic');
+  const s = $('#sheet'); const ov = $('#ov'); const was = ov.classList.contains('on'); s.classList.remove('haspic', 'fixh');
   s.replaceChildren(h('div', { class: 'grab' }), h('div', { class: 'shead' }, h('h2', { text: title }), h('button', { class: 'ib xclose', 'aria-label': 'Schließen', onclick: closeSheet }, ic('xmark'))), ...content.filter(Boolean));
   s.style.transition = ''; s.style.transform = ''; ov.style.removeProperty('--ovo'); ov.classList.remove('out');
   s.classList.toggle('full', !!topSheet); ov.classList.add('on'); s.scrollTop = 0; lockBody(true); barColor();
@@ -1563,8 +1563,8 @@ function pickProduct(g, done) {
     } catch (e) { res.replaceChildren(grey('Open Food Facts gerade nicht erreichbar')); }
   });
   // Das Rezept-Sheet merken, um danach dorthin zurückzukehren
-  const saved = [...$('#sheet').childNodes]; const savedScroll = $('#sheet').scrollTop;
-  reopen = () => { $('#sheet').replaceChildren(...saved); $('#ov').classList.add('on'); lockBody(true); barColor(); $('#sheet').scrollTop = savedScroll; done(); };
+  const saved = [...$('#sheet').childNodes]; const savedScroll = $('#sheet').scrollTop, savedCls = $('#sheet').className;
+  reopen = () => { $('#sheet').className = savedCls; $('#sheet').replaceChildren(...saved); $('#ov').classList.add('on'); lockBody(true); barColor(); $('#sheet').scrollTop = savedScroll; done(); };
   q.addEventListener('keydown', e => { if (e.key === 'Enter') searchBls(); });
   openSheet('Nährwerte für ' + (g.name || 'Zutat'), [q, h('div', { class: 'row', style: 'margin-top:8px;gap:8px' }, h('button', { class: 'btn s', onclick: searchBls }, 'Im BLS suchen'), offBtn),
     h('div', { class: 'row', style: 'margin-top:8px;gap:8px' }, h('button', { class: 'btn s', onclick: () => scanFlow(f => choose({ src: f.src, name: f.name, v: f.v })) }, 'Strichcode scannen'), h('button', { class: 'btn s', onclick: () => photoFlow(f => choose({ src: f.src, name: f.name, v: f.v })) }, 'Nährwerte fotografieren')),
