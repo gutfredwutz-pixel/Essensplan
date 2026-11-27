@@ -355,6 +355,9 @@ function openNutDetail(i, ctx) {
   openSheet({ 2: 'Fett', 23: 'Omega-3', 3: 'Kohlenhydrate', 1: 'Eiweiß' }[i] || (ctx.refs[i] || REF[i] || [0, 'Nährstoff'])[1], out);
   if (ctx.back) sheetBack = ctx.back;
 }
+// Gruppenfarbe aus den Einzelfarben: gelb zählt 1, rot 2, geteilt durch die Anzahl.
+// Beispiele bei 3 Werten: grün grün gelb oder grün grün rot = gelb, grün gelb rot = orange, zwei rot = rot.
+function groupSt(rs) { const sc = rs.reduce((a, r) => a + (r.st === 'r' ? 2 : r.st === 'y' ? 1 : 0), 0) / Math.max(1, rs.length); return sc < 0.2 ? 'g' : sc < 0.75 ? 'y' : sc < 1.25 ? 'o' : 'r'; }
 const worst = sts => sts.includes('r') ? 'r' : sts.includes('y') ? 'y' : 'g';
 // Fett gut = genug ungesättigte Fette (etwa zwei Drittel des Fettbedarfs) und gesättigte höchstens 10 % der Kalorien
 function fatQuality(d, refs) {
@@ -388,7 +391,11 @@ function nutStats(days) {
   const grp = keys => keys.map(i => rows[i]).filter(Boolean);
   const vit = NUT_GROUPS.find(g => g[0] === 'Vitamine')[1], min = NUT_GROUPS.find(g => g[0] === 'Mineralstoffe')[1];
   const ctx = { d, refs };
-  const sumOf = rs => { const gp = groupPct(rs), lim = rs.every(r => LIMIT_KEYS.has(r.i)); return h('span', { class: 'gsum ' + lvl(gp, lim) }, h('i'), lim ? (gp <= 100 ? 'im Rahmen' : `${gp} %`) : `${gp} %`); };
+  const sumOf = rs => {
+    const gp = groupPct(rs), lim = rs.every(r => LIMIT_KEYS.has(r.i)), st = groupSt(rs);
+    const bad = rs.filter(r => r.st !== 'g').sort((a, b) => b.pct - a.pct).map(r => r.nm);
+    return h('span', { class: 'gsum ' + st }, h('i'), lim ? (bad.length ? `${bad.join(', ')} zu viel` : 'im Rahmen') : `${gp} %`);
+  };
   const menu = (title, val, fn) => lrow({ class: 'lr tap', onclick: fn }, h('span', { class: 'tx', text: title }), val, h('span', { class: 'chev', text: '›' }));
   const fib = rows[4];
   out.push(secHead('Nährstoffe'));

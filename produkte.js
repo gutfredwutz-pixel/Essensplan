@@ -29,8 +29,8 @@ async function offProduct(code) {
 
 /* ---- Unterseite in einem offenen Sheet, zurück per Wischen nach rechts ---- */
 function subSheet(title, content, onBack) {
-  const s = $('#sheet'); const saved = [...s.childNodes], sc = s.scrollTop, prevBack = sheetBack;
-  const restore = () => { if (onBack) onBack(); s.replaceChildren(...saved); $('#ov').classList.add('on'); lockBody(true); barColor(); s.scrollTop = sc; sheetBack = prevBack; };
+  const s = $('#sheet'); const saved = [...s.childNodes], sc = s.scrollTop, prevBack = sheetBack, cls = s.className;
+  const restore = () => { if (onBack) onBack(); s.className = cls; s.replaceChildren(...saved); $('#ov').classList.add('on'); lockBody(true); barColor(); s.scrollTop = sc; sheetBack = prevBack; };
   openSheet(title, content); sheetBack = restore;
   const x = $('#sheet .xclose'); if (x) x.onclick = () => { if (onBack) onBack(); restore(); };
   return restore;
