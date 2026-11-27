@@ -1280,7 +1280,7 @@ $('#ov').addEventListener('touchmove', e => { if (!e.target.closest('#sheet')) e
   s.addEventListener('touchmove', e => {
     if (!on) return; dy = e.touches[0].clientY - y0; dx = e.touches[0].clientX - x0;
     if (on === 'maybe') {
-      if (sheetBack && dx > 10 && dx > Math.abs(dy) * 1.3) on = 'h';
+      if (sheetBack && dx > 10 && dx > Math.abs(dy) * 1.3 && !e.target.closest('.dnswipe')) on = 'h';
       else if (top0 && dy > 6 && dy > Math.abs(dx)) on = true;
       else if (Math.abs(dy) > 6 || dx < -6) { on = false; return; } else return;
     }

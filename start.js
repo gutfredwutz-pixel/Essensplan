@@ -184,7 +184,7 @@ function trainBars(days) {
   const vals = groups.map(g => g.days.reduce((a, d) => a + trainMin(d), 0)), total = vals.reduce((a, b) => a + b, 0);
   const n = days.reduce((a, d) => a + trainOf(d).length, 0), max = Math.max(60, ...vals);
   return [secHead('Training', total ? `${n} mal, ${hm(total)}` : null),
-    h('div', { class: 'ln tap train', onclick: () => openTraining() }, total ? h('div', { class: 'bars' + (statRange === 'month' ? ' thin' : '') }, ...groups.map((g, k) => h('div', {}, h('b', { style: `height:${vals[k] ? Math.max(4, vals[k] / max * 96) : 0}px` }), h('span', { text: g.lbl }))))
+    h('div', { class: 'ln tap train', onclick: () => openTrainInfo(days) }, total ? h('div', { class: 'bars' + (statRange === 'month' ? ' thin' : '') }, ...groups.map((g, k) => h('div', {}, h('b', { style: `height:${vals[k] ? Math.max(4, vals[k] / max * 96) : 0}px` }), h('span', { text: g.lbl }))))
       : h('div', { class: 'add', text: 'Noch kein Training eingetragen' }))];
 }
 
@@ -242,7 +242,7 @@ function sleepBars(days) {
   const vals = groups.map(g => avgOf(g.days)), all = vals.filter(x => x != null);
   const avg = all.length ? Math.round(avgOf(days)) : null, max = Math.max(600, ...all), y = m => Math.max(4, m / max * 96);
   return [secHead('Schlaf', avg != null ? (days.length === 1 ? hm(avg) : `im Schnitt ${hm(avg)}`) : null),
-    h('div', { class: 'ln pad tap sleep', onclick: () => openSleep() },
+    h('div', { class: 'ln pad tap sleep', onclick: () => openSleepInfo(days) },
       all.length ? h('div', { class: 'bars' + (statRange === 'month' ? ' thin' : '') },
         h('div', { class: 'eight', style: `bottom:${22 + y(480)}px` }, h('span', { text: '8 h' })),
         ...groups.map((g, k) => h('div', {}, h('b', { class: vals[k] != null && vals[k] >= 480 ? 'ok' : '', style: `height:${vals[k] != null ? y(vals[k]) : 0}px` }), h('span', { text: g.lbl }))))
@@ -379,7 +379,7 @@ function nutStats(days, home) {
   }
   const k = rows[0], out = [];
   out.push(secHead('Kalorien', days.length === 1 ? 'antippen zum Ändern' : d.n === 1 ? 'an 1 Tag eingetragen' : `Schnitt aus ${d.n} eingetragenen Tagen`));
-  out.push(h('div', { class: 'ln pad kcal tap', onclick: days.length === 1 ? () => openDiary(name, days[0], home ? () => { render(); home(); } : render) : () => openDayNut(0) }, h('div', { class: 'big' }, h('b', { text: `${de(k.v)} kcal` }), h('span', { text: `von ${de(k.ref)} am Tag` })), h('span', { class: 'mb wide ' + k.st }, h('i', { style: `width:${Math.min(100, k.pct)}%` }))));
+  out.push(h('div', { class: 'ln pad kcal tap', onclick: days.length === 1 ? () => openDiary(name, days[0], home ? () => { render(); home(); } : render) : () => openKcalInfo(days) }, h('div', { class: 'big' }, h('b', { text: `${de(k.v)} kcal` }), h('span', { text: `von ${de(k.ref)} am Tag` })), h('span', { class: 'mb wide ' + k.st }, h('i', { style: `width:${Math.min(100, k.pct)}%` }))));
   // Makros: bewertet werden nur Eiweiß und gute Fette; Kohlenhydrate und Kalorien bestimmen die Farbe nicht
   const fq = fatQuality(d, refs);
   if (rows[1]) { rows[1].st = rows[1].pct >= 90 ? 'g' : rows[1].pct >= 70 ? 'y' : 'r'; }
@@ -411,12 +411,98 @@ function nutStats(days, home) {
   return out;
 }
 // Nährwerte eines Tages als eigenes Fenster: Pfeile blättern durch die Tage, Unterseiten führen per Wischen hierher zurück
-function openDayNut(off = 0, back) {
+function openDayNut(off = 0, back, enter) {
   const ds = ymd(addDays(new Date(), -off)), home = () => openDayNut(off, back);
   if (!BLSNAME) loadBls().then(() => { if ($('#ov').classList.contains('on') && $('#sheet').querySelector('.dnav')) home(); }).catch(() => { });
-  const go = n => openDayNut(Math.max(0, off - n), back);
-  const nav = h('div', { class: 'pnav statnav dnav' }, h('button', { class: 'ib', 'aria-label': 'Tag davor', onclick: () => go(-1) }, ic('chevron-left')), h('div', { text: off === 0 ? 'Heute' : off === 1 ? 'Gestern' : longDate(ds) }), h('button', { class: 'ib' + (off === 0 ? ' off' : ''), 'aria-label': 'Tag danach', onclick: () => go(1) }, ic('chevron-right')));
-  openSheet('Nährwerte', [nav, h('div', { class: 'dnbody' }, ...nutStats([ds], home))]); $('#sheet').classList.add('fixh');
+  const body = h('div', { class: 'dnbody' }, ...nutStats([ds], home));
+  // dir 1 = ein Tag zurück (kommt von links), -1 = ein Tag vor (kommt von rechts)
+  const go = dir => { const n = off + dir; if (n < 0) return; body.style.transition = 'transform .16s ease-in, opacity .16s'; body.style.transform = `translate3d(${dir * 60}px,0,0)`; body.style.opacity = '0'; setTimeout(() => openDayNut(n, back, dir), 150); };
+  const nav = h('div', { class: 'pnav statnav dnav' }, h('button', { class: 'ib', 'aria-label': 'Tag davor', onclick: () => go(1) }, ic('chevron-left')), h('div', { text: off === 0 ? 'Heute' : off === 1 ? 'Gestern' : longDate(ds) }), h('button', { class: 'ib' + (off === 0 ? ' off' : ''), 'aria-label': 'Tag danach', onclick: () => go(-1) }, ic('chevron-right')));
+  const wrap = h('div', { class: 'dnswipe' }, nav, body);
+  // Mit dem Finger zwischen den Tagen wischen: nach rechts = Tag davor, nach links = Tag danach
+  let x0 = 0, y0 = 0, dx = 0, mode = null;
+  wrap.addEventListener('touchstart', e => { if (e.touches.length > 1) return; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; mode = 'maybe'; }, { passive: true });
+  wrap.addEventListener('touchmove', e => {
+    if (!mode) return; dx = e.touches[0].clientX - x0; const dy = e.touches[0].clientY - y0;
+    if (mode === 'maybe') { if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.3) mode = 'h'; else if (Math.abs(dy) > 8) { mode = null; return; } else return; }
+    e.preventDefault(); e.stopPropagation();
+    const d = dx < 0 && off === 0 ? dx / 4 : dx;
+    body.style.transition = 'none'; body.style.transform = `translate3d(${d}px,0,0)`; body.style.opacity = String(Math.max(0.35, 1 - Math.abs(d) / 450));
+  }, { passive: false });
+  wrap.addEventListener('touchend', () => {
+    const m = mode; mode = null; if (m !== 'h') return;
+    if (dx > 60) go(1); else if (dx < -60 && off > 0) go(-1);
+    else { body.style.transition = 'transform .25s, opacity .25s'; body.style.transform = ''; body.style.opacity = ''; }
+  }, { passive: true });
+  openSheet('Nährwerte', [wrap]); $('#sheet').classList.add('fixh');
   if (back) sheetBack = back;
+  if (enter) { body.style.transform = `translate3d(${-enter * 60}px,0,0)`; body.style.opacity = '0'; requestAnimationFrame(() => requestAnimationFrame(() => { body.style.transition = 'transform .2s ease-out, opacity .2s'; body.style.transform = ''; body.style.opacity = ''; })); }
 }
-PAGES.stat = function () { if (statRange === 'day') statRange = 'week'; if (!BLSNAME) loadBls().then(() => { if (tab === 'stat') render(); }).catch(() => { }); const days = statDays(); return h('div', { class: 'pg' }, ...nutStats(days), ...sleepBars(days), ...trainBars(days), ...goalStats(days)); };
+
+/* ---- Infos zu Schlaf, Training und Kalorien (Antippen in der Statistik) ---- */
+const shortDate = ds => { const d = parseYmd(ds); return `${WD[(d.getDay() + 6) % 7]}, ${d.getDate()}. ${MON[d.getMonth()].slice(0, 3)}`; };
+const clock = m => { m = ((Math.round(m) % 1440) + 1440) % 1440; return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`; };
+const tapRow = (el, fn) => { el.classList.add('tap'); el.onclick = fn; el.append(h('span', { class: 'chev', text: '›' })); return el; };
+function rangeWord(days) { return days.length <= 7 ? 'in den letzten 7 Tagen' : days.length <= 31 ? 'in den letzten 30 Tagen' : 'in den letzten 12 Monaten'; }
+function openSleepInfo(days) {
+  const me0 = () => openSleepInfo(days);
+  const nights = days.map(d => ({ d, s: sleepOf(d), m: sleepMinutes(sleepOf(d)) })).filter(x => x.m != null);
+  const out = [];
+  if (!nights.length) {
+    out.push(h('p', { class: 'slinfo', text: `Noch keine Nacht ${rangeWord(days)} eingetragen.` }));
+  } else {
+    const n = nights.length, avg = nights.reduce((a, x) => a + x.m, 0) / n;
+    const bedM = nights.map(x => { const b = toMin(x.s.bed); return b < 720 ? b + 1440 : b; }), wakeM = nights.map(x => toMin(x.s.wake));
+    const mean = a => a.reduce((p, q) => p + q, 0) / a.length, sd = a => { const m = mean(a); return Math.sqrt(mean(a.map(x => (x - m) * (x - m)))); };
+    const bedSd = sd(bedM), enough = nights.filter(x => x.m >= 420).length;
+    const avgSt = avg >= 420 ? 'g' : avg >= 360 ? 'y' : 'r', regSt = bedSd <= 30 ? 'g' : bedSd <= 60 ? 'y' : 'r';
+    out.push(h('p', { class: 'slinfo', text: 'Erwachsene brauchen meist 7 bis 9 Stunden Schlaf. Fast genauso wichtig ist, ungefähr zur gleichen Zeit ins Bett zu gehen: Schwankt die Zeit von Tag zu Tag um mehr als eine Stunde, wirkt das auf den Körper wie ein kleiner Jetlag.' }));
+    out.push(secHead('Überblick', n === 1 ? '1 Nacht eingetragen' : `${n} Nächte eingetragen`), h('div', { class: 'ln' },
+      nutLine('Im Schnitt', hm(avg), Math.min(100, avg / 480 * 100), avgSt, avg >= 420 ? 'Im empfohlenen Bereich.' : `Etwa ${hm(Math.max(0, 420 - avg))} unter den empfohlenen 7 Stunden.`),
+      nutLine('Nächte mit 7 h oder mehr', `${enough} von ${n}`, enough / n * 100, enough / n >= 0.8 ? 'g' : enough / n >= 0.5 ? 'y' : 'r', null),
+      nutLine('Eingeschlafen', `um ${clock(mean(bedM))}`, null, null, 'Uhrzeit im Schnitt.'),
+      nutLine('Aufgewacht', `um ${clock(mean(wakeM))}`, null, null, 'Uhrzeit im Schnitt.'),
+      n >= 3 ? nutLine('Gleichmäßigkeit', `± ${Math.round(bedSd)} min`, Math.min(100, Math.max(5, 100 - (bedSd - 30) * 1.2)), regSt, 'So stark schwankt die Zeit, zu der du einschläfst. Bis 30 Minuten ist gut, über eine Stunde bringt den Rhythmus durcheinander.') : null));
+    out.push(secHead('Nächte'), h('div', { class: 'ln' }, ...nights.slice().reverse().slice(0, 31).map(x =>
+      lrow({ class: 'lr col tap', onclick: () => { openSleep(x.d); sheetBack = me0; } }, h('div', { class: 'top' }, h('span', { class: 'tx', text: shortDate(x.d) }), h('span', { class: 'n', text: hm(x.m) }), h('span', { class: 'mb ' + (x.m >= 420 ? 'g' : x.m >= 360 ? 'y' : 'r') }, h('i', { style: `width:${Math.min(100, x.m / 480 * 100)}%` })), h('span', { class: 'chev', text: '›' })), h('div', { class: 'sub', text: `${x.s.bed} bis ${x.s.wake}` })))));
+  }
+  out.push(h('div', { class: 'links' }, h('button', { onclick: () => { openSleep(); sheetBack = me0; } }, 'Nacht eintragen')));
+  openSheet('Schlaf', out);
+}
+function openTrainInfo(days) {
+  const me0 = () => openTrainInfo(days);
+  const list = days.flatMap(d => trainOf(d).map(x => ({ ...x, d }))), weeks = Math.max(1, days.length / 7);
+  const out = [h('p', { class: 'slinfo', text: 'Die WHO empfiehlt pro Woche mindestens 150 Minuten Ausdauer bei mittlerer Anstrengung (z. B. zügiges Radfahren) oder 75 Minuten bei hoher Anstrengung (z. B. Laufen), dazu an mindestens 2 Tagen Krafttraining.' })];
+  if (list.length) {
+    const ausd = list.filter(x => x.kind !== 'kraft').reduce((a, x) => a + (x.min || 0), 0) / weeks;
+    const kraftDays = new Set(list.filter(x => x.kind === 'kraft').map(x => x.d)).size / weeks;
+    const st = p => p >= 100 ? 'g' : p >= 50 ? 'y' : 'r', pa = ausd / 150 * 100, pk = kraftDays / 2 * 100;
+    out.push(secHead('Pro Woche', weeks > 1 ? 'im Schnitt' : null), h('div', { class: 'ln' },
+      nutLine('Ausdauer und Sonstiges', `${de(ausd)} von 150 min`, Math.min(100, pa), st(pa), null),
+      nutLine('Tage mit Krafttraining', `${de(kraftDays, 1)} von 2`, Math.min(100, pk), st(pk), null)));
+    out.push(secHead('Einheiten'), h('div', { class: 'ln' }, ...list.slice().reverse().slice(0, 40).map(x =>
+      tapRow(lrow({}, h('span', { class: 'tx', text: shortDate(x.d) }), h('span', { class: 'n', text: `${x.min} min ${(TRAIN.find(k => k[0] === x.kind) || ['', ''])[1]}` })), () => { openTraining(x.d); sheetBack = me0; }))));
+  } else out.push(h('p', { class: 'slinfo', text: `Noch kein Training ${rangeWord(days)} eingetragen.` }));
+  out.push(h('div', { class: 'links' }, h('button', { onclick: () => { openTraining(); sheetBack = me0; } }, 'Training eintragen')));
+  openSheet('Training', out);
+}
+function openKcalInfo(days) {
+  const name = me(), pf = profiles[name]; if (!pf) return;
+  const me0 = () => openKcalInfo(days), nd = needsOf(pf), out = [];
+  out.push(h('p', { class: 'slinfo', text: 'Dein Kalorienbedarf ist eine Schätzung. Er entsteht in drei Schritten: was dein Körper in Ruhe verbraucht, mal wie aktiv du bist, dann angepasst an dein Ziel.' }));
+  out.push(secHead('So entsteht dein Bedarf'), h('div', { class: 'ln' },
+    nutLine('Grundumsatz', `${de(nd.bmr)} kcal`, null, null, nd.bfUsed ? 'Was dein Körper in völliger Ruhe am Tag verbraucht, berechnet aus Gewicht und Körperfett (Katch-McArdle-Formel).' : 'Was dein Körper in völliger Ruhe am Tag verbraucht, berechnet aus Größe, Gewicht, Alter und Geschlecht (Mifflin-St-Jeor-Formel).'),
+    nutLine('Aktivität', `mal ${de(nd.pal, 2)}`, null, null, 'Alltag, Schritte und Sport aus deinen Angaben. 1,4 heißt fast nur Sitzen, 1,6 bis 1,7 normal aktiv, ab 1,8 sehr aktiv.'),
+    nutLine('Gesamtumsatz', `${de(nd.tdee)} kcal`, null, null, 'So viel verbrauchst du an einem normalen Tag.'),
+    nd.goalAdj ? nutLine(nd.goalAdj < 0 ? 'Zum Abnehmen' : 'Zum Zunehmen', `${nd.goalAdj < 0 ? '−' : '+'} ${de(Math.abs(nd.goalAdj))} kcal`, null, null, '1 kg Körperfett entspricht etwa 7.700 kcal. Daraus ergibt sich, wie viel pro Tag weniger oder mehr nötig ist.') : null,
+    nd.extra ? nutLine('Schwangerschaft/Stillzeit', `+ ${de(nd.extra)} kcal`, null, null, null) : null,
+    lrow({}, h('span', { class: 'tx strong', text: 'Dein Bedarf' }), h('span', { class: 'n', text: `${de(nd.kcal)} kcal` }))));
+  const ref = nd.kcal, rows = days.slice().reverse().map(ds => ({ ds, d: dayIntake(name, ds) })).filter((x, i) => days.length <= 31 || x.d.logged).slice(0, 60);
+  out.push(secHead('Einzelne Tage'), h('div', { class: 'ln' }, ...rows.map(({ ds, d }) => {
+    const off = Math.round((parseYmd(today()) - parseYmd(ds)) / 864e5), k = d.logged ? d.tot[0] : null, p = k == null ? 0 : k / ref * 100;
+    return tapRow(lrow({}, h('span', { class: 'tx', text: off === 0 ? 'Heute' : off === 1 ? 'Gestern' : shortDate(ds) }), h('span', { class: 'n', text: k == null ? 'nichts eingetragen' : `${de(k)} kcal` }), k == null ? null : h('span', { class: 'mb ' + (p >= 90 && p <= 110 ? 'g' : p >= 75 && p <= 125 ? 'y' : 'r') }, h('i', { style: `width:${Math.min(100, p)}%` }))), () => openDayNut(off, me0));
+  })));
+  out.push(h('div', { class: 'links' }, h('button', { onclick: () => openProfileEdit(name, me0) }, 'Angaben ändern')));
+  openSheet('Kalorien', out);
+}
+PAGES.stat = function () { if (statRange === 'day') statRange = 'week'; if (!BLSNAME) loadBls().then(() => { if (tab === 'stat') render(); }).catch(() => { }); const days = statDays(); return h('div', { class: 'pg' }, ...sleepBars(days), ...nutStats(days), ...trainBars(days), ...goalStats(days)); };
