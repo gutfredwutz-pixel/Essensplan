@@ -32,7 +32,7 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - Statistik: Schlaf-Balken ab 0 mit 8-h-Linie, Training-Balken, Ziele als Tagesfelder, Kalorien groß, Nährstoffe als Menü mit Unterseiten (Sheets).
 - Einstellungen: Menü mit Unterseiten (`setSub`), zurück per Wischen.
 - Logo (Entwurf 3, mit Jakob ausgesucht Nov. 2026): zwei weiße Striche, rosa Punkt (`#ff7aa8`) rechts oberhalb, auf Schwarz. Quelle `icons/logo.svg`, PNGs daraus gerendert. Jakob mochte auch die flächige weiße Sonne mit Horizont-Schlitzen.
-- Offen: Nährstoff-Darstellung weiter verbessern (Jakob hat noch Punkte), Training in den Kalorienbedarf einrechnen, News (RSS + KI), Uni-Bereich, CSS aufräumen (viele Überschreib-Blöcke), `app.js` in Module teilen.
+- Offen: Nährstoff-Darstellung weiter verbessern (Jakob hat noch Punkte), Training in den Kalorienbedarf einrechnen, Uni-Bereich, CSS aufräumen (viele Überschreib-Blöcke), `app.js` in Module teilen.
 - Nächste große Punkte (mit Jakob besprochen, Ende Nov. 2026):
   1. **News**: Bereiche KI, Wirtschaft (inkl. auffällige Kursbewegungen/boomende Firmen), Politik Deutschland und Welt, ganz unten Weiterbildung/Arbeitsmarkt. Seriöse Quellen (Tagesschau u. a.) per RSS über die Supabase-Funktion, kurze KI-Zusammenfassungen zum Lesen in der Bahn, wenn möglich mit Bild aus dem Artikel.
      Quellen-Wunsch: Handelsblatt, FAZ, Heise, Tagesschau „und die besten“ (seriös). Wichtig: Artikel wirklich aufbereiten, lesbar für Nicht-Fachleute: Fachbegriffe kurz erklären und Zahlen einordnen (z. B. „DAX +300 Punkte“ = wie viel Prozent, ist das viel, warum). Achtung Bezahlschranken (Handelsblatt/FAZ): per RSS oft nur Teaser; offen damit umgehen und frei lesbare Quellen ergänzen.
@@ -76,6 +76,14 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - Fett, Kohlenhydrate, Eiweiß und Omega-3 haben eigene Details (`openNutDetail` in `start.js`): Fettarten mit % der Kalorien, Omega-6 zu 3 (Ziel ≤ 5:1), ALA vs. EPA+DHA (250 mg, EFSA), KH-Qualität (≥ 1 g Ballaststoff je 10 g KH = hochwertig, Milchzucker extra), Eiweißqualität als Aminosäure-Score (WHO 2007).
 - `produkte.js`: Sammlung `foods` (Haushalt). Strichcode mit ZXing (`lib/zxing.min.js`, lädt erst bei Bedarf) → Open Food Facts; Foto der Nährwerttabelle → KI-Aufgabe `label`. Produkte werden beim Diktieren zuerst erkannt (`findMine`, auch „So sage ich dazu“ und Teilnamen ab 2 Wörtern) und der KI als Kontext mitgegeben. Einstellungen > Meine Lebensmittel. Knöpfe im Eintragen-Fenster und in der Nährwert-Suche.
 - Netz der Cloud-Umgebung: blsdb.de, USDA, Open Food Facts, heise, MRI sind freigegeben.
+
+## News (`news.js`, `supabase/functions/news`, `supabase-news.sql`, Ende Nov. 2026)
+
+- Die Datenbank ruft stündlich `news_tick()` auf (pg_cron `news-tick`, Minute 7); gebaut wird um 6, 12 und 17 Uhr (Berlin) oder wenn der Stand älter als 8 Std. ist, höchstens alle 20 Min. Öffnet jemand die News und der Stand ist älter als 3 Std., stößt `news_get` neu an.
+- Funktion `news` (Verify JWT an, Secret `ANTHROPIC_API_KEY`): RSS von Tagesschau (API mit ganzem Text), Spiegel, Zeit, Deutschlandfunk, heise, t3n, The Decoder, Handelsblatt und FAZ (Bezahlschranke, nur Anriss, höchstens eine je Bereich). Haiku wählt Bereich für Bereich aus (KI, Wirtschaft, Deutschland, Welt, Weiterbildung und Arbeitsmarkt), danach Zusammenfassung mit Einordnung und Begriffen. Börsenwerte (DAX, S&P 500, Euro in Dollar, Bitcoin) von Yahoo. Ergebnis über `news_save` mit Einmal-Token in `news_state` (nur Datenbank), Fehler stehen in `news_state.error`.
+- Haiku verschachtelt Listen manchmal (`picks:[{picks:[...]}]`), `flat()` fängt das ab.
+- App: Seite `PAGES.news`, Artikel als Sheet, Stand im Browser unter `ep_news`. Testdaten in `dev/news.json`.
+- App startet erst nach `DOMContentLoaded` (vorher blitzte beim Öffnen kurz die Rezeptseite auf, weil `start.js` noch nicht geladen war).
 
 ## Supplemente (`supplemente.js`)
 
