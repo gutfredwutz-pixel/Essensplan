@@ -72,6 +72,9 @@ async def main():
             await pg.click('.lr.ask >> text=Ja'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'supplemente2.png'))
             print('Jod mit Jodsalz heute:', await pg.evaluate("Math.round(dayIntake('Jakob', ymd(new Date())).tot[22])"))
             print('Kontext KI:', await pg.evaluate("mealContext(gapState())"))
+            print("Vorschläge je Nährstoff:", await pg.evaluate("Object.keys(REF).map(i=>REF[i][1]+': '+suggestFoods(+i).join(', ')).join('\\n')"))
+            print("Einkaufen:", await pg.evaluate("(s=>[jodTip(s),...buyCandidates(s)].filter(Boolean).map(f=>f.name+' ('+(f.txt||fitTxt(f))+')').join('; '))(gapState())"))
+            print("Liste:", await pg.evaluate("listNutrition().best.map(b=>b.n).join(', ')"))
             print('Fehler auf der Seite:', errs or 'keine'); print('Bilder in', OUT)
             await b.close()
     finally:

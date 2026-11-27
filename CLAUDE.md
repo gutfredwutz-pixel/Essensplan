@@ -52,6 +52,7 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - Start: „Bald essen“ (Vorrat, der Lücken der letzten 7 Tage füllt, dann frische Sachen ab 3 Tagen, eigenes Rezept mit den meisten Zutaten da, „Gericht-Ideen“) und „Einkaufen“ (Tippen setzt auf die Liste). Auswahl schrittweise (`greedy`), damit nicht drei Lebensmittel dieselbe Lücke füllen.
 - Rechnung ohne KI auf dem Gerät. Nur „Gericht-Ideen“ fragt die KI (Aufgabe `meal`), Ergebnis pro Tag und Vorrat in `localStorage` gemerkt. Ohne KI: passende eigene Rezepte.
 
+- Vorschläge nur aus Alltags-Lebensmitteln (`EVERYDAY` in `app.js`, plus was oft gekauft/gegessen wird), passend zur Ernährungsform (`dietOk`) und Portion (`portionOf`). Jakob fand Muscheln/Sardellen/Seelachs für Jod „Quatsch“: Jod fehlt → zuerst Jodsalz (wenn nicht schon im Profil). Vitamin D bekommt keine Lebensmittel-Vorschläge (`NO_FOOD_TIP`). Kauf-Vorschläge haben ein Plus rechts wie die Einkaufsliste; Zeilen, die etwas öffnen, haben ›.
 - Gewohnheiten (`habits()`): was in 30 Tagen oft gegessen, gekocht, gekauft wurde. Vertrautes wird bei „Einkaufen“ leicht bevorzugt und geht als Text an die KI (Gericht-Ideen); die KI hat kein Gedächtnis, sie weiß nur, was die App mitschickt.
 
 ## Gegessen eintragen (`openDiary` in `tagebuch.js`, Nov. 2026)
