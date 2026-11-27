@@ -112,7 +112,7 @@ const PICK_SYS = `Du stellst für Jakob, einen BWL-Studenten in München, die Na
 - deutschland: Politik in Deutschland.
 - welt: internationale Politik und große Ereignisse weltweit.
 - arbeit: Arbeitsmarkt, Berufseinstieg, Gehälter, Weiterbildung, Studium.
-Regeln: Relevanz und Tragweite zuerst, keine Boulevard-, Sport- oder Unfallmeldungen ohne politische Bedeutung, keine Liveblogs, keine Meinungsartikel, keine Ratgeber-, Gesundheits-, Psychologie- oder Lifestyle-Texte. Jede Meldung nur in einem Bereich. EU-Themen gehören zu welt, außer es geht vor allem um deutsche Politik. Jede Geschichte nur einmal: berichten mehrere Quellen darüber, nimm die Meldung einer frei lesbaren Quelle (Tagesschau, Spiegel, Zeit, heise, The Decoder, t3n, Deutschlandfunk) als Haupteintrag und nenne die anderen unter also. Meldungen mit (Abo) sind hinter einer Bezahlschranke: nimm sie nur als Haupteintrag, wenn es die Geschichte nirgends frei gibt, und höchstens eine pro Bereich. Halte dich an die angegebene Anzahl je Bereich, weniger nur, wenn es nichts Wichtiges gibt. Reihenfolge im Bereich: Wichtigstes zuerst.`;
+Regeln: Relevanz und Tragweite zuerst, keine Boulevard-, Sport- oder Unfallmeldungen ohne politische Bedeutung, keine Liveblogs, keine Meinungsartikel, keine Ratgeber-, Gesundheits-, Psychologie- oder Lifestyle-Texte, keine Podcasts, keine Tagesvorschauen (z. B. „Was Anleger heute beachten sollten“). Jede Meldung nur in einem Bereich. EU-Themen gehören zu welt, außer es geht vor allem um deutsche Politik. Jede Geschichte nur einmal, auch nicht in zwei Bereichen: berichten mehrere Quellen darüber, nimm die Meldung einer frei lesbaren Quelle (Tagesschau, Spiegel, Zeit, heise, The Decoder, t3n, Deutschlandfunk) als Haupteintrag und nenne die anderen unter also. Meldungen mit (Abo) sind hinter einer Bezahlschranke: nimm sie nur als Haupteintrag, wenn es die Geschichte nirgends frei gibt, und höchstens eine pro Bereich. Gib je Bereich bis zu 3 Meldungen mehr als die angegebene Anzahl an (als Reserve), Reihenfolge im Bereich: Wichtigstes zuerst.`;
 const PICK_TOOL = {
   name: 'auswahl', description: 'Ausgewählte Meldungen',
   input_schema: { type: 'object', properties: { picks: { type: 'array', items: { type: 'object', properties: {
@@ -151,11 +151,12 @@ async function build(prev: Record<string, any>) {
   const want = SECTIONS.map(([k, , n]) => `${k}: ${n}`).join(', ');
   const pk = await claude(PICK_SYS, PICK_TOOL, `Anzahl je Bereich: ${want}\n\nMeldungen (id | Quelle | Alter | Titel | Anriss):\n${list}`, 6000);
   const byId = new Map(all.map((i) => [i.id, i]));
-  const used = new Set<string>(), count: Record<string, number> = {};
+  const used = new Set<string>(), count: Record<string, number> = {}, paid: Record<string, number> = {};
   const picks = ((pk?.picks || []) as { id: string; sec: string; also?: string[] }[]).filter((p) => {
     const it = byId.get(p.id), max = (SECTIONS.find((s) => s[0] === p.sec) || [])[2] as number;
     if (!it || !max || used.has(it.url) || (count[p.sec] || 0) >= max) return false;
-    used.add(it.url); count[p.sec] = (count[p.sec] || 0) + 1; return true;
+    if (it.pay && paid[p.sec]) return false; // höchstens eine Bezahl-Meldung je Bereich
+    used.add(it.url); count[p.sec] = (count[p.sec] || 0) + 1; if (it.pay) paid[p.sec] = 1; return true;
   });
   if (!picks.length) throw new Error(`Auswahl leer (${all.length} Meldungen): ${JSON.stringify(pk).slice(0, 300)}`);
   const chosen = picks.map((p) => byId.get(p.id)!);
