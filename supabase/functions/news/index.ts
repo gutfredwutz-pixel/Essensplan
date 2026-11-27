@@ -102,7 +102,8 @@ async function claude(system: string, tool: Record<string, unknown>, text: strin
   const j = await r.json();
   if (!r.ok) throw new Error(j?.error?.message || 'KI-Fehler');
   const out = (j.content || []).find((c: { type: string }) => c.type === 'tool_use');
-  return out ? out.input : null;
+  if (!out) throw new Error(`KI ohne Ergebnis (${j.stop_reason})`);
+  return out.input;
 }
 
 const PICK_SYS = `Du stellst für Jakob, einen BWL-Studenten in München, die Nachrichten des Tages zusammen. Wähle aus der Liste die wichtigsten Meldungen für diese Bereiche:
@@ -156,6 +157,7 @@ async function build(prev: Record<string, any>) {
     if (!it || !max || used.has(it.url) || (count[p.sec] || 0) >= max) return false;
     used.add(it.url); count[p.sec] = (count[p.sec] || 0) + 1; return true;
   });
+  if (!picks.length) throw new Error(`Auswahl leer (${all.length} Meldungen): ${JSON.stringify(pk).slice(0, 300)}`);
   const chosen = picks.map((p) => byId.get(p.id)!);
   await Promise.all(chosen.filter((i) => !prev[i.url]).map(fullText));
   // neu zusammenfassen nur, was noch nicht im letzten Stand war
@@ -173,6 +175,7 @@ async function build(prev: Record<string, any>) {
     return { ...base, url: it.url, src: it.src, date: it.date, img: it.img || (old && old.img) || '', pay: it.pay, short: !it.text,
       also: (p.also || []).map((a) => byId.get(a)).filter(Boolean).filter((a) => a!.src !== it.src).map((a) => ({ src: a!.src, url: a!.url })) };
   }) })).filter((s) => s.items.length);
+  if (!sections.length) throw new Error('Keine Bereiche');
   return { at: new Date().toISOString(), markets: mk, sections };
 }
 
