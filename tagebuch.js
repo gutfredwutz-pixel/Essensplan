@@ -369,7 +369,7 @@ function openDiary(name, ds, back) {
       return saving; };
     if (now) return run(); saveT = setTimeout(run, 500); return saving;
   };
-  const txt = h('textarea', { class: 'dyin', rows: '1', placeholder: 'Was hast du gegessen?', enterkeyhint: 'done' }); txt.value = '';
+  const txt = h('textarea', { class: 'dyin', rows: '1', placeholder: 'Oder hier eintippen', enterkeyhint: 'done' }); txt.value = '';
   const grow = () => { txt.style.height = 'auto'; txt.style.height = txt.scrollHeight + 'px'; };
   const stTxt = h('span', { class: 'dyst' }); const stBtn = h('button', { class: 'dygo hidden', type: 'button' });
   const status = h('div', { class: 'dystat hidden' }, stTxt, stBtn);
@@ -439,7 +439,18 @@ function openDiary(name, ds, back) {
   txt.addEventListener('blur', () => { if (txt.value.trim() && !rec) evalText(); });
   // Aufnahme: Mikrofon im Feld, beim Zuhören ein klarer Fertig-Knopf
   let rec = null, chunks = [];
-  const mic = h('button', { class: 'dymic', type: 'button', 'aria-label': 'Einsprechen' }, ic('microphone'));
+  const mic = h('button', { class: 'dybig', type: 'button', 'aria-label': 'Einsprechen' }, h('i', { class: 'r1' }), h('i', { class: 'r2' }), ic('microphone'));
+  const micLbl = h('div', { class: 'dybiglbl', text: 'Tippen und sprechen' });
+  // Ringe folgen der Lautstärke der Stimme (nur während der Aufnahme)
+  let meter = null;
+  const startMeter = stream => {
+    try {
+      const ac = new (window.AudioContext || window.webkitAudioContext)(); const an = ac.createAnalyser(); an.fftSize = 512;
+      ac.createMediaStreamSource(stream).connect(an); const buf = new Uint8Array(an.fftSize); let lv = 0, raf = 0;
+      const tick = () => { an.getByteTimeDomainData(buf); let sum = 0; for (const b of buf) { const x = (b - 128) / 128; sum += x * x; } const v = Math.min(1, Math.sqrt(sum / buf.length) * 5); lv = v > lv ? v : lv * 0.85 + v * 0.15; mic.style.setProperty('--lv', lv.toFixed(3)); raf = requestAnimationFrame(tick); };
+      tick(); meter = () => { cancelAnimationFrame(raf); ac.close().catch(() => { }); mic.style.setProperty('--lv', '0'); meter = null; };
+    } catch (err) { meter = null; }
+  };
   const stopRec = () => { if (rec && rec.state !== 'inactive') rec.stop(); };
   mic.addEventListener('click', async () => {
     if (rec) return stopRec();
@@ -449,7 +460,7 @@ function openDiary(name, ds, back) {
       chunks = []; rec = new MediaRecorder(stream);
       rec.ondataavailable = ev => ev.data.size && chunks.push(ev.data);
       rec.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop()); rec = null; mic.classList.remove('rec'); mic.replaceChildren(ic('microphone'));
+        stream.getTracks().forEach(t => t.stop()); if (meter) meter(); rec = null; mic.classList.remove('rec'); micLbl.textContent = 'Tippen und sprechen';
         const blob = new Blob(chunks, { type: chunks[0] ? chunks[0].type : 'audio/mp4' });
         setStatus('Schreibe auf, was du gesagt hast …');
         try {
@@ -458,8 +469,8 @@ function openDiary(name, ds, back) {
           else setStatus('Nichts verstanden. Tippe nochmal aufs Mikrofon.');
         } catch (err) { console.error(err); setStatus('Konnte die Aufnahme nicht auswerten. Tippe es sonst ein.'); }
       };
-      rec.start(); mic.classList.add('rec'); mic.replaceChildren(ic('stop'));
-      setStatus('Ich höre zu. Sag alles, was du gegessen hast.', 'Fertig', stopRec);
+      rec.start(); startMeter(stream); mic.classList.add('rec'); micLbl.textContent = 'Ich höre zu. Fertig? Nochmal tippen.';
+      setStatus('');
     } catch (err) { toast('Kein Zugriff aufs Mikrofon'); }
   });
   drawPlans(); drawList(); drawSum();
@@ -468,7 +479,7 @@ function openDiary(name, ds, back) {
   const go = n => { flush(); openDiary(name, ymd(addDays(dt, n)), back); };
   openSheet('Was hast du gegessen?', [h('div', { class: 'dy' },
     h('div', { class: 'pnav' }, h('button', { class: 'ib', 'aria-label': 'Tag davor', onclick: () => go(-1) }, ic('chevron-left')), h('div', { text: dlabel }), h('button', { class: 'ib', 'aria-label': 'Tag danach', onclick: () => go(1) }, ic('chevron-right'))),
-    h('div', { class: 'dygrp dyadd' }, h('div', { class: 'dyline' }, txt, mic), status),
+    h('div', { class: 'dygrp dyadd' }, h('div', { class: 'dybigwrap' }, mic, micLbl), h('div', { class: 'dyline' }, txt), status),
     listBox,
     planBox,
     sumBox)]);

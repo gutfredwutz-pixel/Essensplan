@@ -53,7 +53,7 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 ## Gegessen eintragen (`openDiary` in `tagebuch.js`, Nov. 2026)
 
 - Kein Speichern-Knopf: jede Änderung wird nach 0,5 s gespeichert, beim Schließen/Tag-Wechsel wird Getipptes noch ausgewertet und gespeichert. Unten steht „Gespeichert“ bzw. „Nicht gespeichert, keine Verbindung“.
-- Mikrofon grau im Feld; beim Zuhören Hinweis plus weißer Text-Knopf „Fertig“; danach „Verstanden: …“ mit dem erkannten Satz. Neue Einträge kommen oben in die Liste.
+- Großes buntes Mikrofon (Jakob mag es, nicht entfernen), beim Zuhören wachsen zwei Ringe mit der Lautstärke der Stimme (`--lv`, Analyser), darunter „Ich höre zu. Fertig? Nochmal tippen.“; danach „Verstanden: …“ mit dem erkannten Satz. Neue Einträge kommen oben in die Liste.
 - Mischungen („Kokos-Rosinen-Mix“, „Whey Shake“) werden in Einzelteile zerlegt (`findFoods`), Bindestriche zählen als Leerzeichen. Die KI (`diary`) ist ebenfalls angewiesen, Gemischtes aufzuteilen.
 - Eigene Ergänzungen außerhalb des BLS stehen in `diaryfoods.js` (u. a. Whey-Protein mit Durchschnittswerten) und erscheinen auch in der Lebensmittel-Suche.
 - Essen > Woche hat oben „Heute gegessen“. Umschalter Woche/Rezepte/Vorrat tauscht die Seite ohne Wischeffekt (`switchNow`); Wischen mit dem Finger bleibt.
