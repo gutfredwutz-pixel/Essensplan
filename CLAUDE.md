@@ -56,6 +56,8 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - Großes buntes Mikrofon (Jakob mag es, nicht entfernen), beim Zuhören wachsen zwei Ringe mit der Lautstärke der Stimme (`--lv`, Analyser), darunter „Ich höre zu. Fertig? Nochmal tippen.“; danach „Verstanden: …“ mit dem erkannten Satz. Neue Einträge kommen oben in die Liste.
 - Mischungen („Kokos-Rosinen-Mix“, „Whey Shake“) werden in Einzelteile zerlegt (`findFoods`), Bindestriche zählen als Leerzeichen. Die KI (`diary`) ist ebenfalls angewiesen, Gemischtes aufzuteilen.
 - Eigene Ergänzungen außerhalb des BLS stehen in `diaryfoods.js` (u. a. Whey-Protein mit Durchschnittswerten) und erscheinen auch in der Lebensmittel-Suche.
+- Unten im Eintragen-Fenster „Nährstoffe an diesem Tag“ → Statistik „Tag“ für dieses Datum (`statDay` = Tage zurück, Pfeile `dayNav`). Im Tag-Modus stehen Kalorien/Nährstoffe zuerst.
+- Kalorien-/Nährstoff-Schnitt zählt nur Tage mit Einträgen (`dayIntake().logged` = Essen oder Plan-Anteil eingetragen); nur geplante Tage zählen nicht mehr.
 - Essen > Woche hat oben „Heute gegessen“. Umschalter Woche/Rezepte/Vorrat tauscht die Seite ohne Wischeffekt (`switchNow`); Wischen mit dem Finger bleibt.
 
 ## Supplemente (`supplemente.js`)

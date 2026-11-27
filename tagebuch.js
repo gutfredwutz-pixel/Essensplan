@@ -74,12 +74,13 @@ function dayIntake(name, ds) {
   const pf = profiles[name];
   if (counted && pf) for (const s of pf.supps || []) add(s.label + ' (Supplement)', suppVec(s), 1);
   const sv = counted && window.saltVec ? saltVec(pf) : null; if (sv) add('Jodsalz beim Kochen', sv, 1);
-  return { tot, src, logged: !!e, counted };
+  const logged = !!e && (((e.foods || []).length > 0) || Object.keys(e.plans || {}).length > 0);
+  return { tot, src, logged, counted };
 }
 function rangeData(name, days) {
   const total = new Array(24).fill(0), src = {}; let n = 0, logged = 0; const per = {};
   for (const ds of days) {
-    const d = dayIntake(name, ds); per[ds] = d; if (!d.counted) continue; n++; if (d.logged) logged++;
+    const d = dayIntake(name, ds); per[ds] = d; if (!d.logged) continue; n++; logged++;
     for (let i = 0; i < 24; i++) total[i] += d.tot[i];
     for (const i in d.src) for (const k in d.src[i]) { (src[i] = src[i] || {}); src[i][k] = (src[i][k] || 0) + d.src[i][k]; }
   }
@@ -482,6 +483,7 @@ function openDiary(name, ds, back) {
     h('div', { class: 'dygrp dyadd' }, h('div', { class: 'dybigwrap' }, mic, micLbl), h('div', { class: 'dyline' }, txt), status),
     listBox,
     planBox,
-    sumBox)]);
+    sumBox,
+    h('div', { class: 'ln dylink' }, h('div', { class: 'lr tap', onclick: () => { flush(); closeSheet(); statRange = 'day'; statDay = Math.round((parseYmd(today) - parseYmd(ds)) / 864e5); if (tab === 'stat') { renderHead(); render(); } else switchNow('stat'); } }, h('span', { class: 'tx', text: 'Nährstoffe an diesem Tag' }), h('span', { class: 'chev', text: '›' }))))]);
   $('#sheet .xclose').onclick = () => { flush(); closeSheet(); back(); };
 }
