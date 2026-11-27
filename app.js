@@ -922,7 +922,8 @@ function ideasBlock() {
   const rows = best.map(b => {
     // andere Lebensmittel, die dieselben Lücken schließen
     const alt = new Map();
-    b.rows.forEach(r => (GOOD_SRC[r.i] || []).forEach(([n]) => { if (shown.has(canon(n)) || onListOpen(n) || (typeof inPantry === 'function' && inPantry(n))) return; const a = alt.get(n) || { n, rows: [] }; a.rows.push(r); alt.set(n, a); }));
+    const every = new Set(EVERYDAY.map(canon));
+    b.rows.forEach(r => (GOOD_SRC[r.i] || []).forEach(([n]) => { if (!every.has(canon(n)) || !dietOk(n) || shown.has(canon(n)) || onListOpen(n) || (typeof inPantry === 'function' && inPantry(n))) return; const a = alt.get(n) || { n, rows: [] }; a.rows.push(r); alt.set(n, a); }));
     const alts = [...alt.values()].sort((x, y) => y.rows.length - x.rows.length).slice(0, 4);
     const isOpen = openIdeas.has(b.n);
     const box = h('div', { class: 'slalts' + (isOpen ? '' : ' hidden') }, ...alts.map(a => h('div', { class: 'slidea alt' }, h('div', { class: 'slname' }, h('span', { class: 'slt', text: a.n }), slWhy(a.rows, d)), slAddBtn(a.n))));
@@ -971,7 +972,8 @@ function listNutrition() {
   const low = rows.filter(r => r.pct < 60).sort((x, y) => x.pct - y.pct);
   const onList = n => items.some(it => canon(it.name) === canon(n));
   const score = new Map();
-  low.forEach(r => (GOOD_SRC[r.i] || []).forEach(([n], j) => { if (onList(n) || (typeof inPantry === 'function' && inPantry(n))) return; const s = score.get(n) || { n, w: 0, for: [], rows: [] }; s.w += (6 - Math.min(5, j)) * (1 + (60 - r.pct) / 60); s.for.push(r.name); s.rows.push(r); score.set(n, s); }));
+  const every = new Set(EVERYDAY.map(canon)), jodOk = (pf || {}).jodsalz !== 'ja';
+  low.filter(r => !NO_FOOD_TIP.has(r.i)).forEach(r => (GOOD_SRC[r.i] || []).forEach(([n], j) => { if (!(every.has(canon(n)) || (n === 'Jodsalz' && jodOk)) || !dietOk(n) || onList(n) || (typeof inPantry === 'function' && inPantry(n))) return; const s = score.get(n) || { n, w: 0, for: [], rows: [] }; s.w += (6 - Math.min(5, j)) * (1 + (60 - r.pct) / 60); s.for.push(r.name); s.rows.push(r); score.set(n, s); }));
   const best = [...score.values()].sort((x, y) => y.w - x.w).slice(0, 8);
   return { cov, rows, low, best, counted, who, nDays: days.length, hasProfile: !!pf };
 }
@@ -1821,27 +1823,57 @@ const GOOD_SRC = {
   12: [['Milch', ''], ['Joghurt', ''], ['Champignons', ''], ['Mandeln', ''], ['Eier', ''], ['Brokkoli', '']],
   13: [['Kichererbsen', ''], ['Lachs', ''], ['Hähnchenbrust', ''], ['Bananen', ''], ['Walnüsse', ''], ['Kartoffeln', '']],
   14: [['Spinat', ''], ['Feldsalat', ''], ['Brokkoli', ''], ['Kichererbsen', ''], ['Linsen', ''], ['Rosenkohl', '']],
-  15: [['Lachs', ''], ['Eier', ''], ['Rindfleisch', 'mager'], ['Joghurt', ''], ['Emmentaler', ''], ['Hering', '']],
+  15: [['Lachs', ''], ['Eier', ''], ['Rinderhack', ''], ['Joghurt', ''], ['Emmentaler', ''], ['Hering', '']],
   16: [['Paprika rot', 'mehr als Orangen'], ['Brokkoli', ''], ['Kiwis', ''], ['Orangen', ''], ['Erdbeeren', ''], ['Rosenkohl', '']],
   17: [['Kartoffeln', ''], ['Bananen', ''], ['Spinat', ''], ['Weiße Bohnen', ''], ['Avocado', ''], ['Aprikosen getrocknet', '']],
   18: [['Milch', ''], ['Joghurt', ''], ['Emmentaler', 'sehr viel'], ['Grünkohl', ''], ['Brokkoli', ''], ['Sesam', '']],
   19: [['Haferflocken', ''], ['Kürbiskerne', 'sehr viel'], ['Mandeln', ''], ['Vollkornbrot', ''], ['Spinat', ''], ['Bananen', '']],
-  20: [['Linsen', 'mit Vitamin C essen'], ['Haferflocken', ''], ['Rindfleisch', 'gut aufnehmbar'], ['Kürbiskerne', ''], ['Hirse', ''], ['Spinat', '']],
-  21: [['Rindfleisch', ''], ['Haferflocken', ''], ['Kürbiskerne', ''], ['Linsen', ''], ['Emmentaler', ''], ['Cashews', '']],
-  22: [['Seelachs', 'beste Quelle'], ['Kabeljau', ''], ['Jodsalz', ''], ['Milch', ''], ['Joghurt', ''], ['Eier', '']],
+  20: [['Linsen', 'mit Vitamin C essen'], ['Haferflocken', ''], ['Rinderhack', 'gut aufnehmbar'], ['Kürbiskerne', ''], ['Hirse', ''], ['Spinat', '']],
+  21: [['Rinderhack', ''], ['Haferflocken', ''], ['Kürbiskerne', ''], ['Linsen', ''], ['Emmentaler', ''], ['Cashews', '']],
+  22: [['Jodsalz', 'am einfachsten'], ['Milch', ''], ['Joghurt', ''], ['Eier', ''], ['Seelachs', 'Seefisch'], ['Kabeljau', '']],
   23: [['Lachs', 'EPA und DHA'], ['Hering', ''], ['Makrele', ''], ['Leinöl', 'pflanzlich'], ['Walnüsse', ''], ['Leinsamen', '']],
 };
+/* Vorschläge nur aus Alltags-Lebensmitteln (normaler Supermarkt), dazu was ihr ohnehin oft esst oder kauft.
+   Keine Exoten wie Muscheln oder Sardellen, nur weil sie pro 100 g viel von etwas haben. */
+const EVERYDAY = ['Haferflocken', 'Vollkornbrot', 'Naturreis', 'Vollkornnudeln', 'Kartoffeln', 'Süßkartoffeln', 'Linsen', 'Kichererbsen', 'Kidneybohnen', 'Erbsen', 'Tofu', 'Quinoa',
+  'Magerquark', 'Skyr', 'Joghurt', 'Milch', 'Hüttenkäse', 'Emmentaler', 'Gouda', 'Mozzarella', 'Eier', 'Hähnchenbrust', 'Putenbrust', 'Rinderhack', 'Lachs', 'Thunfisch', 'Seelachs',
+  'Brokkoli', 'Spinat', 'Paprika rot', 'Karotten', 'Tomaten', 'Zucchini', 'Champignons', 'Feldsalat', 'Rucola', 'Grünkohl', 'Rosenkohl', 'Blumenkohl', 'Erbsen', 'Edamame',
+  'Bananen', 'Äpfel', 'Orangen', 'Kiwis', 'Himbeeren', 'Heidelbeeren', 'Mandeln', 'Walnüsse', 'Haselnüsse', 'Kürbiskerne', 'Sonnenblumenkerne', 'Leinsamen', 'Erdnüsse', 'Avocado', 'Rapsöl'];
+// Für diese Nährstoffe ist ein Lebensmittel nicht die richtige Antwort (Sonne, Jodsalz, Supplement)
+const NO_FOOD_TIP = new Set([9]);
+function dietOk(name) {
+  const pf = profiles[me()] || {}, cat = catOf(canonName(name));
+  if (isNever(name)) return false;
+  if ((pf.diet === 'vegetarisch' || pf.diet === 'vegan') && cat === 'Fleisch & Fisch') return false;
+  if (pf.diet === 'vegan' && (cat === 'Milch & Eier' || /honig|quark|skyr|joghurt|kase|milch|eier/.test(canon(name)))) return false;
+  return true;
+}
+// übliche Portion in Gramm
+function portionOf(name) {
+  const c = canon(name), cat = catOf(canonName(name));
+  if (/ol$/.test(c)) return 10;
+  if (/nuss|nusse|kerne|samen|mandel|cashew/.test(c)) return 30;
+  if (/milch$/.test(c)) return 250;
+  if (cat === 'Milch & Eier' && /kase|emmentaler|gouda|feta|parmesan/.test(c) && !/hutten/.test(c)) return 40;
+  if (c === 'haferflocken') return 60;
+  if (cat === 'Nudeln, Reis & Getreide') return 75;
+  if (PIECE[c]) return Math.min(200, Math.max(PIECE[c], 80));
+  return 150;
+}
 function suggestFoods(i) {
-  const cand = [];
-  for (const b of BASE) {
-    if (!['Obst & Gemüse', 'Nudeln, Reis & Getreide', 'Milch & Eier', 'Fleisch & Fisch', 'Vegetarisch & Vegan', 'Backen & Süßes'].includes(b.cat)) continue;
-    if (HERBS.test(b.key) || /^tk-/.test(b.key) || /schokolade|kuvertur|zucker|kekse|gummi|streusel|sahnesteif|gelatine|pudding|eis$/.test(b.key)) continue;
-    const v = window.NUTRI && window.NUTRI[b.key]; if (!v || v[0] < 15) continue;
-    cand.push({ name: b.name, d: v[i] / v[0] * 100 + v[i] * 0.02 });
+  if (i === 22 && (profiles[me()] || {}).jodsalz !== 'ja') return ['Jodsalz', ...suggestFoods2(i).slice(0, 4)];
+  return suggestFoods2(i);
+}
+function suggestFoods2(i) {
+  const ref = (REF[i] || [1])[0];
+  const out = [];
+  for (const n of [...new Set(EVERYDAY)]) {
+    if (!dietOk(n)) continue;
+    const v = nutOf({ name: n }); if (!v || !v[i]) continue;
+    const share = v[i] * portionOf(n) / 100 / ref;
+    out.push({ n, s: share - v[0] * portionOf(n) / 100 / 4000 });
   }
-  const picked = []; const out = [];
-  for (const c of cand.sort((a, b) => b.d - a.d)) { const k = norm(c.name).replace(/n$/, ''); if (picked.some(p => p.includes(k) || k.includes(p) || p.split(' ')[0] === k.split(' ')[0])) continue; picked.push(k); out.push(c.name); if (out.length >= 6) break; }
-  return out;
+  return out.sort((a, b) => b.s - a.s).filter(x => x.s > 0.05).slice(0, 6).map(x => x.n);
 }
 function bar(pct) { return h('div', { class: 'rbar' }, h('i', { style: `width:${Math.min(100, pct)}%` })); }
 /* ============ Abgleich mit der Einkaufsliste (ohne KI) ============ */

@@ -48,7 +48,7 @@ function pantryRow(p) {
   return lrow({ class: 'lr tap', onclick: () => openPantryItem(p) },
     h('span', { class: 'tx', text: p.name }),
     p.qty ? h('span', { class: 'n', text: p.qty }) : null,
-    old ? h('span', { class: 'n old', text: agoTxt(d) }) : null);
+    old ? h('span', { class: 'n old', text: agoTxt(d) }) : null, h('span', { class: 'chev', text: '›' }));
 }
 PAGES.pan = function () {
   const cart = items.filter(i => i.checked);
@@ -95,11 +95,11 @@ function gapState() {
 }
 // Wie gut passt ein Lebensmittel (eine übliche Portion) zu den Lücken?
 function foodFit(name, st) {
-  const v = nutOf({ name }); if (!v || isNever(name) || isSpice(name)) return null;
-  const c = canon(name), cat = catOf(canonName(name));
-  const g = PIECE[c] ? Math.max(PIECE[c], 80) : /nuss|nusse|kerne|samen|mandel|cashew/.test(c) ? 30 : cat === 'Nudeln, Reis & Getreide' ? 75 : cat === 'Milch & Eier' && /kase|emmentaler|gouda|feta|parmesan/.test(c) ? 40 : 150;
+  const v = nutOf({ name }); if (!v || !dietOk(name) || isSpice(name)) return null;
+  const g = portionOf(name);
   let score = 0; const parts = [];
   for (const l of st.lack) {
+    if (NO_FOOD_TIP.has(l.i)) continue;
     const share = (v[l.i] || 0) * g / 100 / st.refs[l.i][0]; if (share <= 0) continue;
     score += l.gap * Math.min(share, l.gap); if (share >= 0.12) parts.push({ nm: l.nm, pct: Math.round(share * 100) });
   }
@@ -110,9 +110,22 @@ function foodFit(name, st) {
 }
 const fitTxt = f => f.parts.slice(0, 2).map(x => x.nm).join(', ');
 function buyCandidates(st) {
-  const names = new Set();
-  for (const l of st.lack) { for (const [n] of (GOOD_SRC[l.i] || [])) names.add(n); for (const n of suggestFoods(l.i)) names.add(n); }
+  // nur Alltägliches: feste Alltagsliste, gute Quellen daraus und was ihr ohnehin oft kauft oder esst
+  const fam = habits().fam, every = new Set(EVERYDAY.map(canon)), names = new Set();
+  const ok = n => every.has(canon(n)) || (fam.get(canon(n)) || 0) >= 2;
+  for (const l of st.lack) {
+    if (NO_FOOD_TIP.has(l.i)) continue;
+    for (const [n] of (GOOD_SRC[l.i] || [])) if (ok(n)) names.add(n);
+    for (const n of suggestFoods2(l.i)) names.add(n);
+  }
+  for (const [k, c] of fam) if (c >= 2) { const v = nutOf({ name: k }); if (v) names.add(k.replace(/^./, x => x.toUpperCase())); }
   return greedy([...names].filter(n => !inPantry(n) && !onShopList(n)), st, 8);
+}
+// Jod fehlt und kein Jodsalz im Haus: das ist der einfachste Tipp, kein Fisch
+function jodTip(st) {
+  const pf = profiles[me()] || {};
+  if (pf.jodsalz === 'ja' || !st.lack.some(l => l.i === 22) || inPantry('Jodsalz') || onShopList('Jodsalz')) return null;
+  return { name: 'Jodsalz', txt: 'statt normalem Salz, für Jod' };
 }
 // Nacheinander auswählen: nach jedem Treffer gilt dessen Lücke als kleiner, damit nicht dreimal dasselbe kommt
 function greedy(names, st, n) {
@@ -151,11 +164,11 @@ function foodTips() {
   if (!me()) return [];
   const st = gapState(); if (!st) return [];
   const out = [];
-  const soon = eatSoon(st).slice(0, 3), rec = pantryRecipes()[0], buy = st.none ? [] : buyCandidates(st).slice(0, 3);
+  const soon = eatSoon(st).slice(0, 3), rec = pantryRecipes()[0], buy = st.none ? [] : [jodTip(st), ...buyCandidates(st)].filter(Boolean).slice(0, 3);
   const meta = st.kcalOpen != null && st.kcalOpen >= 150 ? `heute noch ${de(st.kcalOpen)} kcal` : null;
   const soonRows = soon.map(x => lrow({ class: 'lr tap', onclick: () => openPantryItem(x.p) },
-    h('span', { class: 'tx', text: x.p.name }), h('span', { class: 'n', text: x.f && x.f.parts.length ? fitTxt(x.f) : agoTxt(x.d) })));
-  if (rec) soonRows.push(lrow({ class: 'lr tap', onclick: () => openRecipeView(rec.r) }, h('span', { class: 'tx', text: rec.r.title }), h('span', { class: 'n', text: `${rec.have} von ${rec.n} Zutaten da` })));
+    h('span', { class: 'tx', text: x.p.name }), h('span', { class: 'n', text: x.f && x.f.parts.length ? fitTxt(x.f) : agoTxt(x.d) }), h('span', { class: 'chev', text: '›' })));
+  if (rec) soonRows.push(lrow({ class: 'lr tap', onclick: () => openRecipeView(rec.r) }, h('span', { class: 'tx', text: rec.r.title }), h('span', { class: 'n', text: `${rec.have} von ${rec.n} Zutaten da` }), h('span', { class: 'chev', text: '›' })));
   soonRows.push(lrow({ class: 'lr tap', onclick: () => openMealIdeas() }, h('span', { class: 'tx', text: 'Gericht-Ideen' }), h('span', { class: 'n', text: pantry.length ? 'mit deinem Vorrat' : '' }), h('span', { class: 'chev', text: '›' })));
   if (!pantry.length) soonRows.unshift(lrow({ class: 'lr tap', onclick: () => goTab('pan', 1) }, h('span', { class: 'add', text: 'Vorrat eintragen, dann passen die Vorschläge besser' })));
   out.push(secHead('Bald essen', meta), h('div', { class: 'ln tipl' }, ...soonRows));
@@ -163,11 +176,10 @@ function foodTips() {
   return out;
 }
 function buyRow(f) {
-  const ck = h('button', { class: 'ckb' + (onShopList(f.name) ? ' x' : ''), 'aria-label': 'Auf die Einkaufsliste' });
-  const n = h('span', { class: 'n', text: fitTxt(f) });
-  const add = () => { if (ck.classList.contains('x')) return; ck.classList.add('x'); n.textContent = 'auf der Liste'; addItem(f.name); };
-  ck.onclick = add;
-  return lrow({ class: 'lr tap', onclick: e => { if (e.target !== ck) add(); } }, ck, h('span', { class: 'tx', text: f.name }), n);
+  const n = h('span', { class: 'n', text: f.txt || fitTxt(f) });
+  const b = slAddBtn(f.name);
+  b.addEventListener('click', () => { n.textContent = 'auf der Liste'; });
+  return lrow({ class: 'lr tap buy', onclick: e => { if (e.target.closest('.sladdb')) return; b.click(); } }, h('span', { class: 'tx', text: f.name }), n, b);
 }
 
 /* ---------- Gericht-Ideen (KI) ---------- */

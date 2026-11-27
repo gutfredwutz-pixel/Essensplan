@@ -136,7 +136,7 @@ function mealTip() {
   const refs = allRefs(needsOf(pf)), kcal = Math.round(refs[0][0] - d.tot[0]), prot = Math.round(refs[1][0] - d.tot[1]);
   if (kcal < 150) return [secHead('Vorschlag'), h('div', { class: 'ln pad tip' }, h('div', { class: 'tipt', text: 'Kalorien sind für heute gedeckt.' }))];
   // welcher Nährstoff fehlt heute am meisten (ohne Makros und ohne „nicht zu viel“)
-  let worst = null; for (const [, keys] of NUT_GROUPS) for (const i of keys) { if (MACRO.has(i) || LIMIT_KEYS.has(i) || i === 1 || !refs[i]) continue; const p = d.tot[i] / refs[i][0]; if (!worst || p < worst.p) worst = { i, p, nm: refs[i][1] }; }
+  let worst = null; for (const [, keys] of NUT_GROUPS) for (const i of keys) { if (MACRO.has(i) || LIMIT_KEYS.has(i) || NO_FOOD_TIP.has(i) || i === 1 || !refs[i]) continue; const p = d.tot[i] / refs[i][0]; if (!worst || p < worst.p) worst = { i, p, nm: refs[i][1] }; }
   const foods = [...new Set([...(prot > 15 ? suggestFoods(1).slice(0, 2) : []), ...(worst ? suggestFoods(worst.i).slice(0, 3) : [])])].slice(0, 4);
   return [secHead('Vorschlag'), h('div', { class: 'ln pad tip' },
     h('div', { class: 'tipt' }, `Heute noch offen: ${de(kcal)} kcal` + (prot > 5 ? ` und ${de(prot)} g Eiweiß` : '')),
