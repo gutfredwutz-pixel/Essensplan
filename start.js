@@ -283,6 +283,10 @@ function openNutDetail(i, ctx) {
   if (i === 2) {
     const sfa = avg(6), mufa = avg(24), pufa = avg(25), n6 = avg(26), n3 = avg(23), ratio = n3 > 0 ? n6 / n3 : null;
     out.push(h('p', { class: 'slinfo', text: `Fett ${days}: ${g1(avg(2))} g, das sind ${fmtInt(pe(2))} % deiner Kalorien. Empfohlen sind etwa 30 %. Wichtiger als die Menge ist, welche Fette es sind.` }));
+    const fq = fatQuality(d, ctx.refs);
+    out.push(secHead('Einschätzung'), h('div', { class: 'ln' },
+      nutLine('Gute Fette', `${g1(fq.healthy)} von ${g1(fq.target)} g`, fq.hp, fq.hSt, 'Einfach und mehrfach ungesättigte Fette, etwa zwei Drittel deines Fettbedarfs.'),
+      nutLine('Gesättigte Fette', `${g1(fq.sfaPct)} % der Kalorien`, Math.min(100, fq.sfaPct / 10 * 100), fq.sfaSt, 'Höchstens 10 %. Grün ist Fett nur, wenn beides passt: genug gute und nicht zu viele gesättigte.')));
     out.push(secHead('Fettarten'), h('div', { class: 'ln' },
       nutLine('Gesättigt', `${g1(sfa)} g / ${fmtInt(pe(6))} %`, pe(6) / 10 * 100, lvl(pe(6) / 10 * 100, true), `Höchstens 10 % der Kalorien (DGE). Vor allem in Butter, Käse, Wurst, Kokosfett. Bei dir vor allem aus: ${topSrc(d, 6) || '-'}`),
       nutLine('Einfach ungesättigt', `${g1(mufa)} g / ${fmtInt(pe(24))} %`, pe(24) / 10 * 100, lvl(pe(24) / 10 * 100), `Gut, gern der größte Teil des Fetts, etwa 10 % der Kalorien oder mehr. Olivenöl, Rapsöl, Nüsse, Avocado. Bei dir vor allem aus: ${topSrc(d, 24) || '-'}`),
@@ -351,6 +355,15 @@ function openNutDetail(i, ctx) {
   openSheet({ 2: 'Fett', 23: 'Omega-3', 3: 'Kohlenhydrate', 1: 'Eiweiß' }[i] || (ctx.refs[i] || REF[i] || [0, 'Nährstoff'])[1], out);
   if (ctx.back) sheetBack = ctx.back;
 }
+const worst = sts => sts.includes('r') ? 'r' : sts.includes('y') ? 'y' : 'g';
+// Fett gut = genug ungesättigte Fette (etwa zwei Drittel des Fettbedarfs) und gesättigte höchstens 10 % der Kalorien
+function fatQuality(d, refs) {
+  const n = Math.max(1, d.n), kcal = Math.max(1, d.total[0] / n), fatRef = (refs[2] || [70])[0];
+  const healthy = ((d.total[24] || 0) + (d.total[25] || 0)) / n, target = fatRef * 2 / 3, hp = Math.round(healthy / target * 100);
+  const sfaPct = (d.total[6] || 0) / n * 9 / kcal * 100;
+  const hSt = hp >= 80 ? 'g' : hp >= 50 ? 'y' : 'r', sfaSt = sfaPct <= 10 ? 'g' : sfaPct <= 12.5 ? 'y' : 'r';
+  return { hp, healthy, target, sfaPct, hSt, sfaSt, st: worst([hSt, sfaSt]) };
+}
 function nutStats(days) {
   const name = me(), pf = profiles[name];
   if (!pf) return [secHead('Nährstoffe'), lines(lrow({ class: 'lr tap', onclick: () => openProfileEdit(name, render) }, h('span', { class: 'add', text: 'Angaben machen, damit dein Bedarf berechnet wird' })))];
@@ -364,16 +377,29 @@ function nutStats(days) {
   const k = rows[0], out = [];
   out.push(secHead('Kalorien', days.length === 1 ? 'antippen zum Ändern' : d.n === 1 ? 'an 1 Tag eingetragen' : `Schnitt aus ${d.n} eingetragenen Tagen`));
   out.push(h('div', { class: 'ln pad kcal' + (days.length === 1 ? ' tap' : ''), onclick: days.length === 1 ? () => openDiary(name, days[0], render) : null }, h('div', { class: 'big' }, h('b', { text: `${de(k.v)} kcal` }), h('span', { text: `von ${de(k.ref)} am Tag` })), h('span', { class: 'mb wide ' + k.st }, h('i', { style: `width:${Math.min(100, k.pct)}%` }))));
-  const lack = Object.values(rows).filter(r => !MACRO.has(r.i) && !LIMIT_KEYS.has(r.i) && r.i !== 1).sort((a, b) => a.pct - b.pct).slice(0, 5);
-  const groups = [['Fehlt am meisten', lack, 'Die Nährstoffe, von denen du im Schnitt am wenigsten hattest.'], ['Makros', [1, 3, 2].map(i => rows[i]).filter(Boolean)]];
-  for (const [title, keys] of NUT_GROUPS) { const rs = keys.map(i => rows[i]).filter(r => r && !MACRO.has(r.i) && r.i !== 1); if (rs.length) groups.push([title, rs]); }
-  out.push(secHead('Nährstoffe'));
+  // Makros: bewertet werden nur Eiweiß und gute Fette; Kohlenhydrate und Kalorien bestimmen die Farbe nicht
+  const fq = fatQuality(d, refs);
+  if (rows[1]) { rows[1].st = rows[1].pct >= 90 ? 'g' : rows[1].pct >= 70 ? 'y' : 'r'; }
+  if (rows[2]) { rows[2] = { ...rows[2], st: fq.st, pct: fq.hp }; }
+  if (rows[3]) rows[3].st = 'n';
+  const macroSt = worst([rows[1] && rows[1].st, fq.st]);
+  const macroTxt = macroSt === 'g' ? 'passt' : rows[1] && rows[1].st !== 'g' && rows[1].st === worst([rows[1].st, fq.st]) ? 'Eiweiß knapp' : fq.sfaSt !== 'g' && fq.sfaSt === fq.st ? 'viel gesättigtes Fett' : 'wenig gute Fette';
+  const lack = Object.values(rows).filter(r => !MACRO.has(r.i) && !LIMIT_KEYS.has(r.i) && r.i !== 1 && r.i !== 4).sort((a, b) => a.pct - b.pct).slice(0, 5);
+  const grp = keys => keys.map(i => rows[i]).filter(Boolean);
+  const vit = NUT_GROUPS.find(g => g[0] === 'Vitamine')[1], min = NUT_GROUPS.find(g => g[0] === 'Mineralstoffe')[1];
   const ctx = { d, refs };
-  out.push(h('div', { class: 'ln menu' }, ...groups.map(([title, rs, note]) => lrow({ class: 'lr tap', onclick: () => openNutList(title, rs, note, ctx) },
-    h('span', { class: 'tx', text: title }),
-    title === 'Fehlt am meisten' ? h('span', { class: 'n', text: rs[0] ? rs[0].nm : '' }) : (() => { const gp = groupPct(rs), lim = rs.every(r => LIMIT_KEYS.has(r.i)); return h('span', { class: 'gsum ' + lvl(gp, lim) }, h('i'), lim ? (gp <= 100 ? 'im Rahmen' : `${gp} %`) : `${gp} %`); })(),
-    h('span', { class: 'chev', text: '›' }))),
-    (() => { const c = suppCheck(name), n = suppCount(c); return lrow({ class: 'lr tap', onclick: () => openSuppCheck() }, h('span', { class: 'tx', text: 'Supplemente' }), h('span', { class: 'n', text: n ? (n === 1 ? '1 Hinweis' : `${n} Hinweise`) : 'passt' }), h('span', { class: 'chev', text: '›' })); })()));
+  const sumOf = rs => { const gp = groupPct(rs), lim = rs.every(r => LIMIT_KEYS.has(r.i)); return h('span', { class: 'gsum ' + lvl(gp, lim) }, h('i'), lim ? (gp <= 100 ? 'im Rahmen' : `${gp} %`) : `${gp} %`); };
+  const menu = (title, val, fn) => lrow({ class: 'lr tap', onclick: fn }, h('span', { class: 'tx', text: title }), val, h('span', { class: 'chev', text: '›' }));
+  const fib = rows[4];
+  out.push(secHead('Nährstoffe'));
+  out.push(h('div', { class: 'ln menu' },
+    menu('Fehlt am meisten', h('span', { class: 'n', text: lack[0] ? lack[0].nm : '' }), () => openNutList('Fehlt am meisten', lack, 'Die Nährstoffe, von denen du im Schnitt am wenigsten hattest.', ctx)),
+    menu('Makros', h('span', { class: 'gsum ' + macroSt }, h('i'), macroTxt), () => openNutList('Makros', grp([1, 2, 23, 3]), 'Die Farbe hängt nur an Eiweiß und guten Fetten. Kohlenhydrate braucht der Körper nicht zwingend, sie zählen hier nur zur Info.', ctx)),
+    menu('Lieber nicht zu viel', sumOf(grp([7, 5, 6])), () => openNutList('Lieber nicht zu viel', grp([7, 5, 6]), null, ctx)),
+    fib ? menu('Ballaststoffe', h('span', { class: 'gsum ' + fib.st }, h('i'), `${g1(fib.v)} g`), () => { ctx.back = null; openNutDetail(4, ctx); }) : null,
+    menu('Vitamine', sumOf(grp(vit)), () => openNutList('Vitamine', grp(vit), null, ctx)),
+    menu('Mineralstoffe', sumOf(grp(min)), () => openNutList('Mineralstoffe', grp(min), null, ctx)),
+    (() => { const c = suppCheck(name), n = suppCount(c); return menu('Supplemente', h('span', { class: 'n', text: n ? (n === 1 ? '1 Hinweis' : `${n} Hinweise`) : 'passt' }), () => openSuppCheck()); })()));
   return out;
 }
 function dayNav() {
@@ -381,4 +407,4 @@ function dayNav() {
   const ds = ymd(addDays(new Date(), -statDay));
   return h('div', { class: 'pnav statnav' }, h('button', { class: 'ib', 'aria-label': 'Tag davor', onclick: () => go(-1) }, ic('chevron-left')), h('div', { text: statDay === 0 ? 'Heute' : statDay === 1 ? 'Gestern' : longDate(ds) }), h('button', { class: 'ib' + (statDay === 0 ? ' off' : ''), 'aria-label': 'Tag danach', onclick: () => go(1) }, ic('chevron-right')));
 }
-PAGES.stat = function () { if (!BLSNAME) loadBls().then(() => { if (tab === 'stat') render(); }).catch(() => { }); const days = statDays(); if (statRange === 'day') return h('div', { class: 'pg' }, dayNav(), ...nutStats(days), ...sleepBars(days), ...trainBars(days), ...goalStats(days)); return h('div', { class: 'pg' }, ...sleepBars(days), ...trainBars(days), ...goalStats(days), ...nutStats(days)); };
+PAGES.stat = function () { if (!BLSNAME) loadBls().then(() => { if (tab === 'stat') render(); }).catch(() => { }); const days = statDays(); if (statRange === 'day') return h('div', { class: 'pg' }, dayNav(), ...nutStats(days), ...sleepBars(days), ...trainBars(days), ...goalStats(days)); return h('div', { class: 'pg' }, ...nutStats(days), ...sleepBars(days), ...trainBars(days), ...goalStats(days)); };

@@ -675,7 +675,8 @@ function renderCal() {
   // Heute Gegessenes direkt hier eintragen
   if (typeof openDiary === 'function' && typeof lrow === 'function') {
     const who = me(), t = ymd(new Date()); const logged = !!diary[who + '_' + t]; const kc = logged && profiles[who] ? Math.round(dayIntake(who, t).tot[0]) : 0;
-    wrap.append(h('div', { class: 'ln calate' }, lrow({ class: 'lr tap', onclick: () => openDiary(who, t, render) }, h('span', { class: 'tx', text: 'Heute gegessen' }), h('span', { class: 'n', text: logged ? `${fmtInt(kc)} kcal` : 'Eintragen' }), h('span', { class: 'chev', text: '›' }))));
+    wrap.append(h('div', { class: 'ln calate' }, lrow({ class: 'lr tap', onclick: () => openDiary(who, t, render) }, h('span', { class: 'tx', text: 'Heute gegessen' }), h('span', { class: 'n', text: logged ? `${fmtInt(kc)} kcal` : 'Eintragen' }), h('span', { class: 'chev', text: '›' })),
+      lrow({ class: 'lr tap', onclick: () => { statRange = 'day'; statDay = 0; switchNow('stat'); renderHead(); } }, h('span', { class: 'tx', text: 'Nährwerte' }), h('span', { class: 'chev', text: '›' }))));
   }
   wrap.append(h('div', { class: 'calbar' },
     h('button', { class: 'ib', 'aria-label': 'Zurück', onclick: () => shift(-1) }, ic('chevron-left')),
