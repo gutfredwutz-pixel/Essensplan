@@ -45,7 +45,7 @@ const ART = {
   list: `<svg viewBox="0 0 64 64"><defs><linearGradient id="gb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5B8CFF"/><stop offset="1" stop-color="#FF8DBA"/></linearGradient></defs><path d="M30 2C48 0 63 13 62 31 62 49 49 63 31 62 14 62 1 50 2 32 2 15 13 4 30 2Z" fill="url(#gb)"/><path d="M28 21c-1-5 2-9 6-10" stroke="#3FA34D" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M33 13c4-3 8-2 9 0-3 3-7 3-9 0z" fill="#5DBB63"/><path d="M22 26c-2-6 1-11 5-12l3 12z" fill="#FF9F43"/><path d="M38 26c0-5 3-9 7-9 3 2 3 6 1 9z" fill="#E8473E"/><path d="M15 26h34l-3 22c-1 3-3 5-6 5H24c-3 0-5-2-6-5z" fill="#fff"/><path d="M23 33v12M32 33v12M41 33v12" stroke="#DDE6FF" stroke-width="2.6" stroke-linecap="round"/></svg>`,
   rec: `<svg viewBox="0 0 64 64"><defs><linearGradient id="gc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F6BFF"/><stop offset="1" stop-color="#FF8DBA"/></linearGradient></defs><path d="M33 2C51 3 63 15 62 33 61 51 48 63 30 62 12 61 1 48 2 30 3 13 16 1 33 2Z" fill="url(#gc)"/><path d="M12 20c7-3 14-3 20 2v26c-6-5-13-5-20-2z" fill="#fff"/><path d="M52 20c-7-3-14-3-20 2v26c6-5 13-5 20-2z" fill="#F4F7FF"/><path d="M17 27c3-1 7-1 10 1M17 33c3-1 7-1 10 1M17 39c3-1 7-1 10 1" stroke="#C9D6FF" stroke-width="2" stroke-linecap="round"/><path d="M37 27c3-1 7-1 10 1M37 33c3-1 7-1 10 1" stroke="#FFC2DA" stroke-width="2" stroke-linecap="round"/><circle cx="44" cy="41" r="4" fill="#FFC23D"/></svg>`
 };
-const TITLES = { start: '', stat: 'Statistik', nutri: 'Nährstoffe', list: 'Essen', cal: 'Essen', rec: 'Essen', todo: 'To-dos', news: 'News', set: 'Einstellungen' };
+const TITLES = { start: '', stat: 'Statistik', nutri: 'Nährstoffe', list: 'Einkaufsliste', cal: 'Essen', rec: 'Essen', todo: 'To-dos', news: 'News', set: 'Einstellungen' };
 window.FA = window.FA || {};
 window.FA['jar'] = [512, 512, 'M176 32h160c13 0 24 11 24 24v24c0 9-5 17-13 21 66 28 109 88 109 159 0 107-74 220-200 220S56 367 56 260c0-71 43-131 109-159-8-4-13-12-13-21V56c0-13 11-24 24-24zm-48 248c0 78 52 168 128 168s128-90 128-168c0-6 0-12-1-18-33 18-75 18-110 2-38-17-80-16-144 2z'];
 
@@ -462,7 +462,7 @@ function renderTabs() {
   if (FOOD.includes(tab)) foodSub = tab;
   t.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.t === (FOOD.includes(tab) ? 'food' : tab === 'nutri' ? 'stat' : tab)));
   tabInd(TABS().indexOf(tab), 0, true);
-  renderHead(); syncDock();
+  renderHead();
 }
 // Gleitender Kreis in der Tab-Leiste; folgt beim Wischen dem Finger
 function tabInd(i, prog, anim) {
@@ -487,10 +487,10 @@ const TAB_DEF = [
 // Unterteilung im Bereich Essen: Liste / Woche / Rezepte
 function renderFoodSeg() {
   let f = $('#fseg'); if (!f) { f = h('div', { id: 'fseg', class: 'useg' }); $('header').append(f); }
-  f.classList.toggle('hidden', !FOOD.includes(tab) && tab !== 'stat');
+  f.classList.toggle('hidden', (!FOOD.includes(tab) && tab !== 'stat') || tab === 'list');
   if (tab === 'stat') { f.replaceChildren(...[['day', 'Tag'], ['week', 'Woche'], ['month', 'Monat'], ['year', 'Jahr']].map(([k, l]) => h('button', { class: k === statRange ? 'on' : '', onclick: () => { statRange = k; renderHead(); render(); } }, l))); return; }
   if (!FOOD.includes(tab)) return;
-  f.replaceChildren(...[['cal', 'Woche'], ['rec', 'Rezepte'], ['pan', 'Vorrat']].map(([id, l]) => h('button', { class: id === tab ? 'on' : '', onclick: () => { if (id !== tab) goTab(id, FOOD.indexOf(id) - FOOD.indexOf(tab)); } }, l)));
+  f.replaceChildren(...[['cal', 'Woche'], ['rec', 'Rezepte'], ['pan', 'Vorrat']].map(([id, l]) => h('button', { class: id === tab ? 'on' : '', onclick: () => { if (id !== tab) switchNow(id); } }, l)));
 }
 let topSheet = null, setSub = null;
 function openTop(id) {
@@ -508,6 +508,13 @@ function stageClone(id, node) {
   const st = stage(); const r = st.getBoundingClientRect();
   const c = st.cloneNode(true); c.removeAttribute('id'); c.classList.add('stageclone');
   c.querySelectorAll('[id]').forEach(x => { x.dataset.cid = x.id; x.removeAttribute('id'); });
+  // Die Kopie soll genau wie das Original aussehen; alte CSS-Regeln greifen bei ihr sonst anders (Größe, Rahmen, Abstand oben)
+  const SAME = ['font-size', 'line-height', 'font-weight', 'letter-spacing', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left', 'box-shadow', 'background-image', 'background-color', 'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width', 'border-radius', 'color'];
+  st.querySelectorAll('[id]').forEach(o => {
+    const k = c.querySelector(`[data-cid="${o.id}"]`); if (!k) return; const a = getComputedStyle(o);
+    const props = o.tagName === 'BUTTON' ? SAME.concat(['width', 'height']) : SAME;
+    props.forEach(p => k.style.setProperty(p, a.getPropertyValue(p), 'important'));
+  });
   if (id) {
     const t = c.querySelector('[data-cid=title]'); if (t) t.textContent = TITLES[id];
     const art = c.querySelector('[data-cid=art]'); if (art) art.replaceChildren(svgEl(ART[id]));
@@ -541,6 +548,8 @@ function slideSwap(id, dir, fromX, outDur) {
     }, od * 1000);
   });
 }
+// Umschalter angetippt: Seite direkt tauschen, ohne dass der ganze Bildschirm wegschiebt
+function switchNow(id) { if (id === tab) return; if (tab === 'nutri' && window.resetNutriState) resetNutriState(); tab = id; document.body.dataset.tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, 0); }
 function goTab(id, dir) { if (id === tab) return; cachePage(); slideSwap(id, dir > 0 ? 1 : -1, 0, 0.13); }
 function cachePage() { const m = $('#main'); if (m && m.firstChild) { const d = h('div'); d.append(...[...m.childNodes].map(n => n.cloneNode(true))); pageCache[tab] = d; } }
 function peekNode(id) {
@@ -645,6 +654,11 @@ function renderCal() {
   const e6 = addDays(anchor, 6);
   const title = isWeek ? (anchor.getMonth() === e6.getMonth() ? `${anchor.getDate()}. bis ${e6.getDate()}. ${MON[e6.getMonth()]}` : `${anchor.getDate()}. ${MON[anchor.getMonth()].slice(0, 3)}. bis ${e6.getDate()}. ${MON[e6.getMonth()].slice(0, 3)}.`) : `${MON[monthAnchor.getMonth()]} ${monthAnchor.getFullYear()}`;
   const shift = dir => { if (isWeek) anchor = addDays(anchor, 7 * dir); else monthAnchor = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() + dir, 1); render(); };
+  // Heute Gegessenes direkt hier eintragen
+  if (typeof openDiary === 'function' && typeof lrow === 'function') {
+    const who = me(), t = ymd(new Date()); const logged = !!diary[who + '_' + t]; const kc = logged && profiles[who] ? Math.round(dayIntake(who, t).tot[0]) : 0;
+    wrap.append(h('div', { class: 'ln calate' }, lrow({ class: 'lr tap', onclick: () => openDiary(who, t, render) }, h('span', { class: 'tx', text: 'Heute gegessen' }), h('span', { class: 'n', text: logged ? `${fmtInt(kc)} kcal` : 'Eintragen' }), h('span', { class: 'chev', text: '›' }))));
+  }
   wrap.append(h('div', { class: 'calbar' },
     h('button', { class: 'ib', 'aria-label': 'Zurück', onclick: () => shift(-1) }, ic('chevron-left')),
     h('div', { class: 'ttl', text: title }),
@@ -809,8 +823,8 @@ function addItem(raw, catHint) {
   learn(p.name, catHint);
 }
 function renderList() {
-  const wrap = h('div');
-  const inp = h('input', { class: 'field', placeholder: 'Karotten, 500 g Hack …', enterkeyhint: 'done', autocomplete: 'off' });
+  const wrap = h('div', { class: 'sl' });
+  const inp = h('input', { class: 'slin', placeholder: 'Hinzufügen', enterkeyhint: 'done', autocomplete: 'off' });
   const submit = () => {
     const v = inp.value.trim(); if (!v) { inp.focus(); return; }
     const p = parseEntry(v); const top = foodSuggestions(p.name)[0];
@@ -819,35 +833,102 @@ function renderList() {
   };
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
   const sg = attachSuggest(inp, s => { const p = parseEntry(inp.value); addItem((p.qty ? p.qty + ' ' : '') + s.name, s.cat); inp.value = ''; inp.focus(); }, { parse: parseEntry });
-  const plus = h('button', { class: 'ib p big', 'aria-label': 'Hinzufügen', onmousedown: e => e.preventDefault(), onclick: submit }, ic('plus'));
-  const body = h('div');
-  wrap.append(h('div', { class: 'rectop listtop' }, h('div', { class: 'addbar' }, inp, plus), sg.box), body);
+  // Eingesprochen: „Milch, Eier und Brot“ wird zu drei Einträgen
+  const mic = slMic(t => t.split(/\s*(?:,|;|\bund\b)\s*/i).map(x => x.trim().replace(/[.!?]$/, '')).filter(Boolean).forEach(x => addItem(x)));
+  const body = h('div', { class: 'slbody' });
+  wrap.append(h('div', { class: 'sladd' }, inp, mic), sg.box, body);
   listUI = { wrap, inp, body };
   drawListBody();
   return wrap;
 }
+function slMic(onText) {
+  let rec = null, chunks = [];
+  const b = h('button', { class: 'slmic', type: 'button', 'aria-label': 'Einsprechen' }, ic('microphone'));
+  b.addEventListener('click', async () => {
+    if (rec) { rec.stop(); return; }
+    if (!navigator.mediaDevices || !window.MediaRecorder) return toast('Aufnahme wird hier nicht unterstützt');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      chunks = []; rec = new MediaRecorder(stream);
+      rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+      rec.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop()); rec = null; b.classList.remove('rec'); b.replaceChildren(ic('spinner', 'spin'));
+        try { const t = await window.transcribeVideo(new Blob(chunks, { type: chunks[0] ? chunks[0].type : 'audio/mp4' }), () => {}); if (t && t.trim()) onText(t.trim()); else toast('Nicht verstanden'); } catch (e) { toast('Nicht verstanden'); }
+        b.replaceChildren(ic('microphone'));
+      };
+      rec.start(); b.classList.add('rec'); b.replaceChildren(ic('stop'));
+    } catch (e) { toast('Kein Zugriff aufs Mikrofon'); }
+  });
+  return b;
+}
 let openSwipe = null;
+const openIdeas = new Set();
 function drawListBody() {
   const body = listUI.body; const frag = [];
-  if (!canWrite) frag.push(h('div', { class: 'note', text: 'Nur Leserechte' }));
+  if (!canWrite) frag.push(h('div', { class: 'slempty', text: 'Nur Leserechte' }));
   const open = items.filter(i => !i.checked), done = items.filter(i => i.checked);
-  if (db && loaded.items && !open.length) frag.push(emptyArt(done.length ? 'Alles im Wagen' : 'Noch nichts auf der Liste'));
-  const sorted = open.slice().sort((a, b) => CATS.indexOf(CATS.includes(a.category) ? a.category : 'Sonstiges') - CATS.indexOf(CATS.includes(b.category) ? b.category : 'Sonstiges') || a.name.localeCompare(b.name, 'de'));
-  let last = null;
-  const flat = h('div', { class: 'flatlist' });
-  for (const it of sorted) { const c = CATS.includes(it.category) ? it.category : 'Sonstiges'; const row = itemRow(it); if (last && c !== last) row.classList.add('gap'); last = c; flat.append(row); }
-  if (sorted.length) frag.push(flat);
+  if (db && loaded.items && !open.length) frag.push(h('div', { class: 'slempty', text: done.length ? 'Alles im Wagen' : 'Noch nichts auf der Liste' }));
+  // Nach Bereichen im Supermarkt, in jedem Bereich nach Name
+  const by = new Map();
+  for (const it of open) { const c = CATS.includes(it.category) ? it.category : 'Sonstiges'; if (!by.has(c)) by.set(c, []); by.get(c).push(it); }
+  const groups = CATS.filter(c => by.has(c)).map(c => h('div', { class: 'slgrp' }, h('div', { class: 'sllbl', text: c }), ...by.get(c).sort((a, b) => a.name.localeCompare(b.name, 'de')).map(itemRow)));
+  if (groups.length) frag.push(h('div', { class: 'slopen' }, ...groups));
+  frag.push(...ideasBlock());
   if (done.length) {
-    frag.push(h('div', { class: 'donebox' },
-      h('div', { class: 'donehead' }, h('div', { class: 'cat', text: `Im Wagen (${done.length})` }),
-        h('span', { class: 'donebtns' }, h('button', { class: 'btn g sm', onclick: () => cartToPantry() }, 'In den Vorrat'), confirmBtn('Leeren', 'Sicher?', () => done.forEach(i => queue('items/' + i.id, () => db.collection('items').doc(i.id).delete())), 'btn g sm'))),
-      h('div', { class: 'donechips' }, ...done.sort((a, b) => (b.checkedAt || 0) - (a.checkedAt || 0)).map(itemRow))));
+    frag.push(h('div', { class: 'sh' }, h('span', { class: 'st', text: 'Im Wagen' }),
+      h('span', { class: 'slbtns' }, h('button', { class: 'slclear', onclick: () => cartToPantry() }, 'In den Vorrat'),
+        confirmBtn('Leeren', 'Wirklich leeren?', () => done.forEach(i => queue('items/' + i.id, () => db.collection('items').doc(i.id).delete())), 'slclear'))));
+    frag.push(h('div', { class: 'sldone' }, ...done.sort((a, b) => (b.checkedAt || 0) - (a.checkedAt || 0)).map(itemRow)));
   }
-  const pill = listTipPill(); $('#tipdock').replaceChildren(...(pill ? [pill] : [])); if (pill) frag.push(h('div', { class: 'tipspace' })); syncDock();
   body.replaceChildren(...frag);
 }
-/* ---- Was der Liste noch fehlt ---- */
-function syncDock() { const d = $('#tipdock'); if (d) d.classList.toggle('show', tab === 'list' && !!d.firstChild); }
+/* ---- Was deiner Woche fehlt: Ideen direkt in der Liste ---- */
+const onListOpen = n => items.some(it => !it.checked && canon(it.name) === canon(n));
+const fmtAmt = (x, u) => (x >= 10 ? fmtInt(x) : String(Math.round(x * 10) / 10).replace('.', ',')) + ' ' + u;
+function slAddBtn(n) {
+  const has = onListOpen(n);
+  const b = h('button', { class: 'sladdb' + (has ? ' on' : ''), 'aria-label': n + ' auf die Liste' }, ic(has ? 'check' : 'plus'));
+  b.onclick = e => { e.stopPropagation(); if (b.classList.contains('on')) return; b.classList.add('on'); b.replaceChildren(ic('check')); addItem(n); };
+  return b;
+}
+function slWhy(rows, d) {
+  return h('div', { class: 'slwhy' }, ...rows.slice(0, 3).flatMap((r, k) => [k ? h('span', { text: ', ' }) : null,
+    h('button', { class: 'slnut', onclick: e => { e.stopPropagation(); openNutInfo(r.i); } }, r.name)]).filter(Boolean));
+}
+function ideasBlock() {
+  if (typeof GOOD_SRC === 'undefined' || !db) return [];
+  const d = listNutrition(); const best = d.best.slice(0, 4); if (!best.length) return [];
+  const shown = new Set(best.map(b => canon(b.n)));
+  const rows = best.map(b => {
+    // andere Lebensmittel, die dieselben Lücken schließen
+    const alt = new Map();
+    b.rows.forEach(r => (GOOD_SRC[r.i] || []).forEach(([n]) => { if (shown.has(canon(n)) || onListOpen(n) || (typeof inPantry === 'function' && inPantry(n))) return; const a = alt.get(n) || { n, rows: [] }; a.rows.push(r); alt.set(n, a); }));
+    const alts = [...alt.values()].sort((x, y) => y.rows.length - x.rows.length).slice(0, 4);
+    const isOpen = openIdeas.has(b.n);
+    const box = h('div', { class: 'slalts' + (isOpen ? '' : ' hidden') }, ...alts.map(a => h('div', { class: 'slidea alt' }, h('div', { class: 'slname' }, h('span', { class: 'slt', text: a.n }), slWhy(a.rows, d)), slAddBtn(a.n))));
+    const name = h('div', { class: 'slname' }, h('span', { class: 'slt' }, b.n, alts.length ? h('span', { class: 'slchev' + (isOpen ? ' open' : ''), text: '›' }) : null), slWhy(b.rows, d));
+    if (alts.length) name.onclick = () => { const o = box.classList.toggle('hidden') === false; if (o) openIdeas.add(b.n); else openIdeas.delete(b.n); const c = name.querySelector('.slchev'); if (c) c.classList.toggle('open', o); };
+    return h('div', null, h('div', { class: 'slidea' }, name, slAddBtn(b.n)), box);
+  });
+  return [secHead('Fehlt deiner Woche', `${fmtInt(d.cov)} % gedeckt`), h('div', { class: 'slideas' }, ...rows)];
+}
+function openNutInfo(i) {
+  const d = listNutrition(); const r = d.rows.find(x => x.i === i); if (!r) return;
+  const unit = (REF[i] || [0, '', 'g'])[2];
+  const foods = (GOOD_SRC[i] || []).map(([n]) => { const v = nutOf({ name: n }); return { n, x: v ? v[i] || 0 : null }; }).sort((p, q) => (q.x ?? -1) - (p.x ?? -1));
+  const st = window.lvl ? lvl(r.pct, false) : 'r';
+  const extra = i === 9 ? 'Vitamin D bildet der Körper vor allem über Sonnenlicht, über das Essen kommt nur ein kleiner Teil.' : i === 22 ? 'Jodsalz ist hier nicht mitgerechnet, darüber kommt im Alltag ein großer Teil.' : '';
+  openSheet(r.name, [
+    INFO[i] ? h('p', { class: 'slinfo', text: INFO[i] }) : null,
+    secHead('Deine Woche', `${fmtInt(r.pct)} %`),
+    h('div', { class: 'ln' },
+      lrow({}, h('span', { class: 'tx', text: 'Schon gegessen' }), h('span', { class: 'n', text: `${fmtInt(r.ate)} %` }), h('span', { class: 'mb ' + st }, h('i', { style: `width:${Math.min(100, r.ate)}%` }))),
+      lrow({}, h('span', { class: 'tx', text: 'Dazu von der Liste' }), h('span', { class: 'n', text: `${fmtInt(r.fromList)} %` }), h('span', { class: 'mb ' + st }, h('i', { style: `width:${Math.min(100, r.fromList)}%` })))),
+    foods.length ? secHead('Viel davon in') : null,
+    foods.length ? h('div', { class: 'ln' }, ...foods.map(f => lrow({ class: 'lr slfood' }, h('span', { class: 'tx', text: f.n }), f.x != null ? h('span', { class: 'n', text: fmtAmt(f.x, unit) + ' in 100 g' }) : null, slAddBtn(f.n)))) : null,
+    h('div', { class: 'sheetnote', text: [extra, (d.hasProfile ? 'Bezogen auf deine Angaben' : 'Ohne deine Angaben mit Durchschnittswerten gerechnet') + '. Die Liste zählt anteilig für jede Person im Haushalt.'].filter(Boolean).join(' ') })]);
+}
+/* ---- Nährstoff-Rechnung für die Liste ---- */
 function listNutrition() {
   // Liste: geteilter Einkauf, pro Person ein Anteil
   const lst = new Array(24).fill(0); let counted = 0;
@@ -870,46 +951,9 @@ function listNutrition() {
   const low = rows.filter(r => r.pct < 60).sort((x, y) => x.pct - y.pct);
   const onList = n => items.some(it => canon(it.name) === canon(n));
   const score = new Map();
-  low.forEach(r => (GOOD_SRC[r.i] || []).forEach(([n], j) => { if (onList(n)) return; const s = score.get(n) || { n, w: 0, for: [] }; s.w += (6 - Math.min(5, j)) * (1 + (60 - r.pct) / 60); s.for.push(r.name); score.set(n, s); }));
+  low.forEach(r => (GOOD_SRC[r.i] || []).forEach(([n], j) => { if (onList(n) || (typeof inPantry === 'function' && inPantry(n))) return; const s = score.get(n) || { n, w: 0, for: [], rows: [] }; s.w += (6 - Math.min(5, j)) * (1 + (60 - r.pct) / 60); s.for.push(r.name); s.rows.push(r); score.set(n, s); }));
   const best = [...score.values()].sort((x, y) => y.w - x.w).slice(0, 8);
   return { cov, rows, low, best, counted, who, nDays: days.length, hasProfile: !!pf };
-}
-function listTipPill() {
-  if (!items.length || typeof GOOD_SRC === 'undefined') return null;
-  const d = listNutrition(); if (!d.counted) return null;
-  const n = Math.min(d.best.length, 6);
-  return h('button', { class: 'tippill', onclick: () => openListTips() },
-    h('span', { class: 'tring' }, ring(d.cov, 'good', 34)),
-    h('span', { class: 'ttxt' }, h('b', { text: n ? `${n} Ideen für die Liste` : 'Liste ist gut aufgestellt' }), h('span', { text: `${fmtInt(d.cov)} % deiner Woche gedeckt` })),
-    h('span', { class: 'tgo' }, ic('chevron-right')));
-}
-function openListTips() {
-  const d = listNutrition();
-  const card = (n, sub) => { const has = items.some(it => !it.checked && canon(it.name) === canon(n)); const b = h('button', { class: 'gsrc' + (has ? ' on' : '') }, h('span', { class: 'gn', text: n }), sub ? h('span', { class: 'gw', text: sub }) : null, h('span', { class: 'gp' }, ic(has ? 'check' : 'plus')));
-    b.onclick = () => { if (b.classList.contains('on')) return; addItem(n); b.classList.add('on'); b.querySelector('.gp').replaceChildren(ic('check')); toast(n + ' steht jetzt auf der Liste'); }; return b; };
-  const parts = [
-    h('div', { class: 'rephero phero2 tiphero' },
-      h('div', { class: 'ph2top' }, h('div', { class: 'ph2ring' }, ring(d.cov, 'good', 104), h('span', { class: 'ph2pct', text: fmtInt(d.cov) + ' %' })),
-        h('div', { class: 'ph2txt' }, h('b', { text: 'Deine Woche' }), h('span', { text: 'Was du bisher gegessen hast und dein Anteil an der Liste' }))),
-      h('div', { class: 'tiplegend' }, h('span', { class: 'lg1' }, h('i'), 'Schon gegessen'), h('span', { class: 'lg2' }, h('i'), 'Kommt von der Liste'))),
-  ];
-  if (d.best.length) parts.push(h('div', { class: 'infocard' }, h('h3', { text: 'Bringt am meisten' }), h('div', { class: 'muted', style: 'margin:-4px 0 12px;font-size:13px', text: 'Schließt gleich mehrere Lücken. Antippen setzt es auf die Liste.' }),
-    h('div', { class: 'gsrcs' }, ...d.best.slice(0, 6).map(b => card(b.n, b.for.slice(0, 2).join(', '))))));
-  if (d.low.length) {
-    const fmtV = (x, u) => (x >= 10 ? fmtInt(x) : String(Math.round(x * 10) / 10).replace('.', ',')) + ' ' + u;
-    const rowsEl = d.low.map(r => {
-      const unit = (REF[r.i] || [0, '', 'g'])[2];
-      const foods = (GOOD_SRC[r.i] || []).map(([n]) => { const v = nutOf({ name: n }); return { n, x: v ? v[r.i] || 0 : null }; }).sort((p, q) => (q.x ?? -1) - (p.x ?? -1));
-      const box = h('div', { class: 'tipfoods hidden' }, h('div', { class: 'gsrcs' }, ...foods.map(f => card(f.n, f.x != null ? fmtV(f.x, unit) + ' in 100 g' : ''))));
-      const head = h('button', { class: 'tiplow' }, h('div', { class: 'macl' }, h('span', { text: r.name }), h('span', { class: 'macv' }, h('b', { text: fmtInt(r.pct) + ' %' }), h('span', { class: 'tchev' }, ic('chevron-right')))), h('div', { class: 'macbar two' }, h('i', { class: 'b1', style: `width:${r.ate}%` }), h('i', { class: 'b2', style: `width:${Math.max(r.ate + r.fromList > 0 ? 0 : 3, r.fromList)}%` })));
-      head.onclick = () => { const open = box.classList.toggle('hidden') === false; head.classList.toggle('open', open); };
-      return h('div', { class: 'tipgrp' }, head, box);
-    });
-    parts.push(h('div', { class: 'infocard' }, h('h3', { text: 'Hier fehlt noch was' }), h('div', { class: 'muted', style: 'margin:-4px 0 14px;font-size:13px', text: 'Antippen zeigt Lebensmittel mit viel davon.' }), h('div', { class: 'tiplows' }, ...rowsEl)));
-  }
-  else parts.push(h('div', { class: 'infocard' }, h('h3', { text: 'Sieht gut aus' }), h('div', { class: 'muted', text: 'Für die wichtigsten Nährstoffe ist genug auf der Liste.' })));
-  parts.push(h('div', { class: 'muted', style: 'font-size:12.5px;margin:0 6px', text: (d.hasProfile ? 'Bezogen auf deine Angaben' : 'Ohne deine Angaben mit Durchschnittswerten gerechnet') + '. Die Liste zählt anteilig für jede Person im Haushalt. Ohne Menge rechnet die App mit einer üblichen Packung.' }));
-  openSheet('Was noch fehlt', [h('div', { class: 'npage' }, ...parts)]);
 }
 function emptyArt(text) {
   return h('div', { class: 'emptyart' }, svgEl(`<svg viewBox="0 0 120 90"><ellipse cx="60" cy="40" rx="46" ry="8" fill="var(--blue-l)"/><path d="M14 40h92c0 24-20 40-46 40S14 64 14 40z" fill="var(--card2)" stroke="var(--line)" stroke-width="2"/><path d="M30 52c4 10 14 17 28 19" stroke="var(--rosa)" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="92" cy="18" r="5" fill="var(--rosa)"/><circle cx="24" cy="14" r="3" fill="var(--blue-l)"/></svg>`), h('div', { text }));
@@ -917,29 +961,28 @@ function emptyArt(text) {
 function itemRow(i) {
   const toggle = () => queue('items/' + i.id, () => db.collection('items').doc(i.id).update({ checked: !i.checked, checkedAt: Date.now() }));
   const del = () => queue('items/' + i.id, () => db.collection('items').doc(i.id).delete());
-  // Abgehakt: nur noch der Name, mittig
-  if (i.checked) return h('button', { class: 'donerow', onclick: toggle }, h('span', { class: 'dck' }, ic('check')), h('span', { class: 'dnm', text: i.name }), i.qty ? h('span', { class: 'dq', text: i.qty }) : null);
-  const subs = (i.notes || []).map((n, idx) => h('div', { class: 'note-line', title: 'Antippen zum Entfernen', onclick: e => {
+  // Im Wagen: Antippen holt es zurück auf die Liste
+  if (i.checked) return h('button', { class: 'slrow done', onclick: toggle }, h('span', { class: 'slck x' }), h('span', { class: 'slname' }, h('span', { class: 'slt', text: i.name })), i.qty ? h('span', { class: 'slq', text: i.qty }) : null);
+  const subs = (i.notes || []).map((n, idx) => h('span', { class: 'slsub note-line', title: 'Antippen zum Entfernen', onclick: e => {
     e.stopPropagation();
     const notes = (i.notes || []).filter((_, j) => j !== idx);
     queue('items/' + i.id, () => db.collection('items').doc(i.id).update({ notes, fromDish: notes.length ? i.fromDish : false }));
     toast('Hinweis entfernt');
-  } }, h('span', null, 'für ', h('b', { text: n.dish || 'Gericht' }), n.amount ? ': ' + n.amount : '')));
-  const row = h('div', { class: 'item' },
-    h('button', { class: 'cb', 'aria-label': 'Abhaken', onclick: e => { e.stopPropagation(); intoCart(); } }, ic('check')),
-    h('div', { class: 'body' }, h('div', null, dot(i.by), h('span', { class: 'nm', text: i.name }), i.qty ? h('span', { class: 'qty', text: '  ' + i.qty }) : null), subs.length ? h('div', { class: 'sub' }, subs) : null));
+  } }, 'für ' + (n.dish || 'Gericht') + (n.amount && !i.qty ? ': ' + n.amount : '')));
+  const row = h('div', { class: 'slrow' },
+    h('button', { class: 'slck cb', 'aria-label': 'Abhaken', onclick: e => { e.stopPropagation(); intoCart(); } }),
+    h('div', { class: 'slname' }, h('span', { class: 'slt', text: i.name }), ...subs),
+    i.qty ? h('span', { class: 'slq', text: i.qty }) : null);
   const acts = h('div', { class: 'swacts' },
     h('button', { class: 'sw amt', onclick: () => { closeSwipe(); editQty(i); } }, 'Menge'),
     h('button', { class: 'sw del', onclick: () => { closeSwipe(); del(); } }, 'Löschen'));
-  const [, cfg] = catStyle(CATS.includes(i.category) ? i.category : 'Sonstiges');
-  row.style.setProperty('--cfg', cfg);
   const wrap = h('div', { class: 'swipe' }, acts, row);
   // In den Wagen: Haken füllt sich, Zeile klappt weich zu, dann erst speichern
   let going = false;
   function intoCart() {
     if (going) return; going = true; row.classList.add('ticked');
     const hgt = wrap.offsetHeight; wrap.style.height = hgt + 'px'; wrap.style.overflow = 'hidden';
-    setTimeout(() => { wrap.style.transition = 'height .24s cubic-bezier(.4,0,.2,1), opacity .2s, margin .24s'; wrap.style.height = '0px'; wrap.style.opacity = '0'; wrap.style.marginTop = '0px'; wrap.style.marginBottom = '0px'; }, 170);
+    setTimeout(() => { wrap.style.transition = 'height .24s cubic-bezier(.4,0,.2,1), opacity .2s'; wrap.style.height = '0px'; wrap.style.opacity = '0'; }, 170);
     setTimeout(toggle, 420);
   }
   makeSwipe(wrap, row, intoCart, del);
@@ -1480,7 +1523,9 @@ function pickProduct(g, done) {
   const searchBls = async () => {
     res.replaceChildren(grey('Suche …'));
     const all = await loadBls(); const words = norm(q.value).split(' ').filter(Boolean);
-    const hits = all.filter(([n]) => { const k = norm(n); return words.every(w => k.includes(w)); }).sort((a, b) => (/\broh\b/.test(b[0]) - /\broh\b/.test(a[0])) || a[0].length - b[0].length).slice(0, 25);
+    // Eigene Ergänzungen (z. B. Whey-Protein), die nicht im BLS stehen, zuerst
+    const extra = (window.DIARY_FOODS || []).filter(([, n]) => !all.some(([bn]) => bn === n)).filter(([al, n]) => { const k = norm(al.replace(/\|/g, ' ') + ' ' + n); return words.length && words.every(w => k.includes(w)); }).map(([, n, , , v]) => [n, v]);
+    const hits = extra.concat(all.filter(([n]) => { const k = norm(n); return words.every(w => k.includes(w)); }).sort((a, b) => (/\broh\b/.test(b[0]) - /\broh\b/.test(a[0])) || a[0].length - b[0].length)).slice(0, 25);
     res.replaceChildren(...hits.map(([n, v]) => h('button', { onclick: () => choose({ src: 'BLS', name: n, v }) }, h('span', { text: n }), h('span', { class: 'muted', text: `  ${fmtInt(v[0])} kcal` }))));
     if (!hits.length) res.replaceChildren(grey('Nichts im BLS gefunden, probier die Markensuche'));
   };

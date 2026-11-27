@@ -37,7 +37,7 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
   1. **News**: Bereiche KI, Wirtschaft (inkl. auffällige Kursbewegungen/boomende Firmen), Politik Deutschland und Welt, ganz unten Weiterbildung/Arbeitsmarkt. Seriöse Quellen (Tagesschau u. a.) per RSS über die Supabase-Funktion, kurze KI-Zusammenfassungen zum Lesen in der Bahn, wenn möglich mit Bild aus dem Artikel.
      Quellen-Wunsch: Handelsblatt, FAZ, Heise, Tagesschau „und die besten“ (seriös). Wichtig: Artikel wirklich aufbereiten, lesbar für Nicht-Fachleute: Fachbegriffe kurz erklären und Zahlen einordnen (z. B. „DAX +300 Punkte“ = wie viel Prozent, ist das viel, warum). Achtung Bezahlschranken (Handelsblatt/FAZ): per RSS oft nur Teaser; offen damit umgehen und frei lesbare Quellen ergänzen.
   2. ~~Vorrat~~ und 3. ~~Start Essen~~: erledigt (Ende Nov. 2026), siehe unten „Vorrat und Vorschläge“.
-  4. **Einkaufsliste neu**: wirkt unübersichtlich; Kauf-Ideen für fehlende Nährstoffe direkt dort statt schwebender Pille.
+  4. ~~Einkaufsliste neu~~ erledigt (Entwurf A): Überschrift „Einkaufsliste“, Eingabe ohne Plus mit Mikrofon, Bereiche als graue Namen, darunter „Fehlt deiner Woche“ (Plus rechts fügt hinzu, Name antippen zeigt Alternativen, Nährstoff antippen öffnet Karte `openNutInfo`), dann „Im Wagen“. Kein Personen-Punkt mehr. CSS-Block „Einkaufsliste (neu“ am Ende von `index.html`.
   5. Ladebildschirm beim Öffnen klären (Screenshot von Jakob abwarten; evtl. alter iOS-Startbildschirm, nach Neu-Hinzufügen weg).
 - **Mitteilungen** (Web Push): Einstellungen > Mitteilungen, je Gerät und Person (Sammlung `push`, Doc-ID in `ep_push`). To-dos haben `remind` (Minuten vorher, `'off'`, Standard 15). Die Datenbank ruft jede Minute `push_tick()` auf (pg_cron, `supabase-push.sql`), die Funktion `push` (`supabase/functions/push/index.ts`, Verify JWT aus, keine Secrets) entscheidet und verschickt: Erinnerungen und höchstens 2 Anstupser am Tag (ab ca. 12 und 17:30 Uhr, nicht wenn in der Stunde ein To-do mit Uhrzeit ansteht). Signier-Schlüssel erzeugt die App beim ersten Einschalten, er liegt in `push_config` (nur Datenbank). Rückmeldung per `push_mark` mit Einmal-Token gegen doppelte Meldungen.
 - `dev/screens.py` braucht Python-Playwright (`pip install playwright`), nutzt den vorinstallierten Chromium unter `/opt/pw-browsers/chromium`.
@@ -49,6 +49,14 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - Rechnung ohne KI auf dem Gerät. Nur „Gericht-Ideen“ fragt die KI (Aufgabe `meal`), Ergebnis pro Tag und Vorrat in `localStorage` gemerkt. Ohne KI: passende eigene Rezepte.
 
 - Gewohnheiten (`habits()`): was in 30 Tagen oft gegessen, gekocht, gekauft wurde. Vertrautes wird bei „Einkaufen“ leicht bevorzugt und geht als Text an die KI (Gericht-Ideen); die KI hat kein Gedächtnis, sie weiß nur, was die App mitschickt.
+
+## Gegessen eintragen (`openDiary` in `tagebuch.js`, Nov. 2026)
+
+- Kein Speichern-Knopf: jede Änderung wird nach 0,5 s gespeichert, beim Schließen/Tag-Wechsel wird Getipptes noch ausgewertet und gespeichert. Unten steht „Gespeichert“ bzw. „Nicht gespeichert, keine Verbindung“.
+- Mikrofon grau im Feld; beim Zuhören Hinweis plus weißer Text-Knopf „Fertig“; danach „Verstanden: …“ mit dem erkannten Satz. Neue Einträge kommen oben in die Liste.
+- Mischungen („Kokos-Rosinen-Mix“, „Whey Shake“) werden in Einzelteile zerlegt (`findFoods`), Bindestriche zählen als Leerzeichen. Die KI (`diary`) ist ebenfalls angewiesen, Gemischtes aufzuteilen.
+- Eigene Ergänzungen außerhalb des BLS stehen in `diaryfoods.js` (u. a. Whey-Protein mit Durchschnittswerten) und erscheinen auch in der Lebensmittel-Suche.
+- Essen > Woche hat oben „Heute gegessen“. Umschalter Woche/Rezepte/Vorrat tauscht die Seite ohne Wischeffekt (`switchNow`); Wischen mit dem Finger bleibt.
 
 ## Supplemente (`supplemente.js`)
 
@@ -80,6 +88,7 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - `backdrop-filter` auf Dingen, die sich bewegen oder über bewegtem Inhalt liegen, kostet pro Bild viel und ruckelt. Sparsam einsetzen.
 - Seitenwechsel per Wischen: Transforms auf dem Inhalt wurden während `touchmove` auf iOS nicht zuverlässig gezeichnet, daher folgt ein Schnappschuss-Klon (`stageClone`) dem Finger; die neue Seite kommt aus einem Zwischenspeicher (`pageCache`) und wird erst nach der Animation neu aufgebaut.
 - Elemente mit `position:fixed` innerhalb eines Containers mit Transform springen. Schwebende Bedienelemente (z. B. Vorschlags-Pille) außerhalb von `#stage` halten.
+- `stageClone` übernimmt Größen/Abstände der Elemente mit `id` als Inline-Stil vom Original, weil alte CSS-Regeln die Kopie sonst anders zeichnen (Überschrift kleiner, Inhalt 30 px höher, Rahmen um Knöpfe) und beim Loslassen alles springt.
 - Neu aufgebaute Umschalter-Marker sofort vor dem ersten Zeichnen setzen, sonst „ploppen“ sie auf.
 - Beim offenen Sheet die Seite dahinter festhalten (`lockBody`), sonst lässt sie sich mitwischen.
 

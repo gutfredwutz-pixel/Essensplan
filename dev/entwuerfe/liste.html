@@ -1,0 +1,99 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{margin:0;padding:36px;background:#2A2B2E;font-family:Inter,system-ui,sans-serif;color:#F2F2F4;-webkit-font-smoothing:antialiased;width:1340px}
+.row{display:flex;gap:40px;align-items:flex-start}
+.cap{font:650 17px Inter;color:#E6E7EA;margin:0 0 4px 6px}.cap2{font:400 14px/1.4 Inter;color:#A9ABB2;margin:0 0 14px 6px;width:380px;height:40px}
+.ph{width:390px;height:1420px;border-radius:48px;overflow:hidden;position:relative;background:#000;flex:none;--mu:#8E8E93;--mu2:#5E5E63}
+.sb{height:54px;display:flex;justify-content:space-between;align-items:center;padding:0 32px;font-weight:600;font-size:15px}
+.hd{padding:10px 24px 0}
+.k{font-size:17px;color:var(--mu);padding-bottom:6px}
+.t{display:flex;justify-content:space-between;align-items:center}
+h1{font-size:32px;font-weight:700;margin:0;letter-spacing:-.02em}
+.in{padding:30px 24px 0}
+.add{display:flex;align-items:center;gap:14px;font-size:15.5px;color:var(--mu);padding:10px 0}
+.add .pl{width:24px;text-align:center;font-size:22px;font-weight:300;color:var(--mu)}
+.add .mic{margin-left:auto}
+svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.sh{display:flex;justify-content:space-between;align-items:baseline;margin:44px 0 12px}
+.sh b{font-size:18px;font-weight:650}.sh span{font-size:15px;color:var(--mu)}
+.lbl{font-size:14px;color:var(--mu);margin:22px 0 2px}
+.lbl:first-child{margin-top:0}
+.it{display:flex;align-items:center;gap:14px;padding:10px 0;font-size:15.5px}
+.c{width:22px;height:22px;border-radius:50%;border:1.6px solid #5A5A5F;flex:none;box-sizing:border-box}
+.c.d{background:#F2F2F4;border:0;display:flex;align-items:center;justify-content:center}
+.c.d svg{width:13px;height:13px;stroke:#000;stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.c.p{border:1.6px dashed #4A4A4F;display:flex;align-items:center;justify-content:center;color:var(--mu);font-size:16px;line-height:1}
+.q{color:var(--mu);margin-left:auto;font-size:14.5px}
+.q2{color:var(--mu);font-size:14.5px}
+.sub{font-size:13.5px;color:var(--mu);margin-top:2px}
+.nm{display:flex;flex-direction:column}
+.dot{width:7px;height:7px;border-radius:50%;background:#E58FB4;flex:none;margin-left:-6px}
+.gap{height:14px}
+.done .nm2{color:var(--mu)}
+.idea{display:flex;align-items:center;gap:14px;padding:10px 0;font-size:15.5px}
+.idea .pp{width:22px;text-align:center;font-size:22px;font-weight:300;color:#F2F2F4}
+.idea .why{margin-left:auto;color:var(--mu);font-size:14px}
+.gi{color:#A9ABB2}
+.line{font-size:15.5px;line-height:1.45;color:#D8D9DD}
+.chips{display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:12px;font-size:15.5px;font-weight:600}
+.chips span{white-space:nowrap}.chips em{font-style:normal;font-weight:300;font-size:19px;margin-right:6px}
+.more{font-size:15px;color:var(--mu);margin-top:14px}
+.tabs{position:absolute;left:0;right:0;bottom:0;height:84px;padding-bottom:18px;background:#000;display:flex;justify-content:space-around;align-items:center;font-size:11px;font-weight:600;color:#6E6E73;box-sizing:border-box}
+.tabs span{display:flex;flex-direction:column;align-items:center;gap:4px}.tabs .on{color:#F2F2F4}
+.tabs svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.cv{display:flex;align-items:center;gap:10px}
+.mb{height:5px;border-radius:3px;background:#2A2A2D;width:70px;position:relative}.mb i{position:absolute;left:0;top:0;bottom:0;border-radius:3px}
+.lv-r{background:#E06B6B}.lv-o{background:#E59A55}.lv-y{background:#E3C65A}
+.nut{display:flex;align-items:center;gap:12px;padding:9px 0;font-size:15.5px}.nut .pc{margin-left:auto;color:var(--mu);font-size:14.5px;width:42px;text-align:right}
+</style></head><body>
+<div class="row" id="row"></div>
+<script>
+const I={
+ mic:'<svg class="i" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>',
+ cart:'<svg class="i" style="width:26px;height:26px" viewBox="0 0 24 24"><path d="M3 4h2.2l2.1 10.2a1.5 1.5 0 0 0 1.5 1.2h8.4a1.5 1.5 0 0 0 1.5-1.1L20.5 8H6.2"/><circle cx="9.5" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg>',
+ chk:'<svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg>'};
+const tabs=`<div class="tabs"><span><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v8.5a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/></svg>Start</span><span><svg viewBox="0 0 24 24"><path d="M5 20v-7M10 20V9M15 20v-5M20 20V5"/></svg>Statistik</span><span class="on"><svg viewBox="0 0 24 24"><path d="M7 3v18M4.5 3v5a2.5 2.5 0 0 0 5 0V3M17 21V3c-2.2 1.5-3 4-3 7s1.3 3.5 3 3.5"/></svg>Essen</span><span><svg viewBox="0 0 24 24"><path d="M4 6.5l1.6 1.6L8.5 5M4 15.5l1.6 1.6 2.9-3.1M12 7h8M12 16h8"/></svg>To-dos</span><span><svg viewBox="0 0 24 24"><rect x="4" y="4" width="13" height="16" rx="1.5"/><path d="M17 8h3v10.5a1.5 1.5 0 0 1-3 0M7.5 8h6M7.5 12h6M7.5 16h4"/></svg>News</span></div>`;
+const head=`<div class="sb"><span>9:41</span><span>●●●</span></div><div class="hd"><div class="k">Donnerstag, 26. November</div><div class="t"><h1>Einkaufsliste</h1><span style="color:#F2F2F4">${I.cart}</span></div></div>`;
+const addRow=`<div class="add"><span class="pl">+</span><span>Karotten, 500 g Hack …</span><span class="mic">${I.mic}</span></div>`;
+const it=(n,q,o={})=>`<div class="it"><span class="c"></span><span class="nm"><span>${n}</span>${o.sub?`<span class="sub">${o.sub}</span>`:''}</span>${o.f?'<span class="dot"></span>':''}${q?`<span class="q">${q}</span>`:''}</div>`;
+const doneRows=`<div class="sh"><b>Im Wagen</b><span>Leeren</span></div><div class="it done"><span class="c d">${I.chk}</span><span class="nm2">Milch</span><span class="q">1 l</span></div><div class="it done"><span class="c d">${I.chk}</span><span class="nm2">Eier</span><span class="q">10</span></div>`;
+const groups=[
+ ['Obst & Gemüse',[['Äpfel','6'],['Paprika','2'],['Tomaten','400 g',{sub:'für Lasagne'}],['Zwiebeln','']]],
+ ['Milch & Eier',[['Feta','',{f:1}],['Joghurt','500 g',{f:1}]]],
+ ['Brot & Backwaren',[['Brot','']]],
+ ['Nudeln, Reis & Getreide',[['Linsen','200 g'],['Nudeln','500 g']]],
+ ['Drogerie & Haushalt',[['Spülmittel','',{f:1}]]]];
+const ideaIn={'Obst & Gemüse':[['Spinat','Eisen, Folat']],'Fleisch & Fisch':[['Lachs','Vitamin D, Jod']],'Nudeln, Reis & Getreide':[['Haferflocken','Magnesium, Zink']],'Snacks':[['Walnüsse','Omega-3']]};
+const ideas=[['Lachs','Vitamin D, Jod'],['Spinat','Eisen, Folat'],['Haferflocken','Magnesium, Zink'],['Walnüsse','Omega-3']];
+
+// A: Bereiche mit Namen, Ideen als eigener Abschnitt unter der Liste
+let A=head+'<div class="in">'+addRow+'<div style="height:22px"></div>';
+for(const [g,xs] of groups){A+=`<div class="lbl">${g}</div>`+xs.map(x=>it(...x)).join('');}
+A+=`<div class="sh"><b>Fehlt deiner Woche</b><span>31 % gedeckt</span></div>`;
+A+=ideas.map(([n,w])=>`<div class="idea"><span class="pp">+</span><span>${n}</span><span class="why">${w}</span></div>`).join('');
+A+=doneRows+'</div>'+tabs;
+
+// B: Ideen oben kompakt, Liste ohne Bereichsnamen, nur Abstand
+let B=head+'<div class="in">'+addRow;
+B+=`<div class="sh" style="margin-top:30px"><b>Für deine Woche</b><span>31 % gedeckt</span></div>`;
+B+=`<div class="line">Es fehlen vor allem Vitamin D, Eisen und Jod.</div><div class="chips">${ideas.slice(0,3).map(([n])=>`<span><em>+</em>${n}</span>`).join('')}</div>`;
+B+=`<div class="sh"><b>Liste</b><span>10</span></div>`;
+B+=groups.map(([g,xs])=>xs.map(x=>it(...x)).join('')).join('<div class="gap"></div>');
+B+=doneRows+'</div>'+tabs;
+
+// C: Ideen grau direkt im passenden Bereich
+let C=head+'<div class="in">'+addRow;
+C+=`<div class="sh" style="margin-top:30px"><b>Deine Woche</b><span>31 % gedeckt</span></div>`;
+C+=[['Vitamin D',12,'lv-r'],['Eisen',38,'lv-o'],['Jod',41,'lv-o']].map(([n,p,c])=>`<div class="nut"><span>${n}</span><span class="pc">${p} %</span><span class="mb"><i class="${c}" style="width:${p}%"></i></span></div>`).join('');
+C+=`<div class="more">Grau in der Liste: passt dazu</div><div style="height:30px"></div>`;
+const order=['Obst & Gemüse','Fleisch & Fisch','Milch & Eier','Brot & Backwaren','Nudeln, Reis & Getreide','Snacks','Drogerie & Haushalt'];
+const gm=Object.fromEntries(groups);
+let first=true;
+for(const g of order){const xs=gm[g]||[],id=ideaIn[g]||[]; if(!xs.length&&!id.length)continue;
+ C+=`<div class="lbl"${first?' style="margin-top:0"':''}>${g}</div>`+xs.map(x=>it(...x)).join('')+id.map(([n,w])=>`<div class="it gi"><span class="c p">+</span><span>${n}</span><span class="q">${w}</span></div>`).join(''); first=false;}
+C+=doneRows+'</div>'+tabs;
+
+const cap={A:['A  Bereiche mit Namen, Ideen darunter','Liste nach Supermarkt-Bereichen. Darunter ein eigener Abschnitt mit Ideen, die deiner Woche fehlen.'],
+ B:['B  Ideen kurz oben, Liste schlicht','Oben ein Satz, was fehlt, und Ideen zum Antippen. Liste ohne Bereichsnamen, nur Abstand dazwischen.'],
+ C:['C  Ideen grau mitten in der Liste','Oben die drei größten Lücken. Ideen stehen grau im passenden Bereich, Antippen setzt sie richtig drauf.']};
+document.getElementById('row').innerHTML=Object.entries({A,B,C}).map(([k,v])=>`<div><div class="cap">${cap[k][0]}</div><div class="cap2">${cap[k][1]}</div><div class="ph">${v}</div></div>`).join('');
+</script></body></html>
