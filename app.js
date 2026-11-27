@@ -1,5 +1,21 @@
 'use strict';
 /* ============ Hilfsfunktionen ============ */
+// Länge der Nährwert-Listen (Reihenfolge siehe nutrition.js / dev/bls_build.py). Alte gespeicherte Listen haben 24 Werte und werden mit fullV ergänzt.
+const NV = 49;
+const VKEY = v => v.slice(0, 24).map(x => Math.round((+x || 0) * 1000)).join(',');
+let FULLV = null, BLSNAME = null;
+function fullIdx() {
+  if (FULLV) return FULLV; FULLV = new Map();
+  for (const v of Object.values(window.NUTRI || {})) FULLV.set(VKEY(v), v);
+  for (const f of window.DIARY_FOODS || []) FULLV.set(VKEY(f[4]), f[4]);
+  for (const g of window.VARIANTS || []) for (const o of g.o) FULLV.set(VKEY(o[1]), o[1]);
+  return FULLV;
+}
+function fullV(v, src) {
+  if (!v || v.length >= NV) return v;
+  const w = fullIdx().get(VKEY(v)) || (BLSNAME && src && BLSNAME.get(src));
+  return w && w.length >= NV ? v.slice(0, 24).concat(w.slice(24)) : v;
+}
 const $ = s => document.querySelector(s);
 function ic(name, cls) {
   const d = (window.FA || {})[name]; if (!d) return document.createTextNode('');
@@ -124,7 +140,7 @@ function startData() {
   const done = () => { if (loaded.items && loaded.plan && loaded.recipes) { clearTimeout(timer); setStatus(''); } };
   const sub = (name, set) => db.collection(name).onSnapshot(snap => { set(snap.docs.map(x => ({ id: x.id, ...x.data() }))); loaded[name] = true; done(); render(); }, e => { lastErr = (e && (e.message || e.code)) || ''; setStatus('Fehler beim Laden'); console.error(e); });
   sub('items', v => items = v); sub('plan', v => plan = v); sub('recipes', v => recipes = v);
-  sub('todos', v => todos = v); sub('goals', v => goals = v); sub('sleep', v => sleeps = v); sub('training', v => trainings = v); sub('pantry', v => pantry = v);
+  sub('todos', v => todos = v); sub('goals', v => goals = v); sub('sleep', v => sleeps = v); sub('training', v => trainings = v); sub('pantry', v => pantry = v); sub('foods', v => myFoods = v);
   db.collection('push').onSnapshot(snap => { const first = pushes === null; pushes = snap.docs.map(x => ({ id: x.id, ...x.data() })); if (first) pushSync(); });
   db.collection('known').onSnapshot(snap => { known = new Map(snap.docs.map(x => [x.id, x.data()])); });
   db.collection('settings').onSnapshot(snap => { const d = snap.docs.find(x => x.id === 'household'); hhSet = d ? d.data() : {}; if (tab === 'set') render(); });
@@ -277,6 +293,7 @@ function renderSettings() {
     ['Gewürze aus Rezepten', sp, () => [seg('ep_spices', [['ask', 'Nachfragen'], ['all', 'Immer'], ['none', 'Nie']], 'ask'), note('Ob Gewürze beim Einplanen eines Rezepts auf die Einkaufsliste kommen.')]],
     ['Nie auf die Liste', `${nv} Sachen`, () => SUBNEVER()],
     ['Mitteilungen', pushDoc() ? 'An' : '', () => pushPage(note, seg)],
+    ['Meine Lebensmittel', myFoods.length ? `${myFoods.length}` : '', () => myFoodsPage(note)],
     ['KI', '', () => [aiCard()]],
     ['Spracherkennung', LS.get('ep_asr') ? 'Geladen' : '', () => [note('Fürs Diktieren und für Videos. Am besten einmal im WLAN laden, danach geht es auch offline.'), asrBtn, asrProg]]];
   const OLD_CARDS = () => [
@@ -391,13 +408,13 @@ function nutOf(g) {
   return v || null;
 }
 function recipeNutrition(r) {
-  const tot = new Array(24).fill(0); const unknown = []; const parts = [];
+  const tot = new Array(NV).fill(0); const unknown = []; const parts = [];
   for (const g of (r.ingredients || [])) {
     if (!g.name) continue;
-    const v = nutOf(g), gr = gramsOf(g.name, g.amount);
-    if (v && gr != null) { for (let i = 0; i < 24; i++) tot[i] += (v[i] || 0) * gr / 100; parts.push({ name: g.name, v, gr }); }
+    const v = fullV(nutOf(g), g.product && g.product.name), gr = gramsOf(g.name, g.amount);
+    if (v && gr != null) { for (let i = 0; i < NV; i++) tot[i] += (v[i] || 0) * gr / 100; parts.push({ name: g.name, v, gr }); }
     else if (!isNever(g.name) && !(isSpice(g.name) && v)) unknown.push(g.name);
-    else if (isNever(g.name) && /öl|ol$/.test(norm(g.name)) && gr != null && v) { for (let i = 0; i < 24; i++) tot[i] += (v[i] || 0) * gr / 100; }
+    else if (isNever(g.name) && /öl|ol$/.test(norm(g.name)) && gr != null && v) { for (let i = 0; i < NV; i++) tot[i] += (v[i] || 0) * gr / 100; }
   }
   const serv = Math.max(1, parseFloat(r.servings) || 2);
   return { tot, per: tot.map(x => x / serv), serv, unknown, parts, ok: parts.length > 0 };
@@ -931,11 +948,11 @@ function openNutInfo(i) {
 /* ---- Nährstoff-Rechnung für die Liste ---- */
 function listNutrition() {
   // Liste: geteilter Einkauf, pro Person ein Anteil
-  const lst = new Array(24).fill(0); let counted = 0;
+  const lst = new Array(NV).fill(0); let counted = 0;
   for (const it of items) {
     const v = nutOf({ name: it.name, variant: it.variant }); if (!v) continue;
     let g = gramsOf(it.name, it.qty || ''); if (g == null) g = PIECE[canon(it.name)] || 250;
-    for (let i = 0; i < 24; i++) lst[i] += (v[i] || 0) * g / 100; counted++;
+    for (let i = 0; i < NV; i++) lst[i] += (v[i] || 0) * g / 100; counted++;
   }
   const persons = Math.max(1, people.length || 1);
   const who = me(), pf = profiles[who];
@@ -943,7 +960,7 @@ function listNutrition() {
   // Was die eingeloggte Person diese Woche bisher gegessen hat (bis heute)
   const ws = weekStartOf(new Date()), today0 = dayOnly(new Date());
   const days = []; for (let d = ws; d <= today0; d = addDays(d, 1)) days.push(ymd(d));
-  const eaten = window.rangeData ? rangeData(who, days).total : new Array(24).fill(0);
+  const eaten = window.rangeData ? rangeData(who, days).total : new Array(NV).fill(0);
   const keys = [4, 23, 9, 15, 14, 16, 8, 10, 11, 12, 13, 20, 22, 18, 19, 21, 17, 1];
   const refOf = i => (nd.R[i] || REF[i]);
   const rows = keys.filter(i => refOf(i)).map(i => { const need = refOf(i)[0] * 7; const ate = Math.min(100, eaten[i] / need * 100); const fromList = Math.min(100 - ate, lst[i] / persons / need * 100); return { i, name: refOf(i)[1], ate, fromList, pct: ate + fromList }; });
@@ -1513,7 +1530,7 @@ async function imgToData(file, max, q) {
 
 /* ============ Nährwerte zuordnen: BLS oder Markenprodukt ============ */
 let blsAll = null;
-async function loadBls() { if (blsAll) return blsAll; const r = await fetch('bls.json'); blsAll = await r.json(); return blsAll; }
+async function loadBls() { if (blsAll) return blsAll; const r = await fetch('bls.json'); blsAll = await r.json(); BLSNAME = new Map(blsAll.map(([n, v]) => [n, v])); const m = fullIdx(); for (const [, v] of blsAll) { const k = VKEY(v); if (!m.has(k)) m.set(k, v); } return blsAll; }
 function pickProduct(g, done) {
   const q = h('input', { class: 'inp', value: g.name || '', placeholder: 'Lebensmittel oder Produkt', autocomplete: 'off' });
   const res = h('div', { class: 'pick' });
@@ -1523,10 +1540,11 @@ function pickProduct(g, done) {
   const searchBls = async () => {
     res.replaceChildren(grey('Suche …'));
     const all = await loadBls(); const words = norm(q.value).split(' ').filter(Boolean);
+    const mine = myFoods.filter(p => p.v && words.length && words.every(w => norm(`${p.name} ${p.brand || ''} ${p.alias || ''}`).includes(w))).map(p => [p.brand ? `${p.name} (${p.brand})` : p.name, p.v, true]);
     // Eigene Ergänzungen (z. B. Whey-Protein), die nicht im BLS stehen, zuerst
     const extra = (window.DIARY_FOODS || []).filter(([, n]) => !all.some(([bn]) => bn === n)).filter(([al, n]) => { const k = norm(al.replace(/\|/g, ' ') + ' ' + n); return words.length && words.every(w => k.includes(w)); }).map(([, n, , , v]) => [n, v]);
-    const hits = extra.concat(all.filter(([n]) => { const k = norm(n); return words.every(w => k.includes(w)); }).sort((a, b) => (/\broh\b/.test(b[0]) - /\broh\b/.test(a[0])) || a[0].length - b[0].length)).slice(0, 25);
-    res.replaceChildren(...hits.map(([n, v]) => h('button', { onclick: () => choose({ src: 'BLS', name: n, v }) }, h('span', { text: n }), h('span', { class: 'muted', text: `  ${fmtInt(v[0])} kcal` }))));
+    const hits = mine.concat(extra).concat(all.filter(([n]) => { const k = norm(n); return words.every(w => k.includes(w)); }).sort((a, b) => (/\broh\b/.test(b[0]) - /\broh\b/.test(a[0])) || a[0].length - b[0].length)).slice(0, 25);
+    res.replaceChildren(...hits.map(([n, v, my]) => h('button', { onclick: () => choose({ src: my ? 'Eigenes Produkt' : 'BLS', name: n, v }) }, h('span', { text: n }), h('span', { class: 'muted', text: `  ${fmtInt(v[0])} kcal` }))));
     if (!hits.length) res.replaceChildren(grey('Nichts im BLS gefunden, probier die Markensuche'));
   };
   offBtn.addEventListener('click', async () => {
@@ -1537,7 +1555,7 @@ function pickProduct(g, done) {
       const hits = (j.products || []).filter(p => p.nutriments && p.nutriments['energy-kcal_100g'] != null);
       res.replaceChildren(...hits.map(p => {
         const n = p.nutriments; const name = p.product_name_de || p.product_name || 'Produkt';
-        const v = new Array(24).fill(0); v[0] = +n['energy-kcal_100g'] || 0; v[1] = +n.proteins_100g || 0; v[2] = +n.fat_100g || 0; v[3] = +n.carbohydrates_100g || 0; v[4] = +n.fiber_100g || 0; v[5] = +n.sugars_100g || 0; v[6] = +n['saturated-fat_100g'] || 0; v[7] = +n.salt_100g || 0;
+        const v = new Array(NV).fill(0); v[0] = +n['energy-kcal_100g'] || 0; v[1] = +n.proteins_100g || 0; v[2] = +n.fat_100g || 0; v[3] = +n.carbohydrates_100g || 0; v[4] = +n.fiber_100g || 0; v[5] = +n.sugars_100g || 0; v[6] = +n['saturated-fat_100g'] || 0; v[7] = +n.salt_100g || 0;
         return h('button', { onclick: () => choose({ src: 'OFF', name, brand: (p.brands || '').split(',')[0], code: p.code, v, partial: true }) }, h('span', { text: ((p.brands || '').split(',')[0] ? (p.brands || '').split(',')[0] + ' ' : '') + name }), h('span', { class: 'muted', text: `  ${fmtInt(v[0])} kcal` }));
       }));
       if (!hits.length) res.replaceChildren(grey('Kein Produkt gefunden'));
@@ -1548,6 +1566,7 @@ function pickProduct(g, done) {
   reopen = () => { $('#sheet').replaceChildren(...saved); $('#ov').classList.add('on'); lockBody(true); barColor(); $('#sheet').scrollTop = savedScroll; done(); };
   q.addEventListener('keydown', e => { if (e.key === 'Enter') searchBls(); });
   openSheet('Nährwerte für ' + (g.name || 'Zutat'), [q, h('div', { class: 'row', style: 'margin-top:8px;gap:8px' }, h('button', { class: 'btn s', onclick: searchBls }, 'Im BLS suchen'), offBtn),
+    h('div', { class: 'row', style: 'margin-top:8px;gap:8px' }, h('button', { class: 'btn s', onclick: () => scanFlow(f => choose({ src: f.src, name: f.name, v: f.v })) }, 'Strichcode scannen'), h('button', { class: 'btn s', onclick: () => photoFlow(f => choose({ src: f.src, name: f.name, v: f.v })) }, 'Nährwerte fotografieren')),
     h('div', { class: 'muted', style: 'margin:8px 6px 0', text: 'BLS: geprüfte Durchschnittswerte. Markenprodukte: Herstellerangaben von Open Food Facts.' }), res,
     h('div', { class: 'actions' }, h('button', { class: 'btn g', onclick: () => { closeSheet(); reopen(); } }, 'Zurück'))]);
   $('#sheet .shead .ib').onclick = () => { closeSheet(); reopen(); };
@@ -1595,10 +1614,17 @@ function fmtTime(s) { const m = Math.floor(s / 60), x = s % 60; return s >= 3600
 
 /* ============ Nährstoff-Bericht ============ */
 // Richtwerte pro Tag für Erwachsene, gerundet nach den Referenzwerten der DGE
-const REF = { 4: [30, 'Ballaststoffe', 'g'], 8: [775, 'Vitamin A', 'µg'], 9: [20, 'Vitamin D', 'µg'], 10: [12, 'Vitamin E', 'mg'], 11: [1.1, 'Vitamin B1', 'mg'], 12: [1.2, 'Vitamin B2', 'mg'], 13: [1.5, 'Vitamin B6', 'mg'], 14: [300, 'Folat', 'µg'], 15: [4, 'Vitamin B12', 'µg'], 16: [100, 'Vitamin C', 'mg'], 17: [4000, 'Kalium', 'mg'], 18: [1000, 'Calcium', 'mg'], 19: [325, 'Magnesium', 'mg'], 20: [13, 'Eisen', 'mg'], 21: [9, 'Zink', 'mg'], 22: [150, 'Jod', 'µg'], 23: [1.2, 'Omega-3-Fette', 'g'], 1: [57, 'Eiweiß', 'g'] };
+const REF = { 4: [30, 'Ballaststoffe', 'g'], 8: [775, 'Vitamin A', 'µg'], 9: [20, 'Vitamin D', 'µg'], 10: [12, 'Vitamin E', 'mg'], 11: [1.1, 'Vitamin B1', 'mg'], 12: [1.2, 'Vitamin B2', 'mg'], 13: [1.5, 'Vitamin B6', 'mg'], 14: [300, 'Folat', 'µg'], 15: [4, 'Vitamin B12', 'µg'], 16: [100, 'Vitamin C', 'mg'], 17: [4000, 'Kalium', 'mg'], 18: [1000, 'Calcium', 'mg'], 19: [325, 'Magnesium', 'mg'], 20: [13, 'Eisen', 'mg'], 21: [9, 'Zink', 'mg'], 22: [150, 'Jod', 'µg'], 23: [1.2, 'Omega-3-Fette', 'g'], 1: [57, 'Eiweiß', 'g'], 32: [70, 'Vitamin K', 'µg'], 33: [15, 'Niacin (B3)', 'mg'], 34: [5, 'Pantothensäure (B5)', 'mg'], 35: [40, 'Biotin (B7)', 'µg'], 36: [550, 'Phosphor', 'mg'], 37: [1.5, 'Kupfer', 'mg'], 38: [3, 'Mangan', 'mg'] };
 const LIMITS = { 7: [6, 'Salz', 'g'], 5: [50, 'Zucker', 'g'], 6: [22, 'Gesättigte Fette', 'g'] };
 const HERBS = /petersilie|basilikum|koriander|schnittlauch|dill|minze|rosmarin|thymian|salbei|oregano|estragon|kerbel|liebstockel|barlauch|kresse|lorbeer|majoran/;
 const INFO = {
+  32: 'Wird für die Blutgerinnung und für stabile Knochen gebraucht. Steckt vor allem in grünem Blattgemüse und Kohl.',
+  33: 'Hilft, aus der Nahrung Energie zu gewinnen, und ist wichtig für Haut und Nerven. Der Körper kann es zum Teil aus dem Eiweißbaustein Tryptophan selbst bilden, das ist hier mitgerechnet.',
+  34: 'Wird im Energiestoffwechsel und zum Aufbau von Fetten und Hormonen gebraucht. Kommt in fast allen Lebensmitteln vor, ein Mangel ist sehr selten.',
+  35: 'Wichtig für Haut, Haare und Nägel und für den Energiestoffwechsel. Viel davon in Nüssen, Eiern, Haferflocken und Hülsenfrüchten. Für manche Lebensmittel fehlen Messwerte, deshalb wird hier eher zu wenig gezählt.',
+  36: 'Baustoff für Knochen und Zähne und nötig für die Energie in jeder Zelle. Steckt in Käse, Milch, Fleisch, Fisch, Nüssen und Vollkorn, ein Mangel ist sehr selten.',
+  37: 'Wird für die Blutbildung, das Immunsystem und das Bindegewebe gebraucht. Gute Quellen sind Nüsse, Kerne, Hülsenfrüchte und Vollkorn.',
+  38: 'Hilft bei Knochenaufbau und Stoffwechsel. Viel davon in Haferflocken, Nüssen, Vollkorn und Reis.',
   0: 'Energie für alles, was der Körper tut. Dauerhaft deutlich weniger als der Bedarf heißt abnehmen, deutlich mehr heißt zunehmen.',
   2: 'Liefert viel Energie, wird für fettlösliche Vitamine (A, D, E, K) gebraucht und ist Baustoff für Zellen und Hormone. Am besten vor allem aus Pflanzenölen, Nüssen und Fisch.',
   3: 'Die wichtigste schnelle Energiequelle, besonders für Gehirn und Muskeln beim Sport. Am besten aus Vollkorn, Kartoffeln, Hülsenfrüchten und Obst.',
@@ -1628,11 +1654,11 @@ let repMode = 'week';
 function reportData(start) {
   const days = [...Array(7)].map((_, i) => ymd(addDays(start, i)));
   const meals = plan.filter(p => days.includes(p.date)).map(p => ({ p, r: recipeOf(p) })).filter(m => m.r && recipeNutrition(m.r).ok);
-  const total = new Array(24).fill(0); const src = {}; const unknown = new Set();
+  const total = new Array(NV).fill(0); const src = {}; const unknown = new Set();
   for (const { r, p } of meals) {
     const n = recipeNutrition(r); n.unknown.forEach(x => unknown.add(x)); const pf = p.portion || 1;
-    for (let i = 0; i < 24; i++) total[i] += n.per[i] * pf;
-    for (const part of n.parts) for (let i = 0; i < 24; i++) { const v = (part.v[i] || 0) * part.gr / 100 / n.serv * pf; if (v > 0) { (src[i] = src[i] || {}); src[i][part.name] = (src[i][part.name] || 0) + v; } }
+    for (let i = 0; i < NV; i++) total[i] += n.per[i] * pf;
+    for (const part of n.parts) for (let i = 0; i < NV; i++) { const v = (part.v[i] || 0) * part.gr / 100 / n.serv * pf; if (v > 0) { (src[i] = src[i] || {}); src[i][part.name] = (src[i][part.name] || 0) + v; } }
   }
   const nDays = new Set(meals.map(m => m.p.date)).size;
   return { meals, total, src, unknown, nDays };
@@ -1642,7 +1668,7 @@ function scaleFor(mode, d, ref) {
   if (mode === 'day') return { val: d.total.map(x => x / 7), need: ref };
   return { val: d.total.map(x => x / Math.max(1, d.meals.length)), need: ref / 3 };
 }
-const NUT_GROUPS = [['Grundbausteine', [0, 1, 3, 2, 4, 23]], ['Vitamine', [9, 15, 14, 16, 8, 10, 11, 12, 13]], ['Mineralstoffe', [20, 22, 18, 19, 21, 17]], ['Lieber nicht zu viel', [7, 5, 6]]];
+const NUT_GROUPS = [['Grundbausteine', [0, 1, 3, 2, 4, 23]], ['Vitamine', [9, 15, 14, 16, 8, 10, 32, 11, 12, 33, 34, 13, 35]], ['Mineralstoffe', [20, 22, 18, 19, 21, 17, 36, 37, 38]], ['Lieber nicht zu viel', [7, 5, 6]]];
 const MACRO = new Set([0, 2, 3]), LIMIT_KEYS = new Set([7, 5, 6]);
 function nutState(i, pct) {
   if (MACRO.has(+i)) return pct < 80 ? 'low' : pct <= 115 ? 'good' : 'high';
@@ -1774,6 +1800,13 @@ function openNutrient(r, d, start, opt) {
   window.scrollTo(0, 0);
 }
 const GOOD_SRC = {
+  32: [['Grünkohl', 'sehr viel'], ['Brokkoli', ''], ['Rosenkohl', ''], ['Spinat', ''], ['Rucola', ''], ['Rapsöl', '']],
+  33: [['Hähnchenbrust', ''], ['Erdnüsse', ''], ['Thunfisch', ''], ['Makrele', ''], ['Naturreis', ''], ['Linsen', '']],
+  34: [['Hähnchenbrust', ''], ['Erdnüsse', ''], ['Naturreis', ''], ['Eier', ''], ['Haferflocken', ''], ['Avocado', '']],
+  35: [['Mandeln', ''], ['Haselnüsse', ''], ['Sonnenblumenkerne', ''], ['Walnüsse', ''], ['Eier', ''], ['Linsen', '']],
+  36: [['Emmentaler', ''], ['Sonnenblumenkerne', ''], ['Haferflocken', ''], ['Linsen', ''], ['Lachs', ''], ['Milch', '']],
+  37: [['Cashews', ''], ['Sonnenblumenkerne', ''], ['Sesam', ''], ['Haselnüsse', ''], ['Linsen', ''], ['Haferflocken', '']],
+  38: [['Haferflocken', ''], ['Haselnüsse', ''], ['Kürbiskerne', ''], ['Naturreis', ''], ['Vollkornbrot', ''], ['Pinienkerne', '']],
   1: [['Magerquark', '12 g in 100 g'], ['Skyr', '11 g in 100 g'], ['Linsen', 'mit viel Ballaststoff'], ['Hähnchenbrust', 'mager'], ['Eier', 'vielseitig'], ['Tofu', 'pflanzlich'], ['Hüttenkäse', 'leicht']],
   2: [['Olivenöl', 'gute Fette'], ['Walnüsse', 'mit Omega-3'], ['Avocado', 'ungesättigt'], ['Leinsamen', 'mit Omega-3'], ['Lachs', 'mit Omega-3']],
   3: [['Haferflocken', 'sättigt lange'], ['Vollkornbrot', 'mit Ballaststoff'], ['Kartoffeln', 'mit Kalium'], ['Naturreis', 'Vollkorn'], ['Vollkornnudeln', 'Vollkorn'], ['Bananen', 'schnelle Energie']],

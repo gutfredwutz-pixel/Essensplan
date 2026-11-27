@@ -60,6 +60,15 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - Kalorien-/Nährstoff-Schnitt zählt nur Tage mit Einträgen (`dayIntake().logged` = Essen oder Plan-Anteil eingetragen); nur geplante Tage zählen nicht mehr.
 - Essen > Woche hat oben „Heute gegessen“. Umschalter Woche/Rezepte/Vorrat tauscht die Seite ohne Wischeffekt (`switchNow`); Wischen mit dem Finger bleibt.
 
+## Nährwerte erweitert, Meine Lebensmittel (Ende Nov. 2026)
+
+- Nährwert-Listen haben jetzt 49 Werte (`NV` in `app.js`). 0–23 wie bisher, dazu 24 einfach unges., 25 mehrfach unges., 26 Omega-6, 27 ALA, 28 EPA, 29 DHA, 30 DPA, 31 Stärke, 32 Vit. K, 33 Niacin-Äquiv., 34 Pantothensäure, 35 Biotin, 36 Phosphor, 37 Kupfer (mg), 38 Mangan (mg), 39 Laktose, 40–48 unentbehrliche Aminosäuren (g). Erzeugt mit `dev/bls_build.py` aus der BLS-4.0-Datei (blsdb.de > BLS-Daten > Download, CC BY 4.0, Quelle in der App nennen). Selen gibt es im BLS nicht.
+- Alte gespeicherte Listen (24 Werte) ergänzt `fullV(v, src)` beim Rechnen (über Werte-Schlüssel oder BLS-Namen; Statistik lädt dafür `bls.json`).
+- Bedarf neu: Vit. K, Niacin, Kupfer nach DGE (Geschlecht/Alter), Pantothensäure 5 mg, Biotin 40 µg, Phosphor 550 mg und Mangan 3 mg (EFSA).
+- Statistik > Nährstoffe: Fett, Kohlenhydrate, Eiweiß (Makros) und Omega-3 (Grundbausteine) antippen → Details (`openNutDetail` in `start.js`): Fettarten mit % der Kalorien, Omega-6 zu 3 (Ziel ≤ 5:1), ALA vs. EPA+DHA (250 mg, EFSA), KH-Qualität (≥ 1 g Ballaststoff je 10 g KH = hochwertig, Milchzucker extra), Eiweißqualität als Aminosäure-Score (WHO 2007).
+- `produkte.js`: Sammlung `foods` (Haushalt). Strichcode mit ZXing (`lib/zxing.min.js`, lädt erst bei Bedarf) → Open Food Facts; Foto der Nährwerttabelle → KI-Aufgabe `label`. Produkte werden beim Diktieren zuerst erkannt (`findMine`, auch „So sage ich dazu“ und Teilnamen ab 2 Wörtern) und der KI als Kontext mitgegeben. Einstellungen > Meine Lebensmittel. Knöpfe im Eintragen-Fenster und in der Nährwert-Suche.
+- Netz der Cloud-Umgebung: blsdb.de, USDA, Open Food Facts, heise, MRI sind freigegeben.
+
 ## Supplemente (`supplemente.js`)
 
 - Feste Regeln, keine KI. Prüft eingetragene Supplemente (Summe aller) gegen BfR-Höchstmengen für Supplemente (2024, belegt nur: D 20 µg, Jod 100 µg, Eisen 6 mg, Magnesium 250 mg, Zink 6,5 mg, Folsäure 200 µg; andere ohne Warnung) und meldet „eher unnötig“, wenn das Essen schon 100 % deckt.
@@ -81,7 +90,7 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - **Supabase** (Datenbank + anonyme Anmeldung). Zugriff über einen Adapter im Firestore-Stil: `db.collection('x').doc('y').set/update/delete/onSnapshot`. Sammlungen u. a. `items`, `recipes`, `plan`, `profiles`, `diary`, `settings` (Doc `household`). Tabellen-Setup: `supabase-setup.sql`.
 - Projekt-URL und öffentlicher Schlüssel werden in der App eingegeben oder per Einladungslink übergeben, **nie committen**. `config.js` bleibt leer.
 - **Niemals** den Supabase-`service_role`-Schlüssel oder das DB-Passwort verwenden oder anfordern. API-Schlüssel nie in die App, ins Repo oder in einen Chat.
-- **KI**: Supabase Edge Function `ai` (`supabase/functions/ai/index.ts`). Secrets in Supabase: `ANTHROPIC_API_KEY` (Claude Haiku, Modell `claude-haiku-5-5`, für Rezepte aus Text/Video/Fotos und fürs Tagebuch) und `ELEVENLABS_API_KEY` (Spracherkennung Scribe v3; die Funktion gibt nur Einmal-Schlüssel an die App). Aufgaben: `ping`, `recipe`, `diary`, `stt_token`. Ohne KI greifen die festen Regeln (`recipeFromText`, `parseDiary`). Änderungen an der Funktion müssen in Supabase neu deployt werden (bisher per Kopieren in den Dashboard-Editor; mit Supabase-CLI oder -Connector kann Claude Code das selbst).
+- **KI**: Supabase Edge Function `ai` (`supabase/functions/ai/index.ts`). Secrets in Supabase: `ANTHROPIC_API_KEY` (Claude Haiku, Modell `claude-haiku-5-5`, für Rezepte aus Text/Video/Fotos und fürs Tagebuch) und `ELEVENLABS_API_KEY` (Spracherkennung Scribe v3; die Funktion gibt nur Einmal-Schlüssel an die App). Aufgaben: `ping`, `recipe`, `diary`, `label`, `meal`, `stt_token`. Ohne KI greifen die festen Regeln (`recipeFromText`, `parseDiary`). Änderungen an der Funktion müssen in Supabase neu deployt werden (bisher per Kopieren in den Dashboard-Editor; mit Supabase-CLI oder -Connector kann Claude Code das selbst).
 - Kosten: Anthropic-Guthaben in der Claude Console (getrennt vom Claude-Abo), ElevenLabs Free-Plan.
 
 ## Gelernt auf dem iPhone (wichtig)

@@ -265,8 +265,81 @@ function goalStats(days) {
 // Ampel: ab 80 % grün, ab 60 % gelb, ab 40 % orange, darunter rot; bei „nicht zu viel“ umgekehrt
 function lvl(pct, limit) { if (limit) return pct <= 100 ? 'g' : pct <= 125 ? 'y' : pct <= 150 ? 'o' : 'r'; return pct >= 80 ? 'g' : pct >= 60 ? 'y' : pct >= 40 ? 'o' : 'r'; }
 function groupPct(rs) { const lim = rs.every(r => LIMIT_KEYS.has(r.i)); if (lim) return Math.max(...rs.map(r => r.pct)); return Math.round(rs.reduce((a, r) => a + Math.min(100, r.pct), 0) / rs.length); }
-function nutRowsList(rs) { return rs.map(r => lrow({}, h('span', { class: 'tx', text: r.nm }), h('span', { class: 'n', text: `${r.pct} %` }), h('span', { class: 'mb ' + r.st }, h('i', { style: `width:${Math.min(100, r.pct)}%` })))); }
-function openNutList(title, rs, note) { openSheet(title, [note ? h('div', { class: 'sheetnote', text: note }) : null, h('div', { class: 'ln' }, ...nutRowsList(rs))]); }
+const DETAIL = new Set([1, 2, 3, 23]);
+function nutRowsList(rs, ctx) { return rs.map(r => { const tap = ctx && DETAIL.has(r.i); return lrow(tap ? { class: 'lr tap', onclick: () => openNutDetail(r.i, ctx) } : {}, h('span', { class: 'tx', text: r.nm }), h('span', { class: 'n', text: `${r.pct} %` }), h('span', { class: 'mb ' + r.st }, h('i', { style: `width:${Math.min(100, r.pct)}%` })), tap ? h('span', { class: 'chev', text: '›' }) : null); }); }
+function openNutList(title, rs, note, ctx) { if (ctx) ctx.back = () => openNutList(title, rs, note, ctx); openSheet(title, [note ? h('div', { class: 'sheetnote', text: note }) : null, h('div', { class: 'ln' }, ...nutRowsList(rs, ctx))]); }
+
+/* ---- Details zu Fett, Omega-3, Kohlenhydraten und Eiweiß (Werte im Schnitt pro eingetragenem Tag) ---- */
+const AA = [[40, 'Histidin', 15], [41, 'Isoleucin', 30], [42, 'Leucin', 59], [43, 'Lysin', 45], [44, 'Methionin und Cystein', 22], [45, 'Phenylalanin und Tyrosin', 38], [46, 'Threonin', 23], [47, 'Tryptophan', 6], [48, 'Valin', 39]]; // mg je g Eiweiß, WHO/FAO/UNU 2007 (Erwachsene)
+const g1 = x => (x >= 10 ? fmtInt(x) : String(Math.round(x * 10) / 10).replace('.', ','));
+function topSrc(d, i, n = 3) { const m = d.src[i] || {}; const tot = Object.values(m).reduce((a, b) => a + b, 0); return Object.entries(m).filter(([, x]) => x >= tot * 0.05).sort((a, b) => b[1] - a[1]).slice(0, n).map(([k]) => k.replace(/ \(Supplement\)$/, '')).join(', '); }
+function nutLine(name, val, pct, st, sub) {
+  return lrow({ class: sub ? 'lr col' : 'lr' }, sub ? h('div', { class: 'top' }, h('span', { class: 'tx', text: name }), h('span', { class: 'n', text: val }), pct != null ? h('span', { class: 'mb ' + st }, h('i', { style: `width:${Math.min(100, pct)}%` })) : null) : null,
+    sub ? h('div', { class: 'sub', text: sub }) : h('span', { class: 'tx', text: name }), sub ? null : h('span', { class: 'n', text: val }), !sub && pct != null ? h('span', { class: 'mb ' + st }, h('i', { style: `width:${Math.min(100, pct)}%` })) : null);
+}
+function openNutDetail(i, ctx) {
+  const d = ctx.d, n = Math.max(1, d.n), avg = k => (d.total[k] || 0) / n, kcal = Math.max(1, avg(0)), pe = k => avg(k) * (k === 1 || k === 3 || k === 5 || k === 31 || k === 4 ? 4 : 9) / kcal * 100;
+  const days = n === 1 ? 'an diesem Tag' : `im Schnitt pro Tag (${n} eingetragene Tage)`;
+  const out = [];
+  if (i === 2) {
+    const sfa = avg(6), mufa = avg(24), pufa = avg(25), n6 = avg(26), n3 = avg(23), ratio = n3 > 0 ? n6 / n3 : null;
+    out.push(h('p', { class: 'slinfo', text: `Fett ${days}: ${g1(avg(2))} g, das sind ${fmtInt(pe(2))} % deiner Kalorien. Empfohlen sind etwa 30 %. Wichtiger als die Menge ist, welche Fette es sind.` }));
+    out.push(secHead('Fettarten'), h('div', { class: 'ln' },
+      nutLine('Gesättigt', `${g1(sfa)} g / ${fmtInt(pe(6))} %`, pe(6) / 10 * 100, lvl(pe(6) / 10 * 100, true), `Höchstens 10 % der Kalorien (DGE). Vor allem in Butter, Käse, Wurst, Kokosfett. Bei dir vor allem aus: ${topSrc(d, 6) || '-'}`),
+      nutLine('Einfach ungesättigt', `${g1(mufa)} g / ${fmtInt(pe(24))} %`, pe(24) / 10 * 100, lvl(pe(24) / 10 * 100), `Gut, gern der größte Teil des Fetts, etwa 10 % der Kalorien oder mehr. Olivenöl, Rapsöl, Nüsse, Avocado. Bei dir vor allem aus: ${topSrc(d, 24) || '-'}`),
+      nutLine('Mehrfach ungesättigt', `${g1(pufa)} g / ${fmtInt(pe(25))} %`, pe(25) / 7 * 100, pe(25) > 10 ? 'y' : lvl(pe(25) / 7 * 100), `7 bis 10 % der Kalorien (DGE). Darunter Omega-6 und Omega-3. Bei dir vor allem aus: ${topSrc(d, 25) || '-'}`)));
+    out.push(secHead('Omega-6 und Omega-3'), h('div', { class: 'ln' },
+      nutLine('Omega-6', `${g1(n6)} g / ${g1(n6 * 9 / kcal * 100)} %`, n6 * 9 / kcal * 100 / 2.5 * 100, lvl(n6 * 9 / kcal * 100 / 2.5 * 100), 'Richtwert 2,5 % der Kalorien (DGE). Steckt in Sonnenblumenöl, Distelöl, Nüssen, Fleisch.'),
+      lrow({ class: 'lr tap', onclick: () => { const b = ctx.back; ctx.back = () => openNutDetail(2, Object.assign(ctx, { back: b })); openNutDetail(23, ctx); } }, h('span', { class: 'tx', text: 'Omega-3' }), h('span', { class: 'n', text: `${g1(n3)} g` }), h('span', { class: 'chev', text: '›' })),
+      nutLine('Verhältnis', ratio == null ? '-' : `${g1(ratio)} zu 1`, ratio == null ? null : Math.min(100, 5 / ratio * 100), ratio == null ? 'r' : ratio <= 5 ? 'g' : ratio <= 8 ? 'y' : ratio <= 12 ? 'o' : 'r', 'Gut sind höchstens 5 zu 1 (DGE). Typisch in Deutschland sind etwa 7 bis 10 zu 1. Besser wird es mit Rapsöl statt Sonnenblumenöl, Walnüssen, Leinöl und Fisch.')));
+  } else if (i === 23) {
+    const n3 = avg(23), ala = avg(27), epa = avg(28) * 1000, dha = avg(29) * 1000, dpa = avg(30) * 1000, ed = epa + dha, alaRef = kcal * 0.005 / 9;
+    out.push(h('p', { class: 'slinfo', text: `Omega-3 ist nicht gleich Omega-3. ALA kommt aus Pflanzen (Leinöl, Rapsöl, Walnüsse, Chia). EPA und DHA kommen fast nur aus fettem Seefisch und Algenöl und sind die Formen, die Herz und Gehirn direkt nutzen. Der Körper macht aus ALA nur wenig EPA und noch weniger DHA, meist unter 10 %. Deshalb zählen EPA und DHA extra.` }));
+    out.push(secHead('Deine Werte', days), h('div', { class: 'ln' },
+      nutLine('ALA (pflanzlich)', `${g1(ala)} g`, ala / alaRef * 100, lvl(ala / alaRef * 100), `Richtwert 0,5 % der Kalorien, für dich etwa ${g1(alaRef)} g (DGE). Bei dir vor allem aus: ${topSrc(d, 27) || '-'}`),
+      nutLine('EPA und DHA', `${fmtInt(ed)} mg`, ed / 250 * 100, lvl(ed / 250 * 100), `Empfohlen etwa 250 mg am Tag (EFSA), das schafft man mit 1 bis 2 Portionen fettem Fisch pro Woche (Lachs, Hering, Makrele). Davon EPA ${fmtInt(epa)} mg, DHA ${fmtInt(dha)} mg${dpa > 5 ? `, dazu DPA ${fmtInt(dpa)} mg` : ''}. Bei dir aus: ${topSrc(d, 28) || topSrc(d, 29) || 'nichts'}`),
+      nutLine('Omega-3 gesamt', `${g1(n3)} g`, null, null, n3 > 0 ? `Davon ${fmtInt(ala / n3 * 100)} % ALA und ${fmtInt((ed + dpa) / 1000 / n3 * 100)} % aus Fisch oder Algen.` : '')));
+    out.push(h('div', { class: 'sheetnote', text: 'Ein Tag ohne Fisch ist kein Problem: Der Körper speichert EPA und DHA. Aussagekräftig ist der Schnitt über eine Woche oder länger.' }));
+  } else if (i === 3) {
+    const carb = avg(3), sug = avg(5), lac = avg(39), st = avg(31), fib = avg(4);
+    // Qualität je Lebensmittel: mindestens 1 g Ballaststoff je 10 g Kohlenhydrate gilt als hochwertig
+    const q = { good: [0, []], mid: [0, []], low: [0, []], milk: [0, []] };
+    for (const [lab, c0] of Object.entries(d.src[3] || {})) {
+      const c = c0 / n, f = ((d.src[4] || {})[lab] || 0) / n, l = ((d.src[39] || {})[lab] || 0) / n; if (c < 0.5) continue;
+      const k = l / c > 0.5 ? 'milk' : f * 10 >= c ? 'good' : f * 20 >= c ? 'mid' : 'low';
+      q[k][0] += c; q[k][1].push([lab, c]);
+    }
+    const names = k => q[k][1].sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]).join(', ');
+    const tot = Math.max(1, q.good[0] + q.mid[0] + q.low[0] + q.milk[0]);
+    out.push(h('p', { class: 'slinfo', text: `Kohlenhydrate ${days}: ${g1(carb)} g. Hochwertig sind Kohlenhydrate mit vielen Ballaststoffen: Vollkorn, Haferflocken, Hülsenfrüchte, Kartoffeln mit Schale, Obst und Gemüse. Faustregel: mindestens 1 g Ballaststoffe auf 10 g Kohlenhydrate. Weißmehl, Süßes und Säfte liegen deutlich darunter.` }));
+    out.push(secHead('Wie hochwertig'), h('div', { class: 'ln' },
+      nutLine('Hochwertig', `${fmtInt(q.good[0])} g / ${fmtInt(q.good[0] / tot * 100)} %`, q.good[0] / tot * 100, 'g', names('good') ? `Aus: ${names('good')}` : 'Noch nichts davon'),
+      nutLine('Mittel', `${fmtInt(q.mid[0])} g / ${fmtInt(q.mid[0] / tot * 100)} %`, q.mid[0] / tot * 100, 'y', names('mid') ? `Aus: ${names('mid')}` : '-'),
+      nutLine('Eher nicht so gut', `${fmtInt(q.low[0])} g / ${fmtInt(q.low[0] / tot * 100)} %`, q.low[0] / tot * 100, 'r', names('low') ? `Aus: ${names('low')}` : '-'),
+      q.milk[0] > 0 ? nutLine('Aus Milchprodukten', `${fmtInt(q.milk[0])} g`, null, null, `Milchzucker, neutral. Aus: ${names('milk')}`) : null));
+    out.push(secHead('Woraus sie bestehen'), h('div', { class: 'ln' },
+      nutLine('Stärke', `${g1(st)} g`, null, null, 'Langsame Energie aus Brot, Nudeln, Reis, Kartoffeln.'),
+      nutLine('Zucker', `${g1(sug)} g / ${fmtInt(pe(5))} %`, pe(5) / 10 * 100, lvl(pe(5) / 10 * 100, true), `Davon ${g1(lac)} g Milchzucker. Zugesetzter Zucker sollte unter 10 % der Kalorien bleiben (DGE, WHO). Hier ist aller Zucker gezählt, auch der aus Obst und Milch, der weniger problematisch ist.`),
+      nutLine('Ballaststoffe', `${g1(fib)} g`, fib / 30 * 100, lvl(fib / 30 * 100), 'Mindestens 30 g am Tag (DGE).')));
+  } else if (i === 1) {
+    const prot = avg(1), ref = (ctx.refs[1] || [0])[0];
+    let pp = 0; const aa = AA.map(() => 0);
+    for (const [lab, p0] of Object.entries(d.src[1] || {})) { const sum = AA.reduce((a, [k]) => a + ((d.src[k] || {})[lab] || 0), 0); if (sum <= 0) continue; pp += p0; AA.forEach(([k], j) => aa[j] += (d.src[k] || {})[lab] || 0); }
+    const sc = AA.map(([, nm, r], j) => ({ nm, pct: pp > 0 ? aa[j] * 1000 / pp / r * 100 : 0 })), min = sc.reduce((a, b) => b.pct < a.pct ? b : a, sc[0]);
+    const cov = d.total[1] > 0 ? pp / d.total[1] * 100 : 0, score = Math.min(100, Math.round(min.pct));
+    out.push(h('p', { class: 'slinfo', text: `Eiweiß ${days}: ${g1(prot)} g von ${fmtInt(ref)} g. Für die Qualität zählt, ob alle 9 Eiweißbausteine, die der Körper nicht selbst bilden kann, im richtigen Verhältnis dabei sind. Das misst der Aminosäure-Score der WHO. Die biologische Wertigkeit ist ein älteres Maß nach demselben Prinzip.` }));
+    if (pp > 0) {
+      out.push(secHead('Eiweißqualität', `${score} %`), h('div', { class: 'ln' },
+        nutLine(score >= 100 ? 'Alle Bausteine ausreichend' : `Am knappsten: ${min.nm}`, `${score} %`, score, lvl(score), score >= 100 ? 'Dein Eiweiß enthält alle unentbehrlichen Bausteine in genug Menge. Gute Kombinationen wie Getreide mit Hülsenfrüchten oder Milchprodukte gleichen sich gegenseitig aus.' : (min.nm === 'Lysin' ? 'Lysin ist in Getreide knapp. Hülsenfrüchte, Milchprodukte, Eier, Fisch oder Fleisch gleichen das aus.' : min.nm === 'Methionin und Cystein' ? 'In Hülsenfrüchten knapp. Getreide, Nüsse, Eier oder Milchprodukte gleichen das aus.' : 'Mehr Abwechslung bei den Eiweißquellen gleicht das aus.'))),
+        secHead('Die Bausteine'), h('div', { class: 'ln' }, ...sc.map(x => nutLine(x.nm, `${fmtInt(x.pct)} %`, x.pct, lvl(x.pct)))),
+        h('div', { class: 'sheetnote', text: `100 % heißt: so viel, wie die WHO je Gramm Eiweiß empfiehlt. Messwerte zu den Bausteinen gibt es für ${fmtInt(cov)} % deines Eiweißes.` }));
+    } else out.push(h('div', { class: 'sheetnote', text: 'Für deine Lebensmittel gibt es noch keine Messwerte zu den Eiweißbausteinen.' }));
+    out.push(secHead('Woher'), h('div', { class: 'ln' }, nutLine('Die größten Quellen', '', null, null, topSrc(d, 1, 5) || '-')));
+  }
+  out.push(h('div', { class: 'sheetnote', text: 'Nährwerte: Bundeslebensmittelschlüssel 4.0, Max Rubner-Institut (CC BY 4.0). Referenzwerte: DGE, EFSA, WHO.' }));
+  openSheet({ 2: 'Fett', 23: 'Omega-3', 3: 'Kohlenhydrate', 1: 'Eiweiß' }[i], out);
+  if (ctx.back) sheetBack = ctx.back;
+}
 function nutStats(days) {
   const name = me(), pf = profiles[name];
   if (!pf) return [secHead('Nährstoffe'), lines(lrow({ class: 'lr tap', onclick: () => openProfileEdit(name, render) }, h('span', { class: 'add', text: 'Angaben machen, damit dein Bedarf berechnet wird' })))];
@@ -284,7 +357,8 @@ function nutStats(days) {
   const groups = [['Fehlt am meisten', lack, 'Die Nährstoffe, von denen du im Schnitt am wenigsten hattest.'], ['Makros', [1, 3, 2].map(i => rows[i]).filter(Boolean)]];
   for (const [title, keys] of NUT_GROUPS) { const rs = keys.map(i => rows[i]).filter(r => r && !MACRO.has(r.i) && r.i !== 1); if (rs.length) groups.push([title, rs]); }
   out.push(secHead('Nährstoffe'));
-  out.push(h('div', { class: 'ln menu' }, ...groups.map(([title, rs, note]) => lrow({ class: 'lr tap', onclick: () => openNutList(title, rs, note) },
+  const ctx = { d, refs };
+  out.push(h('div', { class: 'ln menu' }, ...groups.map(([title, rs, note]) => lrow({ class: 'lr tap', onclick: () => openNutList(title, rs, note, ctx) },
     h('span', { class: 'tx', text: title }),
     title === 'Fehlt am meisten' ? h('span', { class: 'n', text: rs[0] ? rs[0].nm : '' }) : (() => { const gp = groupPct(rs), lim = rs.every(r => LIMIT_KEYS.has(r.i)); return h('span', { class: 'gsum ' + lvl(gp, lim) }, h('i'), lim ? (gp <= 100 ? 'im Rahmen' : `${gp} %`) : `${gp} %`); })(),
     h('span', { class: 'chev', text: '›' }))),
@@ -297,4 +371,4 @@ function dayNav() {
   const ds = ymd(addDays(new Date(), -statDay));
   return h('div', { class: 'pnav statnav' }, h('button', { class: 'ib', 'aria-label': 'Tag davor', onclick: () => go(-1) }, ic('chevron-left')), h('div', { text: statDay === 0 ? 'Heute' : statDay === 1 ? 'Gestern' : longDate(ds) }), h('button', { class: 'ib' + (statDay === 0 ? ' off' : ''), 'aria-label': 'Tag danach', onclick: () => go(1) }, ic('chevron-right')));
 }
-PAGES.stat = function () { const days = statDays(); if (statRange === 'day') return h('div', { class: 'pg' }, dayNav(), ...nutStats(days), ...sleepBars(days), ...trainBars(days), ...goalStats(days)); return h('div', { class: 'pg' }, ...sleepBars(days), ...trainBars(days), ...goalStats(days), ...nutStats(days)); };
+PAGES.stat = function () { if (!BLSNAME) loadBls().then(() => { if (tab === 'stat') render(); }).catch(() => { }); const days = statDays(); if (statRange === 'day') return h('div', { class: 'pg' }, dayNav(), ...nutStats(days), ...sleepBars(days), ...trainBars(days), ...goalStats(days)); return h('div', { class: 'pg' }, ...sleepBars(days), ...trainBars(days), ...goalStats(days), ...nutStats(days)); };
