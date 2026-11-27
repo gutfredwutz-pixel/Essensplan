@@ -106,18 +106,20 @@ async function claude(system: string, tool: Record<string, unknown>, text: strin
   return out.input;
 }
 
-const PICK_SYS = `Du stellst für Jakob, einen BWL-Studenten in München, die Nachrichten des Tages zusammen. Wähle aus der Liste die wichtigsten Meldungen für diese Bereiche:
-- ki: Künstliche Intelligenz (neue Modelle, große Firmen, Regeln, Folgen für Arbeit und Alltag). Keine Produkttests, keine Gerüchte, keine Kleinigkeiten.
-- wirtschaft: Konjunktur, Zinsen, Börse, auffällige Kursbewegungen, Firmen, die stark wachsen oder in Schwierigkeiten sind, große Übernahmen.
-- deutschland: Politik in Deutschland.
-- welt: internationale Politik und große Ereignisse weltweit.
-- arbeit: Arbeitsmarkt, Berufseinstieg, Gehälter, Weiterbildung, Studium.
-Regeln: Relevanz und Tragweite zuerst, keine Boulevard-, Sport- oder Unfallmeldungen ohne politische Bedeutung, keine Liveblogs, keine Meinungsartikel, keine Ratgeber-, Gesundheits-, Psychologie- oder Lifestyle-Texte, keine Podcasts, keine Tagesvorschauen (z. B. „Was Anleger heute beachten sollten“). Jede Meldung nur in einem Bereich. EU-Themen gehören zu welt, außer es geht vor allem um deutsche Politik. Jede Geschichte nur einmal, auch nicht in zwei Bereichen: berichten mehrere Quellen darüber, nimm die Meldung einer frei lesbaren Quelle (Tagesschau, Spiegel, Zeit, heise, The Decoder, t3n, Deutschlandfunk) als Haupteintrag und nenne die anderen unter also. Meldungen mit (Abo) sind hinter einer Bezahlschranke: nimm sie nur als Haupteintrag, wenn es die Geschichte nirgends frei gibt, und höchstens eine pro Bereich. Gib je Bereich bis zu 3 Meldungen mehr als die angegebene Anzahl an (als Reserve), Reihenfolge im Bereich: Wichtigstes zuerst.`;
+const SEC_DESC: Record<string, string> = {
+  ki: 'Künstliche Intelligenz: neue Modelle, große Firmen, Regeln, Folgen für Arbeit und Alltag. Keine Produkttests, keine Gerüchte, keine Kleinigkeiten.',
+  wirtschaft: 'Wirtschaft: Konjunktur, Zinsen, Börse, auffällige Kursbewegungen, Firmen, die stark wachsen oder in Schwierigkeiten sind, große Übernahmen, Branchen in Deutschland und der Welt.',
+  deutschland: 'Politik in Deutschland: Bundesregierung, Bundestag, Parteien, Gesetze, Bundesländer.',
+  welt: 'Welt: internationale Politik, Kriege und Konflikte, EU, USA, China, große Ereignisse weltweit.',
+  arbeit: 'Weiterbildung und Arbeitsmarkt: Arbeitslosenzahlen, Tarife und Gehälter, Fachkräfte, Berufseinstieg, Studium, Weiterbildung, Wandel der Arbeit.',
+};
+const PICK_SYS = `Du stellst für Jakob, einen BWL-Studenten in München, die Nachrichten des Tages zusammen, Bereich für Bereich. Wähle aus der Liste die wichtigsten Meldungen für den genannten Bereich.
+Regeln: Relevanz und Tragweite zuerst. Keine Boulevard-, Sport- oder Unfallmeldungen ohne politische Bedeutung, keine Liveblogs, keine Meinungsartikel, keine Ratgeber-, Gesundheits-, Psychologie- oder Lifestyle-Texte, keine Podcasts, keine Tagesvorschauen (z. B. „Was Anleger heute beachten sollten“). Jede Geschichte nur einmal: berichten mehrere Quellen darüber, nimm als Haupteintrag am liebsten Tagesschau, Spiegel oder Zeit (dort gibt es den ganzen Text), sonst heise, The Decoder, t3n oder Deutschlandfunk, und nenne die anderen Meldungen zur selben Geschichte unter also. Meldungen mit (Abo) sind hinter einer Bezahlschranke: nur, wenn es die Geschichte nirgends frei gibt. Geschichten, die schon in anderen Bereichen gewählt wurden, nicht noch einmal nehmen, auch nicht aus einer anderen Quelle. Gib bis zu 3 Meldungen mehr an als verlangt (als Reserve), Wichtigstes zuerst.`;
 const PICK_TOOL = {
-  name: 'auswahl', description: 'Ausgewählte Meldungen',
+  name: 'auswahl', description: 'Ausgewählte Meldungen für den Bereich, Wichtigstes zuerst',
   input_schema: { type: 'object', properties: { picks: { type: 'array', items: { type: 'object', properties: {
-    id: { type: 'string' }, sec: { type: 'string', enum: SECTIONS.map((s) => s[0]) }, also: { type: 'array', items: { type: 'string' } },
-  }, required: ['id', 'sec'] } } }, required: ['picks'] },
+    id: { type: 'string' }, also: { type: 'array', items: { type: 'string' } },
+  }, required: ['id'] } } }, required: ['picks'] },
 };
 const SUM_SYS = `Du bereitest Nachrichten für Jakob auf, einen BWL-Studenten, der sie in der Bahn auf dem Handy liest. Schreibe auf Deutsch, sachlich, klar und ohne Fachjargon, so dass auch jemand ohne Vorwissen alles versteht.
 Für jede Meldung:
@@ -126,7 +128,7 @@ Für jede Meldung:
 - body: 2 bis 4 kurze Absätze (je 2 bis 3 Sätze): was passiert ist, warum, wer betroffen ist, wie es weitergeht. Nur Fakten aus dem Text, nichts erfinden.
 - context: Einordnung in 1 bis 3 Sätzen. Zahlen greifbar machen: Punkte auch in Prozent, große Beträge vergleichen (z. B. mit dem Bundeshaushalt oder dem Umsatz der Firma), sagen, ob das viel oder wenig ist und warum es wichtig ist. Wenn es nichts einzuordnen gibt, leer lassen.
 - terms: bis zu 3 Fachbegriffe aus der Meldung, die nicht jeder kennt, je mit einer Erklärung in einem Satz. Keine Allerweltswörter.
-Wenn nur ein kurzer Anriss vorliegt (Bezahlschranke), schreibe nur, was im Anriss steht, und mach body kürzer. Keine Spiegelstriche, keine Rauten, keine Emojis, keine Mittelpunkte als Trenner.`;
+Wenn nur ein kurzer Anriss vorliegt (Bezahlschranke), schreibe nur, was im Anriss steht, und mach body kürzer. Erwähne nie, dass nur ein Anriss oder wenig Text vorlag, und schreibe keine Sätze darüber, was nicht im Text steht. Keine Spiegelstriche, keine Rauten, keine Emojis, keine Mittelpunkte als Trenner.`;
 const SUM_TOOL = {
   name: 'meldungen', description: 'Aufbereitete Meldungen',
   input_schema: { type: 'object', properties: { items: { type: 'array', items: { type: 'object', properties: {
@@ -153,19 +155,22 @@ async function build(prev: Record<string, any>) {
   if (!all.length) throw new Error('Keine Quellen erreichbar');
   const [mk] = await Promise.all([markets()]);
   const list = all.map((i) => `${i.id} | ${i.src}${i.pay ? ' (Abo)' : ''} | ${i.date ? ago(i.date) : ''} | ${i.title} | ${i.teaser.slice(0, 160)}`).join('\n');
-  const want = SECTIONS.map(([k, , n]) => `${k}: ${n}`).join(', ');
-  const ask = () => claude(PICK_SYS, PICK_TOOL, `Anzahl je Bereich: ${want}\n\nMeldungen (id | Quelle | Alter | Titel | Anriss):\n${list}`, 6000);
-  let pk = await ask();
-  if (flat(pk?.picks, 'picks').length < 5) pk = await ask(); // einmal neu fragen, wenn fast nichts kam
   const byId = new Map(all.map((i) => [i.id, i]));
-  const used = new Set<string>(), count: Record<string, number> = {}, paid: Record<string, number> = {};
-  const picks = (flat(pk?.picks, 'picks') as { id: string; sec: string; also?: string[] }[]).filter((p) => {
-    const it = byId.get(p.id), max = (SECTIONS.find((s) => s[0] === p.sec) || [])[2] as number;
-    if (!it || !max || used.has(it.url) || (count[p.sec] || 0) >= max) return false;
-    if (it.pay && paid[p.sec]) return false; // höchstens eine Bezahl-Meldung je Bereich
-    used.add(it.url); count[p.sec] = (count[p.sec] || 0) + 1; if (it.pay) paid[p.sec] = 1; return true;
-  });
-  if (!picks.length) throw new Error(`Auswahl leer (${all.length} Meldungen): ${JSON.stringify(pk).slice(0, 300)}`);
+  const used = new Set<string>(), picks: { id: string; sec: string; also?: string[] }[] = [];
+  for (const [sec, title, n] of SECTIONS) { // nacheinander, damit keine Geschichte in zwei Bereichen landet
+    const taken = picks.map((p) => byId.get(p.id)!.title).join('\n');
+    const ask = () => claude(PICK_SYS, PICK_TOOL, `Bereich: ${title}. ${SEC_DESC[sec]}\nAnzahl: ${n}\n${taken ? `\nSchon in anderen Bereichen gewählt:\n${taken}\n` : ''}\nMeldungen (id | Quelle | Alter | Titel | Anriss):\n${list}`, 3000).catch(() => null);
+    let pk = await ask();
+    if (flat(pk?.picks, 'picks').length < Math.min(2, n)) pk = await ask(); // einmal neu fragen, wenn fast nichts kam
+    let k = 0, paid = 0;
+    for (const p of flat(pk?.picks, 'picks') as { id: string; also?: string[] }[]) {
+      const it = p && byId.get(p.id);
+      if (!it || used.has(it.url) || k >= n || (it.pay && paid)) continue; // höchstens eine Bezahl-Meldung je Bereich
+      used.add(it.url); for (const a of p.also || []) { const x = byId.get(a); if (x) used.add(x.url); }
+      picks.push({ id: p.id, sec, also: p.also }); k++; if (it.pay) paid = 1;
+    }
+  }
+  if (!picks.length) throw new Error(`Auswahl leer (${all.length} Meldungen)`);
   const chosen = picks.map((p) => byId.get(p.id)!);
   await Promise.all(chosen.filter((i) => !prev[i.url]).map(fullText));
   // neu zusammenfassen nur, was noch nicht im letzten Stand war
