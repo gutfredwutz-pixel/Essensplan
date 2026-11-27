@@ -37,6 +37,7 @@ function needsOf(pf) {
   if (f && pf.special) pk = Math.max(pk, 1.0);
   const pAuto = Math.round(w * pk);
   const own = k => { const v = +String(pf[k] ?? '').replace(',', '.'); return v > 0 ? Math.round(v) : 0; };
+  if (own('fibG')) R[4][0] = own('fibG');
   const P = own('protG') || pAuto; R[1][0] = P; pk = Math.round(P / w * 10) / 10;
   R[23][0] = Math.round(kcal * 0.005 / 9 * 10) / 10;
   const oC = own('carbG'), oF = own('fatG');
@@ -76,7 +77,7 @@ function dayIntake(name, ds) {
   const pf = profiles[name];
   if (counted && pf) for (const s of pf.supps || []) add(s.label + ' (Supplement)', suppVec(s), 1);
   const sv = counted && window.saltVec ? saltVec(pf) : null; if (sv) add('Jodsalz beim Kochen', sv, 1);
-  const logged = !!e && (((e.foods || []).length > 0) || Object.keys(e.plans || {}).length > 0);
+  const logged = !!e && ((e.foods || []).some(f => f.gr > 0 && f.v) || Object.values(e.plans || {}).some(x => +x > 0));
   return { tot, src, logged, counted };
 }
 function rangeData(name, days) {
@@ -227,7 +228,7 @@ function openProfileEdit(name, back) {
       h('div', { class: 'fsec' }, h('h3', { text: 'Ziel' }), segOf('goal', [['halten', 'Halten'], ['ab', 'Abnehmen'], ['zu', 'Zunehmen']]),
         pf.goal === 'ab' || pf.goal === 'zu' ? h('div', { style: 'margin-top:8px' }, segOf('rate', pf.goal === 'ab' ? [[0.25, '¼ kg pro Woche'], [0.5, '½ kg pro Woche'], [0.75, '¾ kg pro Woche']] : [[0.25, '¼ kg pro Woche'], [0.5, '½ kg pro Woche']])) : null),
       h('div', { class: 'fsec' }, h('h3', { text: 'Eigene Ziele' }),
-        h('div', { class: 'frows' }, num('protG', 'Eiweiß', 'g am Tag', 'auto ' + fmtInt(nd.pAuto), true), num('carbG', 'Kohlenhydrate', 'g am Tag', 'auto', true), num('fatG', 'Fett', 'g am Tag', 'auto', true)),
+        h('div', { class: 'frows' }, num('protG', 'Eiweiß', 'g am Tag', 'auto ' + fmtInt(nd.pAuto), true), num('fibG', 'Ballaststoffe', 'g am Tag', '30', true), num('carbG', 'Kohlenhydrate', 'g am Tag', 'auto', true), num('fatG', 'Fett', 'g am Tag', 'auto', true)),
         h('div', { class: 'muted', style: 'margin:10px 4px 0;font-size:12.5px', text: 'Leer lassen heißt automatisch. Was du nicht festlegst, rechnet die App aus den restlichen Kalorien.' })),
       h('div', { class: 'fsec' }, h('h3', { text: 'Ernährung' }), segOf('diet', [['alles', 'Alles'], ['vegetarisch', 'Vegetarisch'], ['vegan', 'Vegan']]),
         pf.diet === 'vegan' ? h('div', { class: 'muted', style: 'margin:8px 4px 0;font-size:12.5px', text: 'Vitamin B12 kommt vegan fast nur über Supplemente oder angereicherte Produkte. Trag es unten ein, wenn du es nimmst.' }) : null),
@@ -388,7 +389,7 @@ function openDiary(name, ds, back) {
   const drawPlans = () => {
     const ps = planOn(ds);
     planBox.className = ps.length ? 'dygrp' : 'hidden';
-    planBox.replaceChildren(...(ps.length ? [h('h3', { text: 'Aus dem Plan' }), ...ps.map(p => h('div', { class: 'dplan' }, h('div', { class: 'dpt', text: p.title + (recipeOf(p) ? '' : ' (ohne Rezept, zählt nicht mit)') }),
+    planBox.replaceChildren(...(ps.length ? [h('h3', { text: 'Aus dem Plan' }), ...ps.map(p => h('div', { class: 'dplan' }, h('div', { class: 'dpt dyplt' }, h('span', { text: p.title + (recipeOf(p) ? '' : ' (ohne Rezept, zählt nicht mit)') }), h('button', { class: 'dydel', 'aria-label': 'Aus der Essenswoche löschen', onclick: async () => { if (!confirm(`„${p.title}“ aus der Essenswoche löschen?`)) return; delete e.plans[p.id]; await db.collection('plan').doc(p.id).delete().catch(showErr); plan = plan.filter(x => x.id !== p.id); drawPlans(); changed(); } }, ic('trash'))),
       h('div', { class: 'seg wide sm' }, ...[[0, '0'], [0.25, '¼'], [0.5, '½'], [0.75, '¾'], [1, '1'], [1.5, '1½']].map(([v, t]) => h('button', { class: Math.abs((e.plans[p.id] ?? 1) - v) < 0.01 ? 'on' : '', onclick: () => { e.plans[p.id] = v; drawPlans(); changed(); } }, t)))))] : []));
   };
   const drawList = () => {
@@ -455,9 +456,35 @@ function openDiary(name, ds, back) {
       tick(); meter = () => { cancelAnimationFrame(raf); ac.close().catch(() => { }); mic.style.setProperty('--lv', '0'); meter = null; };
     } catch (err) { meter = null; }
   };
-  const stopRec = () => { if (rec && rec.state !== 'inactive') rec.stop(); };
-  mic.addEventListener('click', async () => {
-    if (rec) return stopRec();
+  // Live-Diktat mit der Spracherkennung des Geräts (Safari/iOS): Text erscheint schon beim Sprechen. Sonst Aufnahme wie bisher.
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let live = null;
+  const startLive = () => {
+    const r = new SR(); r.lang = 'de-DE'; r.interimResults = true; r.continuous = true;
+    const base = txt.value.trim(); let fin = '', heard = false, stopped = false, lv = 0, raf = 0;
+    const decay = () => { lv *= 0.9; mic.style.setProperty('--lv', lv.toFixed(3)); raf = lv > 0.02 ? requestAnimationFrame(decay) : 0; };
+    const bump = () => { lv = Math.min(1, lv + 0.6); if (!raf) raf = requestAnimationFrame(decay); };
+    const show = interim => { txt.value = [base, (fin + interim).trim()].filter(Boolean).join(', '); grow(); };
+    const end = () => { cancelAnimationFrame(raf); mic.style.setProperty('--lv', '0'); live = null; mic.classList.remove('rec'); micLbl.textContent = 'Tippen und sprechen'; txt.classList.remove('livetxt'); };
+    r.onresult = ev => { let interim = ''; for (let k = ev.resultIndex; k < ev.results.length; k++) { const x = ev.results[k]; if (x.isFinal) fin += x[0].transcript.trim() + ' '; else interim += x[0].transcript; } heard = true; show(interim); bump(); };
+    r.onspeechstart = bump;
+    r.onerror = ev => {
+      if (!/not-allowed|service-not-allowed|audio-capture|language-not-supported|network/.test(ev.error)) return;
+      stopped = true; if (heard) return; end(); if (ev.error !== 'network') LS.set('ep_livesr', 'off'); startRecording();
+    };
+    // iOS beendet nach einer Pause von selbst; dann weiter zuhören, bis Fertig getippt wird
+    r.onend = () => { if (!live && stopped) return; if (!stopped) { try { r.start(); return; } catch (x) { } } end(); show(''); if (txt.value.trim()) evalText(); else setStatus('Nichts verstanden. Tippe nochmal aufs Mikrofon.'); };
+    live = { stop: () => { stopped = true; try { r.stop(); } catch (x) { r.onend(); } } };
+    try { r.start(); } catch (x) { live = null; return startRecording(); }
+    mic.classList.add('rec'); txt.classList.add('livetxt'); micLbl.textContent = 'Ich höre zu. Fertig? Nochmal tippen.'; setStatus('');
+  };
+  const stopRec = () => { if (live) return live.stop(); if (rec && rec.state !== 'inactive') rec.stop(); };
+  mic.addEventListener('click', () => {
+    if (live || rec) return stopRec();
+    if (SR && LS.get('ep_livesr') !== 'off') return startLive();
+    startRecording();
+  });
+  const startRecording = async () => {
     if (!navigator.mediaDevices || !window.MediaRecorder) return toast('Aufnahme wird hier nicht unterstützt');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -476,7 +503,7 @@ function openDiary(name, ds, back) {
       rec.start(); startMeter(stream); mic.classList.add('rec'); micLbl.textContent = 'Ich höre zu. Fertig? Nochmal tippen.';
       setStatus('');
     } catch (err) { toast('Kein Zugriff aufs Mikrofon'); }
-  });
+  };
   const addMine = f => { e.foods.unshift(f); drawList(); changed(); setStatus(`Eingetragen: ${f.name}, ${f.amt}`); };
   drawPlans(); drawList(); drawSum();
   // Beim Schließen oder Tag wechseln: Aufnahme beenden, Getipptes auswerten, alles speichern
