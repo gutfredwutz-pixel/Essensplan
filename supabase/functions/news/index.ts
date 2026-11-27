@@ -136,6 +136,11 @@ const SUM_TOOL = {
   }, required: ['id', 'title', 'teaser', 'body'] } } }, required: ['items'] },
 };
 
+// Die KI verschachtelt Listen manchmal ({picks:[{picks:[...]}]}) oder liefert sie als Text: glatt ziehen
+const flat = (a: any, key: string): any[] => {
+  if (typeof a === 'string') { try { return flat(JSON.parse(a), key); } catch { return []; } }
+  return Array.isArray(a) ? a.flatMap((x) => x && x[key] !== undefined && !x.id ? flat(x[key], key) : [x]) : [];
+};
 const ago = (d: number) => { const h = (Date.now() - d) / 36e5; return h < 1 ? 'vor weniger als 1 Std.' : `vor ${Math.round(h)} Std.`; };
 
 async function build(prev: Record<string, any>) {
@@ -149,10 +154,12 @@ async function build(prev: Record<string, any>) {
   const [mk] = await Promise.all([markets()]);
   const list = all.map((i) => `${i.id} | ${i.src}${i.pay ? ' (Abo)' : ''} | ${i.date ? ago(i.date) : ''} | ${i.title} | ${i.teaser.slice(0, 160)}`).join('\n');
   const want = SECTIONS.map(([k, , n]) => `${k}: ${n}`).join(', ');
-  const pk = await claude(PICK_SYS, PICK_TOOL, `Anzahl je Bereich: ${want}\n\nMeldungen (id | Quelle | Alter | Titel | Anriss):\n${list}`, 6000);
+  const ask = () => claude(PICK_SYS, PICK_TOOL, `Anzahl je Bereich: ${want}\n\nMeldungen (id | Quelle | Alter | Titel | Anriss):\n${list}`, 6000);
+  let pk = await ask();
+  if (flat(pk?.picks, 'picks').length < 5) pk = await ask(); // einmal neu fragen, wenn fast nichts kam
   const byId = new Map(all.map((i) => [i.id, i]));
   const used = new Set<string>(), count: Record<string, number> = {}, paid: Record<string, number> = {};
-  const picks = ((pk?.picks || []) as { id: string; sec: string; also?: string[] }[]).filter((p) => {
+  const picks = (flat(pk?.picks, 'picks') as { id: string; sec: string; also?: string[] }[]).filter((p) => {
     const it = byId.get(p.id), max = (SECTIONS.find((s) => s[0] === p.sec) || [])[2] as number;
     if (!it || !max || used.has(it.url) || (count[p.sec] || 0) >= max) return false;
     if (it.pay && paid[p.sec]) return false; // höchstens eine Bezahl-Meldung je Bereich
@@ -165,10 +172,11 @@ async function build(prev: Record<string, any>) {
   const todo = chosen.filter((i) => !prev[i.url]);
   const sums = new Map<string, any>();
   const chunks: Item[][] = []; for (let k = 0; k < todo.length; k += 5) chunks.push(todo.slice(k, k + 5));
-  const mkTxt = mk.length ? 'Börse heute (zum Einordnen, falls passend): ' + mk.map((m) => `${m.name} ${m.value.toFixed(2)} (${m.chg >= 0 ? '+' : ''}${m.chg.toFixed(2)} % zum Vortag)`).join(', ') + '\n\n' : '';
+  const unit: Record<string, string> = { 'DAX': 'Punkte', 'S&P 500': 'Punkte', 'Euro in Dollar': 'Dollar je Euro', 'Bitcoin': 'Euro' };
+  const mkTxt = mk.length ? 'Börse heute (nur nutzen, wenn es zur Meldung passt): ' + mk.map((m) => `${m.name} ${m.value.toFixed(2)} ${unit[m.name] || ''} (${m.chg >= 0 ? '+' : ''}${m.chg.toFixed(2)} % zum Vortag)`).join(', ') + '\n\n' : '';
   await Promise.all(chunks.map(async (ch) => {
     const txt = ch.map((i) => `### id ${i.id}\nQuelle: ${i.src}${i.pay || !i.text ? ' (nur Anriss frei)' : ''}\nTitel: ${i.title}\nAnriss: ${i.text ? i.teaser.slice(0, 300) : i.teaser}\n${i.text ? 'Text:\n' + i.text.slice(0, 5000) : ''}`).join('\n\n');
-    try { const out = await claude(SUM_SYS, SUM_TOOL, mkTxt + txt); for (const s of out?.items || []) sums.set(s.id, s); } catch (e) { console.warn('Zusammenfassen', e); }
+    try { const out = await claude(SUM_SYS, SUM_TOOL, mkTxt + txt); for (const s of flat(out?.items, 'items')) if (s && s.id) sums.set(s.id, s); } catch (e) { console.warn('Zusammenfassen', e); }
   }));
   const sections = SECTIONS.map(([k, title]) => ({ id: k, title, items: picks.filter((p) => p.sec === k).map((p) => {
     const it = byId.get(p.id)!, s = sums.get(p.id), old = prev[it.url];
