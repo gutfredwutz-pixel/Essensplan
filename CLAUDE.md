@@ -93,6 +93,7 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - `stageClone` übernimmt Größen/Abstände der Elemente mit `id` als Inline-Stil vom Original, weil alte CSS-Regeln die Kopie sonst anders zeichnen (Überschrift kleiner, Inhalt 30 px höher, Rahmen um Knöpfe) und beim Loslassen alles springt.
 - Neu aufgebaute Umschalter-Marker sofort vor dem ersten Zeichnen setzen, sonst „ploppen“ sie auf.
 - Beim offenen Sheet die Seite dahinter festhalten (`lockBody`), sonst lässt sie sich mitwischen.
+- `#stage` steckt in `#clipw` (overflow clip/hidden). Grund: Beim Seitenwechsel wird `#stage` um eine Bildschirmbreite verschoben; ohne Rahmen merkt sich iOS die doppelte Breite, die Seite wird seitlich wischbar und rechts abgeschnitten (`overflow-x:clip` auf html/body hilft auf iOS nicht). Test: in Chromium `html,body{overflow:visible}` setzen und `scrollWidth` nach Tab-Wechsel prüfen.
 
 ## Arbeitsweise
 

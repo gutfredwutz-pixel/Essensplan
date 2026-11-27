@@ -649,7 +649,7 @@ function planOn(ds) {
 }
 function recipeOf(p) { return p && p.recipeId ? recipes.find(x => x.id === p.recipeId) : null; }
 function renderCal() {
-  const wrap = h('div');
+  const wrap = h('div', { class: 'calwrap' });
   const isWeek = view === 'week';
   const e6 = addDays(anchor, 6);
   const title = isWeek ? (anchor.getMonth() === e6.getMonth() ? `${anchor.getDate()}. bis ${e6.getDate()}. ${MON[e6.getMonth()]}` : `${anchor.getDate()}. ${MON[anchor.getMonth()].slice(0, 3)}. bis ${e6.getDate()}. ${MON[e6.getMonth()].slice(0, 3)}.`) : `${MON[monthAnchor.getMonth()]} ${monthAnchor.getFullYear()}`;
