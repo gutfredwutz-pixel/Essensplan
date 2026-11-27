@@ -129,8 +129,12 @@ function openProductSheet(p, onUse, opts = {}) {
   const status = h('div', { class: 'pdstat' });
   const autosave = () => { if (!saved()) return; p.name = name.value.trim() || p.name; p.alias = alias.value.trim(); p.portion = +String(portion.value).replace(',', '.') || null; saveMyFood(p).then(() => status.textContent = 'Gespeichert', () => status.textContent = 'Nicht gespeichert, keine Verbindung'); };
   [name, alias, portion].forEach(x => x.addEventListener('change', autosave));
+  if (opts.edit && !p.v) p.v = new Array(NV).fill(0);
   const v = p.v || [];
-  const rows = KEY_ROWS.map(([i, nm, u]) => lrow({}, h('span', { class: 'tx' + (/^davon/.test(nm) ? ' dim' : ''), text: nm }), h('span', { class: 'n', text: v[i] ? `${numDe(v[i])} ${u}` : (i <= 3 ? '0 ' + u : '-') })));
+  const rows = KEY_ROWS.map(([i, nm, u]) => {
+    if (opts.edit) { const inp = h('input', { class: 'pdin', value: v[i] ? String(v[i]).replace('.', ',') : '', placeholder: '0', inputmode: 'decimal' }); inp.addEventListener('change', () => { v[i] = Math.max(0, +String(inp.value).replace(',', '.') || 0); autosave(); }); return lrow({}, h('span', { class: 'tx' + (/^davon/.test(nm) ? ' dim' : ''), text: nm }), inp, h('span', { class: 'dim pdu', text: u })); }
+    return lrow({}, h('span', { class: 'tx' + (/^davon/.test(nm) ? ' dim' : ''), text: nm }), h('span', { class: 'n', text: v[i] ? `${numDe(v[i])} ${u}` : (i <= 3 ? '0 ' + u : '-') }));
+  });
   const refs = typeof REF !== 'undefined' ? REF : {};
   const micro = Object.keys(refs).map(Number).filter(i => i > 7 && i !== 1 && v[i] > 0).map(i => lrow({}, h('span', { class: 'tx', text: refs[i][1] }), h('span', { class: 'n', text: `${numDe(v[i])} ${refs[i][2]}` })));
   const saveBtn = h('button', { class: 'pdbtn', onclick: async () => { p.name = name.value.trim() || p.name; p.alias = alias.value.trim(); p.portion = +String(portion.value).replace(',', '.') || null; try { await saveMyFood(p); saveBtn.remove(); status.textContent = 'In deinen Lebensmitteln gespeichert'; } catch (e) { showErr(e); } } }, 'In meine Lebensmittel');
@@ -141,10 +145,10 @@ function openProductSheet(p, onUse, opts = {}) {
     back(); onUse(foodFromProduct(p, g));
   } }, 'Eintragen') : null;
   const del = saved() && opts.allowDelete ? h('button', { class: 'pdbtn dim', onclick: async () => { await db.collection('foods').doc(p.id).delete().catch(showErr); myFoods = myFoods.filter(x => x.id !== p.id); back(); if (opts.onDelete) opts.onDelete(); } }, 'Löschen') : null;
-  const back = subSheet(p.brand ? p.brand : 'Produkt', [
+  const back = subSheet(p.brand ? p.brand : opts.edit ? 'Selbst anlegen' : p.src === 'BLS' ? 'Lebensmittel' : 'Produkt', [
     h('div', { class: 'pd' },
       name,
-      h('div', { class: 'pdsrc', text: p.src === 'Foto' ? 'Von deinem Foto der Nährwerttabelle' : p.src === 'Strichcode' ? `Strichcode ${p.code || ''}, Werte von Open Food Facts` : 'Eigenes Lebensmittel' }),
+      h('div', { class: 'pdsrc', text: p.src === 'Foto' ? 'Von deinem Foto der Nährwerttabelle' : p.src === 'Strichcode' ? `Strichcode ${p.code || ''}, Werte von Open Food Facts` : p.src === 'OFF' ? 'Herstellerangaben von Open Food Facts' : p.src === 'BLS' ? `Lebensmittel-Datenbank: ${p.bls || p.name}` : opts.edit ? 'Trag die Werte pro 100 g von der Packung ein' : 'Eigenes Lebensmittel' }),
       onUse ? h('div', { class: 'pdline' }, h('span', { text: 'Gegessen' }), amount, h('span', { class: 'dim', text: 'g' }), h('span', { class: 'pdsp' }), useBtn) : null,
       secHead('Pro 100 g'), h('div', { class: 'ln' }, ...rows),
       micro.length ? secHead('Vitamine und Mineralstoffe') : null, micro.length ? h('div', { class: 'ln' }, ...micro) : null,
@@ -155,7 +159,50 @@ function openProductSheet(p, onUse, opts = {}) {
   return back;
 }
 function foodFromProduct(p, g) {
-  return { name: p.name, amt: `${fmtInt(g)} g`, gr: g, v: p.v, src: p.brand ? `${p.brand}, eigenes Produkt` : 'Eigenes Produkt', portion: p.portion || 100, piece: p.portion || 100, my: p.id || null };
+  const src = p.src === 'BLS' ? (p.bls || p.name) : p.src === 'OFF' ? `${p.brand ? p.brand + ', ' : ''}Open Food Facts` : p.brand ? `${p.brand}, eigenes Produkt` : 'Eigenes Produkt';
+  return { name: p.name, amt: `${fmtInt(g)} g`, gr: g, v: p.v, src, portion: p.portion || 100, piece: p.portion || 100, my: p.id || null };
+}
+
+/* ---- Lebensmittel selbst suchen ---- */
+function foodSearch(q) {
+  const words = norm(q).split(' ').filter(w => w.length >= 2); if (!words.length) return [];
+  const has = t => { const k = norm(t); return words.every(w => k.includes(w)); };
+  const out = [], seen = new Set();
+  const push = (x) => { const k = norm(x.name); if (seen.has(k)) return; seen.add(k); out.push(x); };
+  for (const p of myFoods) if (p.v && has(`${p.name} ${p.brand || ''} ${p.alias || ''}`)) push({ ...p, mine: true });
+  for (const [al, bls, portion, piece, v] of window.DIARY_FOODS || []) if (has(al.replace(/\|/g, ' ') + ' ' + bls)) push({ name: cap(al.split('|')[0]), bls, v, portion, src: 'BLS' });
+  for (const [k, v] of Object.entries(window.NUTRI || {})) if (has(k)) { const b = baseByKey.get(k); push({ name: b ? b.name : cap(k), bls: '', v, portion: PIECE[k] || 100, src: 'BLS' }); if (out.length > 40) break; }
+  if (blsAll) blsAll.filter(([n]) => has(n)).sort((a, b) => (/\broh\b/.test(b[0]) - /\broh\b/.test(a[0])) || a[0].length - b[0].length).slice(0, 30).forEach(([n, v]) => push({ name: n, bls: n, v, portion: 100, src: 'BLS' }));
+  return out.slice(0, 50);
+}
+async function offSearch(q) {
+  const u = 'https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&json=1&page_size=20&lc=de&cc=de&fields=code,product_name,product_name_de,brands,nutriments,serving_quantity&search_terms=' + encodeURIComponent(q);
+  const j = await (await fetch(u)).json();
+  return (j.products || []).filter(p => p.nutriments && p.nutriments['energy-kcal_100g'] != null).map(p => ({ name: p.product_name_de || p.product_name || 'Produkt', brand: (p.brands || '').split(',')[0].trim(), code: p.code, v: offVec(p.nutriments), portion: Math.round(+p.serving_quantity) || null, src: 'OFF' }));
+}
+function searchFlow(onUse0) {
+  loadBls().catch(() => { });
+  let backS = null; const onUse = onUse0 ? f => { if (backS) backS(); onUse0(f); } : null;
+  const q = h('input', { class: 'scannum', placeholder: 'Lebensmittel oder Produkt', enterkeyhint: 'search', autocomplete: 'off' });
+  const res = h('div', { class: 'ln' }), more = h('div', { class: 'ln' });
+  const row = x => lrow({ class: 'lr tap', onclick: () => openProductSheet({ ...x }, onUse, { autoSave: !!(x.src === 'OFF') }) },
+    h('span', { class: 'tx', text: x.name }), h('span', { class: 'n', text: x.mine ? (x.brand || 'Meins') : x.brand || `${fmtInt(x.v[0])} kcal` }), h('span', { class: 'chev', text: '›' }));
+  let t = 0;
+  const run = () => { const r = foodSearch(q.value); res.replaceChildren(...(r.length ? r.map(row) : q.value.trim().length >= 2 ? [lrow({}, h('span', { class: 'tx dim', text: 'Nichts gefunden. Probier die Markensuche oder leg es selbst an.' }))] : [])); };
+  q.addEventListener('input', () => { clearTimeout(t); t = setTimeout(run, 180); });
+  q.addEventListener('keydown', e => { if (e.key === 'Enter') { q.blur(); run(); } });
+  const offRow = lrow({ class: 'lr tap', onclick: async () => {
+    if (q.value.trim().length < 2) return toast('Erst oben etwas eintippen');
+    more.replaceChildren(lrow({}, h('span', { class: 'tx dim', text: 'Suche bei Open Food Facts …' })));
+    try { const r = await offSearch(q.value.trim()); more.replaceChildren(...(r.length ? r.map(row) : [lrow({}, h('span', { class: 'tx dim', text: 'Kein Markenprodukt gefunden.' }))])); }
+    catch (e) { more.replaceChildren(lrow({}, h('span', { class: 'tx dim', text: 'Open Food Facts gerade nicht erreichbar.' }))); }
+  } }, h('span', { class: 'tx', text: 'Markenprodukte suchen' }), h('span', { class: 'chev', text: '›' }));
+  backS = subSheet('Lebensmittel suchen', [h('div', { class: 'ln' }, lrow({ class: 'lr' }, q)), res, more,
+    h('div', { class: 'ln srchmore' }, offRow,
+      lrow({ class: 'lr tap', onclick: () => scanFlow(onUse) }, h('span', { class: 'tx', text: 'Strichcode scannen' }), h('span', { class: 'chev', text: '›' })),
+      lrow({ class: 'lr tap', onclick: () => photoFlow(onUse) }, h('span', { class: 'tx', text: 'Nährwerte fotografieren' }), h('span', { class: 'chev', text: '›' })),
+      lrow({ class: 'lr tap', onclick: () => openProductSheet({ name: cap(q.value.trim()), src: 'Eigen' }, onUse, { edit: true }) }, h('span', { class: 'tx', text: 'Selbst anlegen' }), h('span', { class: 'chev', text: '›' })))]);
+  setTimeout(() => q.focus(), 60);
 }
 // Ganzer Ablauf: scannen → nachschlagen → Produktfenster
 function scanFlow(onUse) {
@@ -216,6 +263,7 @@ function myFoodsPage(note) {
   return [note('Produkte, die du gescannt, fotografiert oder angelegt hast. Die App erkennt sie beim Diktieren, auch unter dem Namen bei „So sage ich dazu“.'),
     h('div', { class: 'ln' },
       lrow({ class: 'lr tap', onclick: () => scanFlow(null) }, h('span', { class: 'tx', text: 'Strichcode scannen' }), h('span', { class: 'chev', text: '›' })),
-      lrow({ class: 'lr tap', onclick: () => photoFlow(null) }, h('span', { class: 'tx', text: 'Nährwerttabelle fotografieren' }), h('span', { class: 'chev', text: '›' }))),
+      lrow({ class: 'lr tap', onclick: () => photoFlow(null) }, h('span', { class: 'tx', text: 'Nährwerttabelle fotografieren' }), h('span', { class: 'chev', text: '›' })),
+      lrow({ class: 'lr tap', onclick: () => openProductSheet({ name: '', src: 'Eigen' }, null, { edit: true }) }, h('span', { class: 'tx', text: 'Selbst anlegen' }), h('span', { class: 'chev', text: '›' }))),
     list.length ? h('div', { class: 'ln', style: 'margin-top:18px' }, ...list.map(p => lrow({ class: 'lr tap', onclick: () => openProductSheet({ ...p }, null, { allowDelete: true, onDelete: re }) }, h('span', { class: 'tx', text: p.name }), h('span', { class: 'n', text: p.brand || '' }), h('span', { class: 'chev', text: '›' })))) : note('Noch keine eigenen Lebensmittel.')];
 }

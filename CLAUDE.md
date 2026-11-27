@@ -75,6 +75,8 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - Essen > Woche: „Heute gegessen“ und „Nährwerte“ (→ Statistik „Tag“).
 - Fett, Kohlenhydrate, Eiweiß und Omega-3 haben eigene Details (`openNutDetail` in `start.js`): Fettarten mit % der Kalorien, Omega-6 zu 3 (Ziel ≤ 5:1), ALA vs. EPA+DHA (250 mg, EFSA), KH-Qualität (≥ 1 g Ballaststoff je 10 g KH = hochwertig, Milchzucker extra), Eiweißqualität als Aminosäure-Score (WHO 2007).
 - `produkte.js`: Sammlung `foods` (Haushalt). Strichcode mit ZXing (`lib/zxing.min.js`, lädt erst bei Bedarf) → Open Food Facts; Foto der Nährwerttabelle → KI-Aufgabe `label`. Produkte werden beim Diktieren zuerst erkannt (`findMine`, auch „So sage ich dazu“ und Teilnamen ab 2 Wörtern) und der KI als Kontext mitgegeben. Einstellungen > Meine Lebensmittel. Knöpfe im Eintragen-Fenster und in der Nährwert-Suche.
+- Eintragen-Fenster: „Suchen“ (`searchFlow`: eigene Produkte, Diary-Lebensmittel, NUTRI, ganzer BLS, auf Wunsch Open Food Facts; Treffer → Produktfenster mit Gramm → „Eintragen“, danach zurück ins Eintragen-Fenster), „Strichcode“, „Nährwert-Foto“. „Selbst anlegen“ = Produktfenster mit eingebbaren Werten pro 100 g (`opts.edit`).
+- Diktat ohne Live-Erkennung des Geräts: alle 2,5 s Zwischenstand über `cloudTranscribe` (ElevenLabs) im Textfeld; liefert die Geräte-Erkennung nichts, wird sie abgeschaltet (`ep_livesr`).
 - Netz der Cloud-Umgebung: blsdb.de, USDA, Open Food Facts, heise, MRI sind freigegeben.
 
 ## Supplemente (`supplemente.js`)
