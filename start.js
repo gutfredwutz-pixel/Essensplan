@@ -228,9 +228,6 @@ PAGES.todo = function () {
     rep.length ? h('div', { class: 'ln todo' }, ...rep.map(x => todoRow(x, 'rep'))) : null,
     h('div', { class: 'links' }, h('button', { onclick: () => openAdd('goal') }, 'Neues Ziel'), h('button', { onclick: () => openAdd('later') }, 'Für später')));
 };
-PAGES.news = function () {
-  return h('div', { class: 'pg' }, h('div', { class: 'ln pad' }, h('p', { class: 'soon', text: 'Hier stehen bald Nachrichten aus Quellen, die du aussuchst, kurz zusammengefasst.' })));
-};
 
 /* ---------- Statistik ---------- */
 const openGroups = new Set();

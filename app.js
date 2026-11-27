@@ -655,6 +655,7 @@ function render() {
   if (tab === 'nutri') { (nutriFn || nutriHome)(); window.scrollTo(0, scroll); return; }
   if (tab === 'set') { m.replaceChildren(renderSettings()); window.scrollTo(0, scroll); return; }
   if (PAGES[tab]) { m.replaceChildren(PAGES[tab]()); window.scrollTo(0, scroll); return; }
+  if (tab !== 'cal' && tab !== 'list' && tab !== 'rec') return;
   m.replaceChildren(tab === 'cal' ? renderCal() : tab === 'list' ? renderList() : renderRec());
   window.scrollTo(0, scroll);
 }
@@ -2202,7 +2203,8 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.addEventListener('message', e => { const u = e.data && e.data.type === 'open' && new URL(e.data.url).searchParams.get('tab'); if (u && PAGES[u]) { if (topSheet || $('#ov').classList.contains('on')) closeSheet(); goTab(u, 1); } });
 }
 { const qt = new URLSearchParams(location.search).get('tab'); if (qt) { if (PAGES[qt]) tab = qt; history.replaceState(null, '', location.pathname); } }
-init();
+// erst starten, wenn alle Skripte (start.js, news.js usw.) geladen sind, sonst blitzt kurz die Rezeptseite auf
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 
 /* Gleitender Marker in allen Umschaltern */
 const segMem = new Map();
