@@ -53,9 +53,11 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 ## Gegessen eintragen (`openDiary` in `tagebuch.js`, Nov. 2026)
 
 - Kein Speichern-Knopf: jede Änderung wird nach 0,5 s gespeichert, beim Schließen/Tag-Wechsel wird Getipptes noch ausgewertet und gespeichert. Unten steht „Gespeichert“ bzw. „Nicht gespeichert, keine Verbindung“.
-- Mikrofon grau im Feld; beim Zuhören Hinweis plus weißer Text-Knopf „Fertig“; danach „Verstanden: …“ mit dem erkannten Satz. Neue Einträge kommen oben in die Liste.
+- Großes buntes Mikrofon (Jakob mag es, nicht entfernen), beim Zuhören wachsen zwei Ringe mit der Lautstärke der Stimme (`--lv`, Analyser), darunter „Ich höre zu. Fertig? Nochmal tippen.“; danach „Verstanden: …“ mit dem erkannten Satz. Neue Einträge kommen oben in die Liste.
 - Mischungen („Kokos-Rosinen-Mix“, „Whey Shake“) werden in Einzelteile zerlegt (`findFoods`), Bindestriche zählen als Leerzeichen. Die KI (`diary`) ist ebenfalls angewiesen, Gemischtes aufzuteilen.
 - Eigene Ergänzungen außerhalb des BLS stehen in `diaryfoods.js` (u. a. Whey-Protein mit Durchschnittswerten) und erscheinen auch in der Lebensmittel-Suche.
+- Unten im Eintragen-Fenster „Nährstoffe an diesem Tag“ → Statistik „Tag“ für dieses Datum (`statDay` = Tage zurück, Pfeile `dayNav`). Im Tag-Modus stehen Kalorien/Nährstoffe zuerst.
+- Kalorien-/Nährstoff-Schnitt zählt nur Tage mit Einträgen (`dayIntake().logged` = Essen oder Plan-Anteil eingetragen); nur geplante Tage zählen nicht mehr.
 - Essen > Woche hat oben „Heute gegessen“. Umschalter Woche/Rezepte/Vorrat tauscht die Seite ohne Wischeffekt (`switchNow`); Wischen mit dem Finger bleibt.
 
 ## Supplemente (`supplemente.js`)
@@ -91,6 +93,7 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - `stageClone` übernimmt Größen/Abstände der Elemente mit `id` als Inline-Stil vom Original, weil alte CSS-Regeln die Kopie sonst anders zeichnen (Überschrift kleiner, Inhalt 30 px höher, Rahmen um Knöpfe) und beim Loslassen alles springt.
 - Neu aufgebaute Umschalter-Marker sofort vor dem ersten Zeichnen setzen, sonst „ploppen“ sie auf.
 - Beim offenen Sheet die Seite dahinter festhalten (`lockBody`), sonst lässt sie sich mitwischen.
+- `#stage` steckt in `#clipw` (overflow clip/hidden). Grund: Beim Seitenwechsel wird `#stage` um eine Bildschirmbreite verschoben; ohne Rahmen merkt sich iOS die doppelte Breite, die Seite wird seitlich wischbar und rechts abgeschnitten (`overflow-x:clip` auf html/body hilft auf iOS nicht). Test: in Chromium `html,body{overflow:visible}` setzen und `scrollWidth` nach Tab-Wechsel prüfen.
 
 ## Arbeitsweise
 

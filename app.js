@@ -446,7 +446,7 @@ function grey(text) { return h('div', { class: 'greytxt', text }); }
 
 /* ============ Kopf & Tabs ============ */
 function renderHead() {
-  const a = $('#art'); a.replaceChildren(); if (ART[tab]) a.append(svgEl(ART[tab])); $('#title').textContent = tab === 'start' && window.startTitle ? startTitle() : TITLES[tab] || ''; renderFoodSeg(); const kk = $('#kicker'); if (kk) { const n = statRange === 'day' ? 1 : statRange === 'week' ? 7 : statRange === 'month' ? 30 : 365; kk.textContent = tab === 'stat' ? (n === 1 ? 'Heute' : n === 365 ? 'Letzte 12 Monate' : `Letzte ${n} Tage`) : longDate(ymd(new Date())); }
+  const a = $('#art'); a.replaceChildren(); if (ART[tab]) a.append(svgEl(ART[tab])); $('#title').textContent = tab === 'start' && window.startTitle ? startTitle() : TITLES[tab] || ''; renderFoodSeg(); const kk = $('#kicker'); if (kk) { const n = statRange === 'day' ? 1 : statRange === 'week' ? 7 : statRange === 'month' ? 30 : 365; kk.textContent = tab === 'stat' ? (n === 1 ? longDate(ymd(addDays(new Date(), -statDay))) : n === 365 ? 'Letzte 12 Monate' : `Letzte ${n} Tage`) : longDate(ymd(new Date())); }
   const w = $('#who'); const m = me(); w.classList.toggle('hidden', !household); w.style.background = colorOf(m); w.textContent = (m || '?')[0];
   const gr = $('#gear'); if (gr && !gr.firstChild) gr.append(ic('gear')); if (gr) gr.classList.toggle('hidden', !household || tab !== 'start');
   const ct = $('#cart'); if (ct) { if (!ct.firstChild) ct.append(svgEl('<svg class="ti" viewBox="0 0 24 24"><path d="M3 4h2.2l2.3 10.5a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H6.3"/><circle cx="9.5" cy="19" r="1.3"/><circle cx="16.5" cy="19" r="1.3"/></svg>')); ct.classList.toggle('hidden', !FOOD.includes(tab)); ct.classList.toggle('on', tab === 'list'); }
@@ -476,7 +476,7 @@ function tabInd(i, prog, anim) {
   bs.forEach((b, k) => b.classList.toggle('near', k === (p > 0.5 ? j : i)));
 }
 let listUI = null, recUI = null;
-const FOOD = ['list', 'cal', 'rec', 'pan']; let foodSub = 'cal', statRange = 'week';
+const FOOD = ['list', 'cal', 'rec', 'pan']; let foodSub = 'cal', statRange = 'week', statDay = 0;
 const TABS = () => ['start', 'stat', foodSub, 'todo', 'news'];
 const TAB_DEF = [
   ['start', 'Start', 'M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z'],
@@ -488,7 +488,7 @@ const TAB_DEF = [
 function renderFoodSeg() {
   let f = $('#fseg'); if (!f) { f = h('div', { id: 'fseg', class: 'useg' }); $('header').append(f); }
   f.classList.toggle('hidden', (!FOOD.includes(tab) && tab !== 'stat') || tab === 'list');
-  if (tab === 'stat') { f.replaceChildren(...[['day', 'Tag'], ['week', 'Woche'], ['month', 'Monat'], ['year', 'Jahr']].map(([k, l]) => h('button', { class: k === statRange ? 'on' : '', onclick: () => { statRange = k; renderHead(); render(); } }, l))); return; }
+  if (tab === 'stat') { f.replaceChildren(...[['day', 'Tag'], ['week', 'Woche'], ['month', 'Monat'], ['year', 'Jahr']].map(([k, l]) => h('button', { class: k === statRange ? 'on' : '', onclick: () => { statRange = k; statDay = 0; renderHead(); render(); } }, l))); return; }
   if (!FOOD.includes(tab)) return;
   f.replaceChildren(...[['cal', 'Woche'], ['rec', 'Rezepte'], ['pan', 'Vorrat']].map(([id, l]) => h('button', { class: id === tab ? 'on' : '', onclick: () => { if (id !== tab) switchNow(id); } }, l)));
 }
@@ -650,7 +650,7 @@ function planOn(ds) {
 }
 function recipeOf(p) { return p && p.recipeId ? recipes.find(x => x.id === p.recipeId) : null; }
 function renderCal() {
-  const wrap = h('div');
+  const wrap = h('div', { class: 'calwrap' });
   const isWeek = view === 'week';
   const e6 = addDays(anchor, 6);
   const title = isWeek ? (anchor.getMonth() === e6.getMonth() ? `${anchor.getDate()}. bis ${e6.getDate()}. ${MON[e6.getMonth()]}` : `${anchor.getDate()}. ${MON[anchor.getMonth()].slice(0, 3)}. bis ${e6.getDate()}. ${MON[e6.getMonth()].slice(0, 3)}.`) : `${MON[monthAnchor.getMonth()]} ${monthAnchor.getFullYear()}`;
