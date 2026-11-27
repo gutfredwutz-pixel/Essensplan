@@ -490,7 +490,7 @@ function renderFoodSeg() {
   f.classList.toggle('hidden', (!FOOD.includes(tab) && tab !== 'stat') || tab === 'list');
   if (tab === 'stat') { f.replaceChildren(...[['day', 'Tag'], ['week', 'Woche'], ['month', 'Monat'], ['year', 'Jahr']].map(([k, l]) => h('button', { class: k === statRange ? 'on' : '', onclick: () => { statRange = k; renderHead(); render(); } }, l))); return; }
   if (!FOOD.includes(tab)) return;
-  f.replaceChildren(...[['cal', 'Woche'], ['rec', 'Rezepte'], ['pan', 'Vorrat']].map(([id, l]) => h('button', { class: id === tab ? 'on' : '', onclick: () => { if (id !== tab) goTab(id, FOOD.indexOf(id) - FOOD.indexOf(tab)); } }, l)));
+  f.replaceChildren(...[['cal', 'Woche'], ['rec', 'Rezepte'], ['pan', 'Vorrat']].map(([id, l]) => h('button', { class: id === tab ? 'on' : '', onclick: () => { if (id !== tab) switchNow(id); } }, l)));
 }
 let topSheet = null, setSub = null;
 function openTop(id) {
@@ -548,6 +548,8 @@ function slideSwap(id, dir, fromX, outDur) {
     }, od * 1000);
   });
 }
+// Umschalter angetippt: Seite direkt tauschen, ohne dass der ganze Bildschirm wegschiebt
+function switchNow(id) { if (id === tab) return; if (tab === 'nutri' && window.resetNutriState) resetNutriState(); tab = id; document.body.dataset.tab = id; listUI = null; recUI = null; nutriFn = null; renderTabs(); render(); window.scrollTo(0, 0); }
 function goTab(id, dir) { if (id === tab) return; cachePage(); slideSwap(id, dir > 0 ? 1 : -1, 0, 0.13); }
 function cachePage() { const m = $('#main'); if (m && m.firstChild) { const d = h('div'); d.append(...[...m.childNodes].map(n => n.cloneNode(true))); pageCache[tab] = d; } }
 function peekNode(id) {
@@ -652,6 +654,11 @@ function renderCal() {
   const e6 = addDays(anchor, 6);
   const title = isWeek ? (anchor.getMonth() === e6.getMonth() ? `${anchor.getDate()}. bis ${e6.getDate()}. ${MON[e6.getMonth()]}` : `${anchor.getDate()}. ${MON[anchor.getMonth()].slice(0, 3)}. bis ${e6.getDate()}. ${MON[e6.getMonth()].slice(0, 3)}.`) : `${MON[monthAnchor.getMonth()]} ${monthAnchor.getFullYear()}`;
   const shift = dir => { if (isWeek) anchor = addDays(anchor, 7 * dir); else monthAnchor = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() + dir, 1); render(); };
+  // Heute Gegessenes direkt hier eintragen
+  if (typeof openDiary === 'function' && typeof lrow === 'function') {
+    const who = me(), t = ymd(new Date()); const logged = !!diary[who + '_' + t]; const kc = logged && profiles[who] ? Math.round(dayIntake(who, t).tot[0]) : 0;
+    wrap.append(h('div', { class: 'ln calate' }, lrow({ class: 'lr tap', onclick: () => openDiary(who, t, render) }, h('span', { class: 'tx', text: 'Heute gegessen' }), h('span', { class: 'n', text: logged ? `${fmtInt(kc)} kcal` : 'Eintragen' }), h('span', { class: 'chev', text: '›' }))));
+  }
   wrap.append(h('div', { class: 'calbar' },
     h('button', { class: 'ib', 'aria-label': 'Zurück', onclick: () => shift(-1) }, ic('chevron-left')),
     h('div', { class: 'ttl', text: title }),
@@ -1516,7 +1523,9 @@ function pickProduct(g, done) {
   const searchBls = async () => {
     res.replaceChildren(grey('Suche …'));
     const all = await loadBls(); const words = norm(q.value).split(' ').filter(Boolean);
-    const hits = all.filter(([n]) => { const k = norm(n); return words.every(w => k.includes(w)); }).sort((a, b) => (/\broh\b/.test(b[0]) - /\broh\b/.test(a[0])) || a[0].length - b[0].length).slice(0, 25);
+    // Eigene Ergänzungen (z. B. Whey-Protein), die nicht im BLS stehen, zuerst
+    const extra = (window.DIARY_FOODS || []).filter(([, n]) => !all.some(([bn]) => bn === n)).filter(([al, n]) => { const k = norm(al.replace(/\|/g, ' ') + ' ' + n); return words.length && words.every(w => k.includes(w)); }).map(([, n, , , v]) => [n, v]);
+    const hits = extra.concat(all.filter(([n]) => { const k = norm(n); return words.every(w => k.includes(w)); }).sort((a, b) => (/\broh\b/.test(b[0]) - /\broh\b/.test(a[0])) || a[0].length - b[0].length)).slice(0, 25);
     res.replaceChildren(...hits.map(([n, v]) => h('button', { onclick: () => choose({ src: 'BLS', name: n, v }) }, h('span', { text: n }), h('span', { class: 'muted', text: `  ${fmtInt(v[0])} kcal` }))));
     if (!hits.length) res.replaceChildren(grey('Nichts im BLS gefunden, probier die Markensuche'));
   };

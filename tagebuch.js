@@ -246,8 +246,8 @@ for (const f of DF) for (const a of f.al) { DF_IDX.set(a, f); if (!a.includes(' 
 const DNUM = { ein: 1, eine: 1, einen: 1, einem: 1, einer: 1, eins: 1, zwei: 2, drei: 3, vier: 4, funf: 5, sechs: 6, sieben: 7, acht: 8, neun: 9, zehn: 10, halb: 0.5, halbe: 0.5, halben: 0.5, halbes: 0.5, anderthalb: 1.5, eineinhalb: 1.5, paar: 3 };
 const DUNIT = [[/^(g|gr|gramm)$/, () => 1], [/^(kg|kilo)$/, () => 1000], [/^(ml)$/, () => 1], [/^(l|liter)$/, () => 1000], [/^(scheibe|scheiben)$/, f => f.piece], [/^(stuck|stucke|stk)$/, f => f.piece],
   [/^(glas|glaser)$/, () => 200], [/^(tasse|tassen|kaffeetasse)$/, () => 200], [/^(becher)$/, f => f.portion], [/^(schussel|schusseln|schale|schalen|bowl)$/, () => 300], [/^(teller)$/, () => 350], [/^(portion|portionen)$/, f => f.portion],
-  [/^(handvoll)$/, () => 30], [/^(essloffel|el|loffel)$/, () => 12], [/^(teeloffel|tl)$/, () => 5], [/^(riegel)$/, () => 40], [/^(tafel|tafeln)$/, () => 100], [/^(kugel|kugeln)$/, () => 60], [/^(flasche|flaschen)$/, () => 500], [/^(dose|dosen)$/, () => 330], [/^(packung|packungen|tute)$/, f => f.portion * 2], [/^(stange|stangen|stuckchen)$/, f => f.piece]];
-const DFILL = new Set('ich hab habe hatte hatten wir gegessen getrunken gefruhstuckt genascht noch so etwa ungefahr circa ca heute gestern es gab war waren also dann ne auch mir mich zum zur zu fruhstuck mittagessen abendessen mittag abend snack snacks zwischendurch abends mittags morgens nachmittags als nachtisch dessert den die das der dem des vom von davon sehr mal einfach eigentlich bisschen ganz glaube oder um uhr gerade nur'.split(' '));
+  [/^(handvoll)$/, () => 30], [/^(scoop|scoops|messloffel|messloffeln)$/, () => 30], [/^(essloffel|el|loffel)$/, () => 12], [/^(teeloffel|tl)$/, () => 5], [/^(riegel)$/, () => 40], [/^(tafel|tafeln)$/, () => 100], [/^(kugel|kugeln)$/, () => 60], [/^(flasche|flaschen)$/, () => 500], [/^(dose|dosen)$/, () => 330], [/^(packung|packungen|tute)$/, f => f.portion * 2], [/^(stange|stangen|stuckchen)$/, f => f.piece]];
+const DFILL = new Set('ich hab habe hatte hatten wir gegessen getrunken gefruhstuckt genascht noch so etwa ungefahr circa ca heute gestern es gab war waren also dann ne auch mir mich zum zur zu fruhstuck mittagessen abendessen mittag abend snack snacks zwischendurch abends mittags morgens nachmittags als nachtisch dessert den die das der dem des vom von davon sehr mal einfach eigentlich bisschen ganz glaube oder um uhr gerade nur mix mischung gemischt aus zusammen zusammengemischt selbstgemacht selbst gemacht shake'.split(' '));
 function factorOf(c) {
   let m;
   if (/nicht ganz|fast (alles|ganz|komplett)/.test(c)) return 0.75;
@@ -261,32 +261,41 @@ function factorOf(c) {
   return 1;
 }
 const FAC_TXT = f => f === 0 ? 'nichts' : f === 1 ? 'ganz' : f === 0.5 ? 'die Hälfte' : Math.round(f * 100) + ' %';
-function findFood(words) {
+function findExact(words) {
   for (let n = Math.min(3, words.length); n >= 1; n--) for (let s = 0; s + n <= words.length; s++) {
     const ph = words.slice(s, s + n).join(' '); const f = DF_IDX.get(ph);
-    if (f) return { name: displayName(ph, f.bls), src: f.bls, v: f.v, portion: f.portion, piece: f.piece };
+    if (f) return { s, n, f: { name: displayName(ph, f.bls), src: f.bls, v: f.v, portion: f.portion, piece: f.piece } };
   }
   for (let n = Math.min(3, words.length); n >= 1; n--) for (let s = 0; s + n <= words.length; s++) {
     const ph = words.slice(s, s + n).join(' '); const k = canon(ph); const v = window.NUTRI && window.NUTRI[k];
-    if (v && ph.length >= 3) { const b = baseByKey.get(k); return { name: b ? b.name : cap(ph), src: 'BLS', v, portion: PIECE[k] || 100, piece: PIECE[k] || 100 }; }
-  }
-  if (blsAll) {
-    const ws = words.filter(w => w.length >= 4); if (ws.length) {
-      const hits = blsAll.filter(([n]) => { const k = norm(n); return ws.every(w => k.includes(w.replace(/(n|en|e)$/, ''))); }).sort((a, b) => (norm(b[0]).startsWith(ws[0]) - norm(a[0]).startsWith(ws[0])) || a[0].length - b[0].length);
-      if (hits[0]) return { name: cap(ws.join(' ')), src: hits[0][0], v: hits[0][1], portion: 100, piece: 100 };
-    }
+    if (v && ph.length >= 3) { const b = baseByKey.get(k); return { s, n, f: { name: b ? b.name : cap(ph), src: 'BLS', v, portion: PIECE[k] || 100, piece: PIECE[k] || 100 } }; }
   }
   return null;
 }
+function findFuzzy(words) {
+  if (!blsAll) return null;
+  const ws = words.filter(w => w.length >= 4); if (!ws.length) return null;
+  const hits = blsAll.filter(([n]) => { const k = norm(n); return ws.every(w => k.includes(w.replace(/(n|en|e)$/, ''))); }).sort((a, b) => (norm(b[0]).startsWith(ws[0]) - norm(a[0]).startsWith(ws[0])) || a[0].length - b[0].length);
+  return hits[0] ? { name: cap(ws.join(' ')), src: hits[0][0], v: hits[0][1], portion: 100, piece: 100 } : null;
+}
+function findFood(words) { const x = findExact(words); return x ? x.f : findFuzzy(words); }
+// Mehrere Lebensmittel in einem Stück Text, z. B. „Kokos Rosinen Mix“ oder „Whey Shake“: alle bekannten herausziehen
+function findFoods(words) {
+  const out = []; let rest = words.slice();
+  for (let i = 0; i < 4 && rest.length; i++) { const x = findExact(rest); if (!x) break; if (!out.some(o => o.src === x.f.src)) out.push(x.f); rest.splice(x.s, x.n); }
+  if (out.length) return out;
+  const f = findFuzzy(words); return f ? [f] : [];
+}
 function displayName(ph, bls) {
+  if (/^Whey/.test(bls)) return 'Whey-Protein';
   const last = ph.split(' ').pop();
   for (const tok of bls.split(/[\s,()/]+/)) { const nt = norm(tok); if (nt.endsWith(last) && nt.length >= last.length) { const word = tok.slice(tok.length - last.length); return cap(ph.split(' ').slice(0, -1).concat(word).join(' ')); } }
   const fix = { kase: 'Käse', brotchen: 'Brötchen', musli: 'Müsli', kasekuchen: 'Käsekuchen', apfel: 'Apfel', mohren: 'Möhren', gummibarchen: 'Gummibärchen', nusse: 'Nüsse', doner: 'Döner', ruhrei: 'Rührei', hahnchen: 'Hähnchen', platzchen: 'Plätzchen', huttenkase: 'Hüttenkäse', konfiture: 'Konfitüre', weissbrot: 'Weißbrot', weisswein: 'Weißwein', weissbier: 'Weißbier', tomatensosse: 'Tomatensoße', sosse: 'Soße', nudelsosse: 'Nudelsoße', bolognesesosse: 'Bolognesesoße', gemusesuppe: 'Gemüsesuppe', mussli: 'Müsli', susskartoffeln: 'Süßkartoffeln' };
   return cap(ph.split(' ').map(w => fix[w] || w).join(' '));
 }
 function gramsFor(f, num, unitG, size) { const base = unitG != null ? unitG : f.piece || f.portion || 100; return Math.round((num != null ? num : (unitG != null ? 1 : 0)) * base * size || f.portion * size); }
-function parseFoodChunk(raw, isSide) {
-  const lw = raw.toLowerCase().replace(/(\d)\s*(g|ml|kg|l)\b/g, '$1 $2');
+function parseFoods(raw, isSide) {
+  const lw = raw.toLowerCase().replace(/[-–\/+&]/g, ' ').replace(/(\d)\s*(g|ml|kg|l)\b/g, '$1 $2');
   let words = norm(lw).split(' ').filter(Boolean);
   let size = /\b(gro(ß|ss)e?[nmrs]?|riesige?[nmrs]?)\b/.test(lw) ? 1.4 : /\bkleine?[nmrs]?\b/.test(lw) ? 0.7 : 1;
   words = words.filter(w => !/^(gross|grosse|grossen|grosser|grosses|kleine|kleinen|kleiner|kleines|klein|riesig|riesige|riesigen)$/.test(w));
@@ -296,16 +305,21 @@ function parseFoodChunk(raw, isSide) {
   const ui = words.findIndex(w => DUNIT.some(([re]) => re.test(w)));
   let unitFn = null; if (ui >= 0) { unitW = words[ui]; unitFn = DUNIT.find(([re]) => re.test(unitW))[1]; words.splice(ui, 1); }
   words = words.filter(w => !DFILL.has(w) && w.length > 1);
-  if (!words.length) return null;
-  const f = findFood(words);
-  if (!f) return { name: cap(words.join(' ')), amt: amtText(num, unitW), gr: null, v: null, src: '', unknown: true };
-  if (unitFn) unitG = unitFn(f);
-  let gr;
-  if (num == null && unitG == null) gr = Math.round((isSide ? Math.min(f.portion, f.piece || f.portion) : f.portion) * size);
-  else if (unitG == null) gr = Math.round(num * (f.piece || f.portion) * size);
-  else gr = Math.round((num == null ? 1 : num) * unitG * size);
-  return { name: f.name, amt: amtText(num, unitW) || 'eine Portion', gr, v: f.v, src: f.src, portion: f.portion, piece: f.piece };
+  if (!words.length) return [];
+  const fs = findFoods(words);
+  if (!fs.length) return [{ name: cap(words.join(' ')), amt: amtText(num, unitW), gr: null, v: null, src: '', unknown: true }];
+  const k = fs.length;
+  return fs.map(f => {
+    let gr;
+    if (unitFn) unitG = unitFn(f);
+    if (num == null && unitG == null) gr = Math.round((isSide ? Math.min(f.portion, f.piece || f.portion) : f.portion) * size / (k > 1 ? 1.5 : 1));
+    else if (unitG == null) gr = Math.round(num * (f.piece || f.portion) * size / k);
+    else gr = Math.round((num == null ? 1 : num) * unitG * size / k);
+    const amt = k > 1 ? (num != null || unitW ? `${fmtInt(gr)} g` : 'eine Portion') : amtText(num, unitW) || 'eine Portion';
+    return { name: f.name, amt, gr, v: f.v, src: f.src, portion: f.portion, piece: f.piece };
+  });
 }
+function parseFoodChunk(raw, isSide) { return parseFoods(raw, isSide)[0] || null; }
 function amtText(num, unitW) { if (num == null && !unitW) return ''; const n = num == null ? 1 : num; return (n === 0.5 ? '½' : String(n).replace('.', ',')) + (unitW ? ' ' + (/^(g|gr|ml|kg|l)$/.test(unitW) ? unitW : cap(unitW)) : ''); }
 function parseDiary(text, ds) {
   const out = { foods: [], plans: {} };
@@ -321,7 +335,7 @@ function parseDiary(text, ds) {
     if (rm) { const fac = factorOf(c.toLowerCase()) || 1; const n = recipeNutrition(rm.r); out.foods.push({ name: rm.r.title, amt: (fac === 1 ? '1' : String(fac).replace('.', ',')) + ' Portion', gr: Math.round(100 * fac), v: n.per, src: 'Euer Rezept', portion: 100, piece: 100, recipe: true }); continue; }
     const parts = c.split(/\s+mit\s+|\s+und\s+/i);
     let main = null;
-    parts.forEach((pt, k) => { const f = parseFoodChunk(pt, k > 0); if (!f) return; if (k === 0) main = f; else if (main && /kaffee|tee|cappuccino|espresso/i.test(main.src || '') && /milch|drink|sahne/i.test(f.src || '') && !/\d/.test(pt)) { f.gr = 30; f.amt = 'ein Schuss'; } out.foods.push(f); });
+    parts.forEach((pt, k) => { for (const f of parseFoods(pt, k > 0)) { if (!main) main = f; else if (main && /kaffee|tee|cappuccino|espresso/i.test(main.src || '') && /milch|drink|sahne/i.test(f.src || '') && !/\d/.test(pt)) { f.gr = 30; f.amt = 'ein Schuss'; } out.foods.push(f); } });
   }
   return out;
 }
@@ -344,90 +358,119 @@ function openDiary(name, ds, back) {
   const pf = profiles[name]; const nd = pf ? needsOf(pf) : null;
   const dt = new Date(ds); const today = ymd(new Date()), yest = ymd(addDays(new Date(), -1));
   const dlabel = (ds === today ? 'Heute' : ds === yest ? 'Gestern' : WDL[dt.getDay()]) + `, ${dt.getDate()}. ${MON[dt.getMonth()]}`;
-  const txt = h('textarea', { class: 'inp dtext', rows: '3', placeholder: 'Oder hier eintippen' }); txt.value = e.text || ''; txt.addEventListener('blur', () => { if (txt.value.trim()) evalText(); });
-  const prog = h('div', { class: 'muted hidden', style: 'margin:8px 4px 0' });
-  const listBox = h('div'), planBox = h('div'), sumBox = h('div', { class: 'dsum' });
-  const drawSum = () => {
-    const kc = e.foods.reduce((a, f) => a + (f.v && f.gr ? f.v[0] * f.gr / 100 : 0), 0) + planOn(ds).reduce((a, p) => { const r = recipeOf(p); if (!r) return a; const n = recipeNutrition(r); return a + (n.ok ? n.per[0] * (e.plans[p.id] ?? 1) : 0); }, 0);
-    sumBox.replaceChildren(h('b', { text: fmtInt(kc) + ' kcal' }), h('span', { text: nd ? ` von etwa ${fmtInt(nd.kcal)} an diesem Tag` : ' an diesem Tag' }));
+  // Speichert sich von selbst: nach jeder Änderung kurz warten, dann in die Datenbank
+  let saveT = 0, saving = Promise.resolve(), dirty = false;
+  const saveLbl = h('span', { class: 'dysave' });
+  const persist = (now) => {
+    dirty = true; clearTimeout(saveT);
+    const run = () => { saveT = 0; if (!dirty) return saving; dirty = false; saveLbl.textContent = 'Speichert …';
+      const copy = JSON.parse(JSON.stringify(e));
+      saving = saving.then(() => db.collection('diary').doc(id).set(copy)).then(() => { diary[id] = copy; saveLbl.textContent = 'Gespeichert'; }, err => { console.error(err); dirty = true; saveLbl.textContent = 'Nicht gespeichert, keine Verbindung'; });
+      return saving; };
+    if (now) return run(); saveT = setTimeout(run, 500); return saving;
   };
+  const txt = h('textarea', { class: 'dyin', rows: '1', placeholder: 'Was hast du gegessen?', enterkeyhint: 'done' }); txt.value = '';
+  const grow = () => { txt.style.height = 'auto'; txt.style.height = txt.scrollHeight + 'px'; };
+  const stTxt = h('span', { class: 'dyst' }); const stBtn = h('button', { class: 'dygo hidden', type: 'button' });
+  const status = h('div', { class: 'dystat hidden' }, stTxt, stBtn);
+  const setStatus = (t, btn, fn) => { status.classList.toggle('hidden', !t && !btn); stTxt.textContent = t || ''; stBtn.classList.toggle('hidden', !btn); stBtn.textContent = btn || ''; stBtn.onclick = fn || null; };
+  const listBox = h('div'), planBox = h('div'), sumBox = h('div', { class: 'dysum' });
+  const kcalOf = f => f.v && f.gr ? f.v[0] * f.gr / 100 : 0;
+  const drawSum = () => {
+    const kc = e.foods.reduce((a, f) => a + kcalOf(f), 0) + planOn(ds).reduce((a, p) => { const r = recipeOf(p); if (!r) return a; const n = recipeNutrition(r); return a + (n.ok ? n.per[0] * (e.plans[p.id] ?? 1) : 0); }, 0);
+    sumBox.replaceChildren(h('div', { class: 'dykc' }, h('b', { text: fmtInt(kc) + ' kcal' }), h('span', { text: nd ? ` von etwa ${fmtInt(nd.kcal)}` : '' })), saveLbl);
+  };
+  const changed = () => { drawSum(); persist(); };
   const drawPlans = () => {
     const ps = planOn(ds);
-    planBox.replaceChildren(h('h3', { text: 'Aus dem Plan' }), ...(ps.length ? ps.map(p => h('div', { class: 'dplan' }, h('div', { class: 'dpt', text: p.title + (recipeOf(p) ? '' : ' (ohne Rezept, zählt nicht mit)') }),
-      h('div', { class: 'seg wide sm' }, ...[[0, '0'], [0.25, '¼'], [0.5, '½'], [0.75, '¾'], [1, '1'], [1.5, '1½']].map(([v, t]) => h('button', { class: Math.abs((e.plans[p.id] ?? 1) - v) < 0.01 ? 'on' : '', onclick: () => { e.plans[p.id] = v; drawPlans(); drawSum(); } }, t))))) : [h('div', { class: 'muted', style: 'margin:0 4px', text: 'Für diesen Tag ist nichts geplant.' })]));
+    planBox.className = ps.length ? 'dygrp' : 'hidden';
+    planBox.replaceChildren(...(ps.length ? [h('h3', { text: 'Aus dem Plan' }), ...ps.map(p => h('div', { class: 'dplan' }, h('div', { class: 'dpt', text: p.title + (recipeOf(p) ? '' : ' (ohne Rezept, zählt nicht mit)') }),
+      h('div', { class: 'seg wide sm' }, ...[[0, '0'], [0.25, '¼'], [0.5, '½'], [0.75, '¾'], [1, '1'], [1.5, '1½']].map(([v, t]) => h('button', { class: Math.abs((e.plans[p.id] ?? 1) - v) < 0.01 ? 'on' : '', onclick: () => { e.plans[p.id] = v; drawPlans(); changed(); } }, t)))))] : []));
   };
   const drawList = () => {
-    listBox.className = e.foods.length ? 'fsec' : 'hidden'; listBox.replaceChildren(...(e.foods.length ? [h('h3', { text: 'Erkannt' })] : []), ...e.foods.map((f, k) => {
-      const a = h('input', { class: 'damt', value: f.amt || '', placeholder: 'Menge' });
-      const kc = h('span', { class: 'dkc', text: f.v && f.gr ? fmtInt(f.v[0] * f.gr / 100) + ' kcal' : '' });
-      const grT = h('span', { class: 'dgr', text: f.gr ? `${fmtInt(f.gr)} g` : '' });
-      a.addEventListener('change', () => { f.amt = a.value; regrams(f); grT.textContent = f.gr ? `${fmtInt(f.gr)} g` : ''; kc.textContent = f.v && f.gr ? fmtInt(f.v[0] * f.gr / 100) + ' kcal' : ''; drawSum(); });
-      const fix = () => { const g = { name: f.name }; pickProduct(g, () => { if (g.product) { f.v = g.product.v; f.src = g.product.name; f.unknown = false; if (!f.gr) { f.gr = 100; f.amt = '100 g'; } } drawList(); drawSum(); }); };
-      return h('div', { class: 'dfood' + (f.unknown ? ' unk' : '') },
-        h('div', { class: 'dft' }, h('b', { text: f.name }), h('button', { class: 'dsrc', onclick: fix, text: f.unknown ? 'Nicht gefunden, tippen zum Suchen' : f.src })),
-        f.recipe || f.unknown ? null : varRow(f.name, f.variant, l => { const o = varVec(f.name, l); if (o) { f.variant = l; f.v = o[1]; f.src = o[2]; } drawList(); drawSum(); }),
-        h('div', { class: 'dfr' }, a, grT, kc, h('button', { class: 'ib sm', 'aria-label': 'Entfernen', onclick: () => { e.foods.splice(k, 1); drawList(); drawSum(); } }, ic('trash'))));
+    listBox.className = e.foods.length ? 'dygrp' : 'hidden'; listBox.replaceChildren(...(e.foods.length ? [h('h3', { text: 'Gegessen' })] : []), ...e.foods.map((f, k) => {
+      const a = h('input', { class: 'dyamt', value: f.amt || '', placeholder: f.gr ? `${fmtInt(f.gr)} g` : 'Menge', enterkeyhint: 'done' });
+      const kc = h('span', { class: 'dykcal', text: f.v && f.gr ? fmtInt(kcalOf(f)) + ' kcal' : '' });
+      const grT = h('span', { class: 'dygr' });
+      // Gramm nur zeigen, wenn die Menge nicht schon in Gramm dasteht
+      const showGr = () => { const same = !a.value.trim() || norm(a.value).replace(/\s/g, '') === String(f.gr) + 'g'; grT.textContent = f.gr && !same ? `${fmtInt(f.gr)} g` : ''; a.style.width = (Math.max(4, (a.value || a.placeholder).length) * 0.56 + 0.6).toFixed(1) + 'em'; };
+      showGr(); a.addEventListener('input', showGr);
+      a.addEventListener('keydown', ev => { if (ev.key === 'Enter') a.blur(); });
+      a.addEventListener('change', () => { f.amt = a.value; regrams(f); showGr(); kc.textContent = f.v && f.gr ? fmtInt(kcalOf(f)) + ' kcal' : ''; changed(); });
+      const fix = () => { const g = { name: f.name }; pickProduct(g, () => { if (g.product) { f.v = g.product.v; f.src = g.product.name; f.unknown = false; if (!f.gr) { f.gr = 100; f.amt = '100 g'; } } drawList(); changed(); }); };
+      return h('div', { class: 'dyrow' + (f.unknown ? ' unk' : '') },
+        h('div', { class: 'dytop' }, h('span', { class: 'dyname', text: f.name }), kc),
+        h('button', { class: 'dysrc', onclick: fix, text: f.unknown ? 'Nicht gefunden, tippen zum Suchen' : f.src === 'BLS' ? 'Lebensmittel-Datenbank, tippen zum Ändern' : f.src }),
+        f.recipe || f.unknown ? null : varRow(f.name, f.variant, l => { const o = varVec(f.name, l); if (o) { f.variant = l; f.v = o[1]; f.src = o[2]; } drawList(); changed(); }),
+        h('div', { class: 'dyamtrow' }, a, grT, h('button', { class: 'dydel', 'aria-label': 'Entfernen', onclick: () => { e.foods.splice(k, 1); drawList(); changed(); } }, ic('trash'))));
     }));
   };
-  const evalText = async () => {
+  // Auswerten nacheinander, nie doppelt gleichzeitig
+  let queue = Promise.resolve();
+  const evalText = () => { const said = txt.value.trim(); if (!said) return queue; txt.value = ''; grow(); queue = queue.then(() => evalNow(said)); return queue; };
+  const evalNow = async (said) => {
+    setStatus('Suche die Lebensmittel heraus …');
     await loadBls().catch(() => { });
     let r = null;
-    if (typeof aiCall === 'function' && aiState !== false && txt.value.trim()) {
+    if (typeof aiCall === 'function' && aiState !== false) {
       const ps = planOn(ds), rs = recipes.filter(x => recipeNutrition(x).ok);
       const ctx = (ps.length ? 'Geplant für diesen Tag:\n' + ps.map(p => `- ${p.title} (id ${p.id})`).join('\n') + '\n' : '') + (rs.length ? 'Eigene Rezepte: ' + rs.map(x => x.title).slice(0, 80).join(', ') : '');
-      toast('KI liest …');
-      const d = await aiCall('diary', { text: txt.value, context: ctx });
+      const d = await aiCall('diary', { text: said, context: ctx }).catch(() => null);
       if (d) {
         r = { foods: [], plans: {} };
         for (const p of d.plans || []) if (ps.some(x => x.id === p.id)) r.plans[p.id] = Math.max(0, +p.factor || 1);
         for (const x of d.recipes || []) { const rr = rs.find(y => norm(y.title) === norm(x.title || '')); if (!rr) continue; const fac = +x.factor || 1; const n = recipeNutrition(rr); r.foods.push({ name: rr.title, amt: (fac === 1 ? '1' : String(fac).replace('.', ',')) + ' Portion', gr: Math.round(100 * fac), v: n.per, src: 'Euer Rezept', portion: 100, recipe: true }); }
         for (const x of d.foods || []) {
           const g = Math.max(1, Math.round(+x.grams || 100));
-          const f = parseFoodChunk(`${g} g ${x.name}`, false);
-          if (f) { f.amt = x.label || `${g} g`; f.gr = g; r.foods.push(f); }
+          const fs = parseFoods(`${g} g ${x.name}`, false);
+          if (fs.length === 1) { fs[0].amt = x.label || `${g} g`; fs[0].gr = g; }
+          r.foods.push(...fs);
         }
       }
     }
-    if (!r) r = parseDiary(txt.value, ds);
-    Object.assign(e.plans, r.plans); e.foods.push(...r.foods); e.text = [e.text, txt.value.trim()].filter(Boolean).join('\n'); txt.value = '';
-    drawPlans(); drawList(); drawSum();
+    if (!r) r = parseDiary(said, ds);
+    Object.assign(e.plans, r.plans); e.foods.unshift(...r.foods); e.text = [e.text, said].filter(Boolean).join('\n');
+    drawPlans(); drawList(); changed();
     const n = r.foods.length + Object.keys(r.plans).length;
-    toast(n ? `${n} ${n === 1 ? 'Eintrag' : 'Einträge'} erkannt` : 'Nichts erkannt, versuch es mit Mengen und Lebensmitteln');
+    setStatus(n ? `Verstanden: „${said}“` : `Nichts erkannt in „${said}“. Nenn Lebensmittel und Mengen.`);
   };
-  // Aufnahme
+  txt.addEventListener('input', () => { grow(); if (!rec) setStatus('', txt.value.trim() ? 'Eintragen' : '', evalText); });
+  txt.addEventListener('keydown', ev => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); txt.blur(); } });
+  txt.addEventListener('blur', () => { if (txt.value.trim() && !rec) evalText(); });
+  // Aufnahme: Mikrofon im Feld, beim Zuhören ein klarer Fertig-Knopf
   let rec = null, chunks = [];
-  const mic = h('button', { class: 'micbtn', 'aria-label': 'Einsprechen' }, ic('microphone'));
-  const micLbl = h('div', { class: 'miclbl', text: 'Einsprechen' });
+  const mic = h('button', { class: 'dymic', type: 'button', 'aria-label': 'Einsprechen' }, ic('microphone'));
+  const stopRec = () => { if (rec && rec.state !== 'inactive') rec.stop(); };
   mic.addEventListener('click', async () => {
-    if (rec) { rec.stop(); return; }
+    if (rec) return stopRec();
     if (!navigator.mediaDevices || !window.MediaRecorder) return toast('Aufnahme wird hier nicht unterstützt');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       chunks = []; rec = new MediaRecorder(stream);
       rec.ondataavailable = ev => ev.data.size && chunks.push(ev.data);
       rec.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop()); rec = null; mic.classList.remove('rec'); micLbl.textContent = 'Einsprechen';
+        stream.getTracks().forEach(t => t.stop()); rec = null; mic.classList.remove('rec'); mic.replaceChildren(ic('microphone'));
         const blob = new Blob(chunks, { type: chunks[0] ? chunks[0].type : 'audio/mp4' });
-        prog.classList.remove('hidden');
-        try { const t = await window.transcribeVideo(blob, (m, fr) => { prog.textContent = m + (fr != null ? ` ${Math.round(fr * 100)} %` : ''); }); prog.classList.add('hidden'); if (t) { txt.value = (txt.value ? txt.value.trim() + ', ' : '') + t.trim(); await evalText(); } else toast('Nichts verstanden'); }
-        catch (err) { console.error(err); prog.textContent = 'Konnte die Aufnahme nicht auswerten'; }
+        setStatus('Schreibe auf, was du gesagt hast …');
+        try {
+          const t = await window.transcribeVideo(blob, (m, fr) => { if (fr != null) setStatus(`Schreibe auf … ${Math.round(fr * 100)} %`); });
+          if (t && t.trim()) { txt.value = (txt.value.trim() ? txt.value.trim() + ', ' : '') + t.trim(); await evalText(); }
+          else setStatus('Nichts verstanden. Tippe nochmal aufs Mikrofon.');
+        } catch (err) { console.error(err); setStatus('Konnte die Aufnahme nicht auswerten. Tippe es sonst ein.'); }
       };
-      rec.start(); mic.classList.add('rec'); micLbl.textContent = 'Tippen zum Beenden';
+      rec.start(); mic.classList.add('rec'); mic.replaceChildren(ic('stop'));
+      setStatus('Ich höre zu. Sag alles, was du gegessen hast.', 'Fertig', stopRec);
     } catch (err) { toast('Kein Zugriff aufs Mikrofon'); }
   });
-  const save = h('button', { class: 'btn grad', onclick: async () => {
-    if (txt.value.trim()) await evalText();
-    save.disabled = true; try { await db.collection('diary').doc(id).set(e); diary[id] = e; toast('Gespeichert'); back(); } catch (err) { showErr(err); save.disabled = false; }
-  } }, 'Speichern');
   drawPlans(); drawList(); drawSum();
-  const go = n => openDiary(name, ymd(addDays(dt, n)), back);
-  openSheet('Was hast du gegessen?', [
+  // Beim Schließen oder Tag wechseln: Aufnahme beenden, Getipptes auswerten, alles speichern
+  const flush = () => { stopRec(); evalText(); clearTimeout(saveT); queue.then(() => persist(true)); };
+  const go = n => { flush(); openDiary(name, ymd(addDays(dt, n)), back); };
+  openSheet('Was hast du gegessen?', [h('div', { class: 'dy' },
     h('div', { class: 'pnav' }, h('button', { class: 'ib', 'aria-label': 'Tag davor', onclick: () => go(-1) }, ic('chevron-left')), h('div', { text: dlabel }), h('button', { class: 'ib', 'aria-label': 'Tag danach', onclick: () => go(1) }, ic('chevron-right'))),
-    h('div', { class: 'fsec' }, planBox),
-    h('div', { class: 'fsec dictate' }, h('h3', { text: 'Was gab es sonst?' }), h('div', { class: 'micwrap' }, mic, micLbl), txt, prog),
+    h('div', { class: 'dygrp dyadd' }, h('div', { class: 'dyline' }, txt, mic), status),
     listBox,
-    sumBox,
-    old ? h('div', { class: 'muted', style: 'margin:6px 4px', text: 'Bisher diktiert: ' + (old.text || 'nichts') }) : null,
-    h('div', { class: 'actions' }, save)]);
-  $('#sheet .xclose').onclick = () => { closeSheet(); back(); };
+    planBox,
+    sumBox)]);
+  $('#sheet .xclose').onclick = () => { flush(); closeSheet(); back(); };
 }
