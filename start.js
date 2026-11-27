@@ -263,11 +263,13 @@ function goalStats(days) {
   return [secHead('Ziele', tot ? `${Math.round(hit / tot * 100)} % geschafft` : null), h('div', { class: 'ln goals' }, ...rows)];
 }
 // Ampel: ab 80 % grün, ab 60 % gelb, ab 40 % orange, darunter rot; bei „nicht zu viel“ umgekehrt
-function lvl(pct, limit) { if (limit) return pct <= 100 ? 'g' : pct <= 125 ? 'y' : pct <= 150 ? 'o' : 'r'; return pct >= 80 ? 'g' : pct >= 60 ? 'y' : pct >= 40 ? 'o' : 'r'; }
+// Drei Farben: grün gut, gelb knapp, rot zu wenig (bei Höchstwerten: zu viel)
+function lvl(pct, limit) { if (limit) return pct <= 100 ? 'g' : pct <= 125 ? 'y' : 'r'; return pct >= 80 ? 'g' : pct >= 50 ? 'y' : 'r'; }
 function groupPct(rs) { const lim = rs.every(r => LIMIT_KEYS.has(r.i)); if (lim) return Math.max(...rs.map(r => r.pct)); return Math.round(rs.reduce((a, r) => a + Math.min(100, r.pct), 0) / rs.length); }
 const DETAIL = new Set([1, 2, 3, 23]);
-function nutRowsList(rs, ctx) { return rs.map(r => { const tap = ctx && DETAIL.has(r.i); return lrow(tap ? { class: 'lr tap', onclick: () => openNutDetail(r.i, ctx) } : {}, h('span', { class: 'tx', text: r.nm }), h('span', { class: 'n', text: `${r.pct} %` }), h('span', { class: 'mb ' + r.st }, h('i', { style: `width:${Math.min(100, r.pct)}%` })), tap ? h('span', { class: 'chev', text: '›' }) : null); }); }
-function openNutList(title, rs, note, ctx) { if (ctx) ctx.back = () => openNutList(title, rs, note, ctx); openSheet(title, [note ? h('div', { class: 'sheetnote', text: note }) : null, h('div', { class: 'ln' }, ...nutRowsList(rs, ctx))]); }
+function nutRowsList(rs, ctx) { return rs.map(r => { const tap = !!ctx; return lrow(tap ? { class: 'lr tap', onclick: () => openNutDetail(r.i, ctx) } : {}, h('span', { class: 'tx', text: r.nm }), h('span', { class: 'n', text: `${r.pct} %` }), h('span', { class: 'mb ' + r.st }, h('i', { style: `width:${Math.min(100, r.pct)}%` })), tap ? h('span', { class: 'chev', text: '›' }) : null); }); }
+function openNutList(title, rs, note, ctx) { if (ctx) ctx.back = () => openNutList(title, rs, note, ctx); const lim = rs.every(r => LIMIT_KEYS.has(r.i)); openSheet(title, [note ? h('div', { class: 'sheetnote', text: note }) : null, nutLegend(lim), h('div', { class: 'ln' }, ...nutRowsList(rs, ctx))]); }
+function nutLegend(lim) { return h('div', { class: 'nlegend' }, ...(lim ? [['g', 'im Rahmen'], ['y', 'etwas zu viel'], ['r', 'zu viel']] : [['g', 'gut'], ['y', 'knapp'], ['r', 'zu wenig']]).map(([c, t]) => h('span', { class: c }, h('i'), t))); }
 
 /* ---- Details zu Fett, Omega-3, Kohlenhydraten und Eiweiß (Werte im Schnitt pro eingetragenem Tag) ---- */
 const AA = [[40, 'Histidin', 15], [41, 'Isoleucin', 30], [42, 'Leucin', 59], [43, 'Lysin', 45], [44, 'Methionin und Cystein', 22], [45, 'Phenylalanin und Tyrosin', 38], [46, 'Threonin', 23], [47, 'Tryptophan', 6], [48, 'Valin', 39]]; // mg je g Eiweiß, WHO/FAO/UNU 2007 (Erwachsene)
@@ -336,8 +338,20 @@ function openNutDetail(i, ctx) {
     } else out.push(h('div', { class: 'sheetnote', text: 'Für deine Lebensmittel gibt es noch keine Messwerte zu den Eiweißbausteinen.' }));
     out.push(secHead('Woher'), h('div', { class: 'ln' }, nutLine('Die größten Quellen', '', null, null, topSrc(d, 1, 5) || '-')));
   }
+  if (!{ 1: 1, 2: 1, 3: 1, 23: 1 }[i]) {
+    const ref = ctx.refs[i] || REF[i] || [1, '', 'g'], unit = ref[2], val = avg(i), lim = LIMIT_KEYS.has(i), pct = val / ref[0] * 100;
+    if (INFO[i]) out.push(h('p', { class: 'slinfo', text: INFO[i] }));
+    out.push(secHead('Deine Werte', days), h('div', { class: 'ln' }, nutLine(lim ? 'Gegessen, höchstens' : 'Gegessen', `${fmtN(val, unit)} von ${fmtN(ref[0], unit)}`, pct, lvl(pct, lim))));
+    if (i === 9) out.push(h('div', { class: 'sheetnote dnote', text: 'Vitamin D bildet der Körper vor allem über Sonnenlicht, über das Essen kommt nur ein kleiner Teil.' }));
+    if (i === 22) out.push(h('div', { class: 'sheetnote dnote', text: 'Jodsalz beim Kochen ist mitgezählt, wenn du es in deinen Angaben eingestellt hast.' }));
+    const m = d.src[i] || {}, tot = Object.values(m).reduce((a, b) => a + b, 0);
+    const srcs = Object.entries(m).filter(([, x]) => x >= tot * 0.03).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    if (srcs.length) out.push(secHead('Woher es bei dir kommt'), h('div', { class: 'ln' }, ...srcs.map(([k, x]) => lrow({}, h('span', { class: 'tx', text: k }), h('span', { class: 'n', text: fmtN(x / n, unit) })))));
+    const good = !lim ? (GOOD_SRC[i] || []) : [];
+    if (good.length) out.push(secHead('Viel davon in'), h('div', { class: 'ln' }, ...good.map(([g0]) => { const v = nutOf({ name: g0 }); return lrow({ class: 'lr slfood' }, h('span', { class: 'tx', text: g0 }), v ? h('span', { class: 'n', text: fmtN(v[i] || 0, unit) + ' in 100 g' }) : null, slAddBtn(g0)); })), h('div', { class: 'sheetnote', text: 'Plus setzt es auf die Einkaufsliste.' }));
+  }
   out.push(h('div', { class: 'sheetnote', text: 'Nährwerte: Bundeslebensmittelschlüssel 4.0, Max Rubner-Institut (CC BY 4.0). Referenzwerte: DGE, EFSA, WHO.' }));
-  openSheet({ 2: 'Fett', 23: 'Omega-3', 3: 'Kohlenhydrate', 1: 'Eiweiß' }[i], out);
+  openSheet({ 2: 'Fett', 23: 'Omega-3', 3: 'Kohlenhydrate', 1: 'Eiweiß' }[i] || (ctx.refs[i] || REF[i] || [0, 'Nährstoff'])[1], out);
   if (ctx.back) sheetBack = ctx.back;
 }
 function nutStats(days) {
@@ -362,8 +376,7 @@ function nutStats(days) {
     h('span', { class: 'tx', text: title }),
     title === 'Fehlt am meisten' ? h('span', { class: 'n', text: rs[0] ? rs[0].nm : '' }) : (() => { const gp = groupPct(rs), lim = rs.every(r => LIMIT_KEYS.has(r.i)); return h('span', { class: 'gsum ' + lvl(gp, lim) }, h('i'), lim ? (gp <= 100 ? 'im Rahmen' : `${gp} %`) : `${gp} %`); })(),
     h('span', { class: 'chev', text: '›' }))),
-    (() => { const c = suppCheck(name), n = suppCount(c); return lrow({ class: 'lr tap', onclick: () => openSuppCheck() }, h('span', { class: 'tx', text: 'Supplemente' }), h('span', { class: 'n', text: n ? (n === 1 ? '1 Hinweis' : `${n} Hinweise`) : 'passt' }), h('span', { class: 'chev', text: '›' })); })(),
-    lrow({ class: 'lr tap', onclick: () => { cachePage(); tab = 'nutri'; renderTabs(); render(); window.scrollTo(0, 0); } }, h('span', { class: 'tx', text: 'Einzelne Tage' }), h('span', { class: 'chev', text: '›' }))));
+    (() => { const c = suppCheck(name), n = suppCount(c); return lrow({ class: 'lr tap', onclick: () => openSuppCheck() }, h('span', { class: 'tx', text: 'Supplemente' }), h('span', { class: 'n', text: n ? (n === 1 ? '1 Hinweis' : `${n} Hinweise`) : 'passt' }), h('span', { class: 'chev', text: '›' })); })()));
   return out;
 }
 function dayNav() {
