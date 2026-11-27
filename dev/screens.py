@@ -56,6 +56,8 @@ async def main():
             await pg.evaluate("closeSheet()"); await pg.wait_for_timeout(300); await pg.click('.tabs button >> nth=4'); await pg.wait_for_timeout(800); await pg.screenshot(path=str(OUT / 'news_ganz.png'), full_page=True)
             await pg.click('.ln.nl .lr.nr >> nth=2'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'news_artikel.png'))
             await pg.evaluate("document.querySelector('#sheet').scrollTop=9999"); await pg.wait_for_timeout(300); await pg.screenshot(path=str(OUT / 'news_artikel_unten.png'))
+            await pg.evaluate("closeSheet()"); await pg.wait_for_timeout(400); await pg.click('.ln.mk .chg >> nth=0'); await pg.wait_for_timeout(300); await pg.screenshot(path=str(OUT / 'news_boerse_abs.png'))
+            await pg.click('.ln.mk .lr >> nth=0'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'news_dax.png'))
             await pg.evaluate("closeSheet()"); await pg.wait_for_timeout(400); await pg.click('.tabs button >> nth=2'); await pg.wait_for_timeout(500); await pg.click('#fseg >> text=Vorrat'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'vorrat.png'), full_page=True)
             await pg.click('.ln.pantry >> text=Spinat'); await pg.wait_for_timeout(700); await pg.screenshot(path=str(OUT / 'vorrat_spinat.png'))
             await pg.evaluate("closeSheet(); const it=items.find(i=>i.name==='Milch'); db.collection('items').doc(it.id).update({checked:true,checkedAt:Date.now()})"); await pg.wait_for_timeout(500)

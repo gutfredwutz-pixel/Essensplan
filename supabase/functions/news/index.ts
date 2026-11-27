@@ -78,18 +78,65 @@ async function fullText(it: Item) {
   } catch { /* nur Anriss */ }
 }
 
-async function markets() {
-  const list: [string, string][] = [['DAX', '%5EGDAXI'], ['S&P 500', '%5EGSPC'], ['Euro in Dollar', 'EURUSD%3DX'], ['Bitcoin', 'BTC-EUR']];
-  const out = await Promise.all(list.map(async ([name, s]) => {
+// Börse: Kurse von Yahoo, alles in Euro. pct = Veränderung zum Vortag in %, abs = in Punkten bzw. Euro.
+type Quote = { key: string; name: string; unit: string; value: number; chg: number; abs: number; trend?: number[]; note?: string; why?: string };
+const WATCH: { key: string; sym: string; name: string; unit: string; usd?: boolean; note?: string }[] = [
+  { key: 'dax', sym: '^GDAXI', name: 'DAX', unit: 'Punkte' },
+  { key: 'acwi', sym: 'SPYI.DE', name: 'MSCI ACWI IMI', unit: '€', note: 'Kurs des SPDR-ETFs auf den MSCI ACWI IMI an der Börse Xetra' },
+  { key: 'btc', sym: 'BTC-EUR', name: 'Bitcoin', unit: '€' },
+  { key: 'tsla', sym: 'TL0.DE', name: 'Tesla', unit: '€', note: 'Kurs an der Börse Xetra' },
+  { key: 'spacex', sym: 'SPCX', name: 'SpaceX', unit: '€', usd: true, note: 'Gehandelt an der Nasdaq in Dollar, hier in Euro umgerechnet' },
+];
+// Große deutsche Werte für „Größte Bewegungen“ (DAX-Mitglieder, Stand 2025)
+const DAX: Record<string, string> = { 'ADS.DE': 'Adidas', 'AIR.DE': 'Airbus', 'ALV.DE': 'Allianz', 'BAS.DE': 'BASF', 'BAYN.DE': 'Bayer', 'BEI.DE': 'Beiersdorf', 'BMW.DE': 'BMW', 'BNR.DE': 'Brenntag', 'CBK.DE': 'Commerzbank', 'CON.DE': 'Continental', 'DTG.DE': 'Daimler Truck', 'DBK.DE': 'Deutsche Bank', 'DB1.DE': 'Deutsche Börse', 'DHL.DE': 'DHL Group', 'DTE.DE': 'Deutsche Telekom', 'EOAN.DE': 'Eon', 'FRE.DE': 'Fresenius', 'HNR1.DE': 'Hannover Rück', 'HEI.DE': 'Heidelberg Materials', 'HEN3.DE': 'Henkel', 'IFX.DE': 'Infineon', 'MBG.DE': 'Mercedes-Benz', 'MRK.DE': 'Merck', 'MTX.DE': 'MTU Aero Engines', 'MUV2.DE': 'Munich Re', 'P911.DE': 'Porsche', 'PAH3.DE': 'Porsche Holding', 'QIA.DE': 'Qiagen', 'RHM.DE': 'Rheinmetall', 'RWE.DE': 'RWE', 'SAP.DE': 'SAP', 'SRT3.DE': 'Sartorius', 'SIE.DE': 'Siemens', 'ENR.DE': 'Siemens Energy', 'SHL.DE': 'Siemens Healthineers', 'SY1.DE': 'Symrise', 'VNA.DE': 'Vonovia', 'VOW3.DE': 'Volkswagen', 'ZAL.DE': 'Zalando', 'G1A.DE': 'GEA' };
+const yq = (s: string) => encodeURIComponent(s);
+async function markets(): Promise<{ list: Quote[]; movers: Quote[] }> {
+  let usd = 0; // Dollar je Euro
+  try { const j = JSON.parse(await get(`https://query1.finance.yahoo.com/v8/finance/chart/EURUSD%3DX?range=1d&interval=1d`, 6000)); usd = j.chart.result[0].meta.regularMarketPrice; } catch { /* ohne Umrechnung */ }
+  const list = (await Promise.all(WATCH.map(async (w): Promise<Quote | null> => {
     try {
-      const j = JSON.parse(await get(`https://query1.finance.yahoo.com/v8/finance/chart/${s}?range=5d&interval=1d`, 6000));
-      const m = j.chart.result[0].meta, v = m.regularMarketPrice, p = m.chartPreviousClose ?? m.previousClose;
-      const closes = (j.chart.result[0].indicators?.quote?.[0]?.close || []).filter((c: number | null) => c != null);
-      const prev = closes.length > 1 ? closes[closes.length - 2] : p;
-      return v && prev ? { name, value: v, chg: (v - prev) / prev * 100 } : null;
+      const j = JSON.parse(await get(`https://query1.finance.yahoo.com/v8/finance/chart/${yq(w.sym)}?range=1mo&interval=1d`, 6000));
+      const r = j.chart.result[0], m = r.meta, k = w.usd ? (usd ? 1 / usd : 0) : 1;
+      if (!k || !m.regularMarketPrice) return null;
+      const closes = (r.indicators?.quote?.[0]?.close || []).filter((c: number | null) => c != null);
+      let pct = m.regularMarketChangePercent;
+      if (pct == null) { const prev = closes.length > 1 ? closes[closes.length - 2] : m.chartPreviousClose; pct = (m.regularMarketPrice - prev) / prev * 100; }
+      const v = m.regularMarketPrice * k;
+      return { key: w.key, name: w.name, unit: w.unit, value: v, chg: pct, abs: v - v / (1 + pct / 100), trend: closes.map((c: number) => +(c * k).toFixed(2)), note: w.note };
     } catch { return null; }
-  }));
-  return out.filter(Boolean) as { name: string; value: number; chg: number }[];
+  }))).filter(Boolean) as Quote[];
+  const syms = Object.keys(DAX), movers: Quote[] = [];
+  for (let a = 0; a < syms.length; a += 20) {
+    try {
+      const j = JSON.parse(await get(`https://query1.finance.yahoo.com/v7/finance/spark?symbols=${syms.slice(a, a + 20).map(yq).join(',')}&range=1d&interval=1d`, 8000));
+      for (const r of j.spark?.result || []) {
+        const m = r.response?.[0]?.meta; if (!m || m.regularMarketChangePercent == null) continue;
+        const pct = m.regularMarketChangePercent, v = m.regularMarketPrice;
+        movers.push({ key: r.symbol, name: DAX[r.symbol] || r.symbol, unit: '€', value: v, chg: pct, abs: v - v / (1 + pct / 100) });
+      }
+    } catch { /* ohne Bewegungen */ }
+  }
+  movers.sort((x, y) => Math.abs(y.chg) - Math.abs(x.chg));
+  return { list, movers: movers.filter((m) => Math.abs(m.chg) >= 1.5).slice(0, 5) };
+}
+
+// Kurze Erklärung zu jedem Kurs: warum gestiegen oder gefallen, aus den Meldungen des Tages
+const MK_SYS = `Du erklärst Jakob, einem BWL-Studenten, in einfachen Worten, warum sich Börsenkurse heute bewegt haben. Nutze nur, was in den mitgeschickten Meldungen und Marktberichten steht, und allgemeines Wissen, wie Börse funktioniert. Erfinde keine Gründe: Wenn die Meldungen nichts dazu sagen, schreib ehrlich, dass es keinen klaren Anlass in den Nachrichten gibt, und was typischerweise dahinterstecken kann (z. B. allgemeine Marktstimmung, Gewinnmitnahmen). why: 2 bis 4 kurze Sätze auf Deutsch, ohne Fachjargon (Fachbegriffe kurz erklären), Prozent mit Komma. Ordne auch ein, ob die Bewegung groß oder klein ist (beim DAX ist 1 % an einem Tag schon deutlich, bei Bitcoin sind 3 % normal, bei Einzelaktien sind 2 bis 3 % normal). Keine Spiegelstriche, keine Rauten, keine Emojis.`;
+const MK_TOOL = {
+  name: 'erklaerungen', description: 'Erklärung je Kurs',
+  input_schema: { type: 'object', properties: { items: { type: 'array', items: { type: 'object', properties: { key: { type: 'string' }, why: { type: 'string' } }, required: ['key', 'why'] } } }, required: ['items'] },
+};
+async function explainMarkets(qs: Quote[], all: Item[]) {
+  if (!qs.length) return;
+  const rep = all.filter((i) => /marktbericht|börse|dax|aktie|kurs|bitcoin|tesla|spacex|musk|msci|wall street/i.test(i.title + ' ' + i.url));
+  const reports = rep.filter((i) => i.text).slice(0, 3).map((i) => `### ${i.src}: ${i.title}\n${i.text!.slice(0, 3500)}`).join('\n\n');
+  const heads = rep.slice(0, 60).map((i) => `${i.src}: ${i.title} | ${i.teaser.slice(0, 200)}`).join('\n');
+  const fmt = (q: Quote) => `${q.key} | ${q.name} | ${q.value.toFixed(2)} ${q.unit} | ${q.chg >= 0 ? '+' : ''}${q.chg.toFixed(2)} % zum Vortag${q.trend && q.trend.length > 5 ? ` | vor einem Monat ${q.trend[0]}` : ''}`;
+  try {
+    const out = await claude(MK_SYS, MK_TOOL, `Kurse (key | Name | Kurs | Veränderung):\n${qs.map(fmt).join('\n')}\n\nMarktberichte:\n${reports || 'keine'}\n\nWeitere Meldungen:\n${heads || 'keine'}`, 4000);
+    const by = new Map(flat(out?.items, 'items').filter((x) => x && x.key).map((x) => [x.key, x.why]));
+    for (const q of qs) q.why = by.get(q.key) || '';
+  } catch (e) { console.warn('Börse erklären', e); }
 }
 
 async function claude(system: string, tool: Record<string, unknown>, text: string, maxTokens = 16000) {
@@ -107,8 +154,8 @@ async function claude(system: string, tool: Record<string, unknown>, text: strin
 }
 
 const SEC_DESC: Record<string, string> = {
-  ki: 'Künstliche Intelligenz: neue Modelle, große Firmen, Regeln, Folgen für Arbeit und Alltag. Keine Produkttests, keine Gerüchte, keine Kleinigkeiten.',
-  wirtschaft: 'Wirtschaft: Konjunktur, Zinsen, Börse, auffällige Kursbewegungen, Firmen, die stark wachsen oder in Schwierigkeiten sind, große Übernahmen, Branchen in Deutschland und der Welt.',
+  ki: 'Künstliche Intelligenz: neue Modelle, große Firmen (auch xAI von Elon Musk), Regeln, Folgen für Arbeit und Alltag. Keine Produkttests, keine Gerüchte, keine Kleinigkeiten.',
+  wirtschaft: 'Wirtschaft: Konjunktur, Zinsen, Börse, auffällige Kursbewegungen, Firmen, die stark wachsen oder in Schwierigkeiten sind, große Übernahmen, Branchen in Deutschland und der Welt. Themen rund um Elon Musk (Tesla, SpaceX, xAI, X) interessieren Jakob besonders: nimm sie, wenn es etwas Nennenswertes gibt.',
   deutschland: 'Politik in Deutschland: Bundesregierung, Bundestag, Parteien, Gesetze, Bundesländer.',
   welt: 'Welt: internationale Politik, Kriege und Konflikte, EU, USA, China, große Ereignisse weltweit.',
   arbeit: 'Weiterbildung und Arbeitsmarkt: Arbeitslosenzahlen, Tarife und Gehälter, Fachkräfte, Berufseinstieg, Studium, Weiterbildung, Wandel der Arbeit.',
@@ -153,7 +200,8 @@ async function build(prev: Record<string, any>) {
   all = all.filter((i) => !i.date || now - i.date < 30 * 36e5).sort((a, b) => b.date - a.date).slice(0, 260);
   all.forEach((it, k) => it.id = 'm' + k);
   if (!all.length) throw new Error('Keine Quellen erreichbar');
-  const [mk] = await Promise.all([markets()]);
+  const mkt = await markets(), mk = mkt.list;
+  const mkDone = explainMarkets([...mkt.list, ...mkt.movers], all);
   const list = all.map((i) => `${i.id} | ${i.src}${i.pay ? ' (Abo)' : ''} | ${i.date ? ago(i.date) : ''} | ${i.title} | ${i.teaser.slice(0, 160)}`).join('\n');
   const byId = new Map(all.map((i) => [i.id, i]));
   const used = new Set<string>(), picks: { id: string; sec: string; also?: string[] }[] = [];
@@ -177,8 +225,7 @@ async function build(prev: Record<string, any>) {
   const todo = chosen.filter((i) => !prev[i.url]);
   const sums = new Map<string, any>();
   const chunks: Item[][] = []; for (let k = 0; k < todo.length; k += 5) chunks.push(todo.slice(k, k + 5));
-  const unit: Record<string, string> = { 'DAX': 'Punkte', 'S&P 500': 'Punkte', 'Euro in Dollar': 'Dollar je Euro', 'Bitcoin': 'Euro' };
-  const mkTxt = mk.length ? 'Börse heute (nur nutzen, wenn es zur Meldung passt): ' + mk.map((m) => `${m.name} ${m.value.toFixed(2)} ${unit[m.name] || ''} (${m.chg >= 0 ? '+' : ''}${m.chg.toFixed(2)} % zum Vortag)`).join(', ') + '\n\n' : '';
+  const mkTxt = mk.length ? 'Börse heute (nur nutzen, wenn es zur Meldung passt): ' + mk.map((m) => `${m.name} ${m.value.toFixed(2)} ${m.unit === '€' ? 'Euro' : m.unit} (${m.chg >= 0 ? '+' : ''}${m.chg.toFixed(2)} % zum Vortag)`).join(', ') + '\n\n' : '';
   await Promise.all(chunks.map(async (ch) => {
     const txt = ch.map((i) => `### id ${i.id}\nQuelle: ${i.src}${i.pay || !i.text ? ' (nur Anriss frei)' : ''}\nTitel: ${i.title}\nAnriss: ${i.text ? i.teaser.slice(0, 300) : i.teaser}\n${i.text ? 'Text:\n' + i.text.slice(0, 5000) : ''}`).join('\n\n');
     try { const out = await claude(SUM_SYS, SUM_TOOL, mkTxt + txt); for (const s of flat(out?.items, 'items')) if (s && s.id) sums.set(s.id, s); } catch (e) { console.warn('Zusammenfassen', e); }
@@ -190,7 +237,8 @@ async function build(prev: Record<string, any>) {
       also: (p.also || []).map((a) => byId.get(a)).filter(Boolean).filter((a) => a!.src !== it.src).map((a) => ({ src: a!.src, url: a!.url })) };
   }) })).filter((s) => s.items.length);
   if (!sections.length) throw new Error('Keine Bereiche');
-  return { at: new Date().toISOString(), markets: mk, sections };
+  await mkDone;
+  return { at: new Date().toISOString(), markets: mk, movers: mkt.movers, sections };
 }
 
 async function rpc(url: string, anon: string, fn: string, args: Record<string, unknown>) {

@@ -36,16 +36,44 @@ function newsStand(iso) {
 const newsMeta = it => [it.src, newsAgo(it.date)].filter(Boolean).join(' / ');
 function newsImg(src, cls) { return src ? h('img', { class: cls, src, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', onerror: e => e.target.remove() }) : null; }
 
-function mkValue(m) {
-  if (m.name === 'Euro in Dollar') return `${de(m.value, 4)} $`;
-  if (m.name === 'Bitcoin') return `${de(m.value, 0)} €`;
-  return `${de(m.value, 0)} Punkte`;
+/* Börse: Prozent antippen wechselt zwischen % und Punkten/Euro (für alle Zeilen, gemerkt), Zeile antippen zeigt Verlauf und Erklärung */
+let mkAbs = LS.get('ep_mkabs') === '1';
+const fmt1 = (n, d) => Number(n).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
+const mkDec = m => m.unit === 'Punkte' || m.value >= 1000 ? 0 : 2;
+function mkValue(m) { return m.unit === 'Punkte' ? `${fmt1(m.value, 0)} Punkte` : `${fmt1(m.value, mkDec(m))} €`; }
+function mkPct(m) { return `${m.chg >= 0 ? '+' : '−'}${fmt1(Math.abs(m.chg), 1)} %`; }
+function mkAbsTxt(m) { const a = Math.abs(m.abs == null ? 0 : m.abs), sg = m.chg >= 0 ? '+' : '−'; return m.unit === 'Punkte' ? `${sg}${fmt1(a, 0)} Pkt.` : `${sg}${fmt1(a, a >= 100 ? 0 : 2)} €`; }
+function mkRow(m) {
+  const chg = h('button', { class: 'chg ' + (m.chg >= 0 ? 'up' : 'dn'), text: mkAbs ? mkAbsTxt(m) : mkPct(m), onclick: e => {
+    e.stopPropagation(); mkAbs = !mkAbs; LS.set('ep_mkabs', mkAbs ? '1' : '0');
+    document.querySelectorAll('.ln.mk .chg').forEach(b => { const q = b._m; b.textContent = mkAbs ? mkAbsTxt(q) : mkPct(q); });
+  } });
+  chg._m = m;
+  return lrow({ class: 'lr tap', onclick: () => openMarket(m) }, h('span', { class: 'tx', text: m.name }), h('span', { class: 'n', text: mkValue(m) }), chg);
 }
-function marketBlock(mk) {
-  if (!mk || !mk.length) return [];
-  return [secHead('Börse', 'zum Vortag'), h('div', { class: 'ln mk' }, ...mk.map(m => lrow({},
-    h('span', { class: 'tx', text: m.name }), h('span', { class: 'n', text: mkValue(m) }),
-    h('span', { class: 'chg ' + (m.chg >= 0 ? 'up' : 'dn'), text: `${m.chg >= 0 ? '+' : '−'}${Math.abs(m.chg).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %` }))))];
+function marketBlock(mk, movers) {
+  const out = [];
+  if (mk && mk.length) out.push(secHead('Börse', 'zum Vortag'), h('div', { class: 'ln mk' }, ...mk.map(mkRow)));
+  if (movers && movers.length) out.push(secHead('Größte Bewegungen im DAX'), h('div', { class: 'ln mk' }, ...movers.map(mkRow)));
+  return out;
+}
+function sparkSvg(vals, up) {
+  if (!vals || vals.length < 3) return null;
+  const W = 320, H = 110, lo = Math.min(...vals), hi = Math.max(...vals), r = hi - lo || 1;
+  const pts = vals.map((v, i) => `${(i / (vals.length - 1) * W).toFixed(1)},${(H - 6 - (v - lo) / r * (H - 12)).toFixed(1)}`).join(' ');
+  return svgEl(`<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${up ? '#30D158' : '#FF6961'}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg>`);
+}
+function openMarket(m) {
+  const t = m.trend || [], mon = t.length > 5 ? (t[t.length - 1] - t[0]) / t[0] * 100 : null;
+  openSheet(m.name, [h('div', { class: 'art mkart' },
+    h('div', { class: 'mkbig' }, h('b', { text: mkValue(m) }), h('span', { class: 'chg ' + (m.chg >= 0 ? 'up' : 'dn'), text: `${mkPct(m)} / ${mkAbsTxt(m)}` })),
+    h('div', { class: 'ntm', text: 'Veränderung zum Vortag' }),
+    t.length > 5 ? h('div', { class: 'asub', text: 'Letzter Monat' }) : null,
+    t.length > 5 ? sparkSvg(t, t[t.length - 1] >= t[0]) : null,
+    mon != null ? h('div', { class: 'ntm', text: `${mon >= 0 ? '+' : '−'}${fmt1(Math.abs(mon), 1)} % in etwa einem Monat` }) : null,
+    m.why ? h('div', { class: 'asub', text: 'Warum?' }) : null,
+    m.why ? h('p', { text: m.why }) : null,
+    m.note ? h('p', { class: 'apay', text: m.note + '.' }) : null)]);
 }
 function newsRow(it, s) {
   return h('div', { class: 'lr nr tap', onclick: () => openArticle(it, s) },
@@ -82,7 +110,7 @@ PAGES.news = function () {
     return h('div', { class: 'pg' }, h('div', { class: 'ln pad' }, h('p', { class: 'soon', text: msg })));
   }
   return h('div', { class: 'pg news' },
-    ...marketBlock(d.markets),
+    ...marketBlock(d.markets, d.movers),
     ...d.sections.flatMap(s => [secHead(s.title), h('div', { class: 'ln nl' }, ...s.items.map(it => newsRow(it, s)))]),
     h('p', { class: 'nfoot', text: `Stand ${newsStand(d.at)}${newsWait ? ', wird gerade aktualisiert' : ''}. Ausgewählt und kurz zusammengefasst von der KI, aus Tagesschau, Spiegel, Zeit, Deutschlandfunk, heise, t3n, The Decoder, Handelsblatt und FAZ.` }));
 };
