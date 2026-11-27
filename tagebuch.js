@@ -25,6 +25,8 @@ function needsOf(pf) {
   const set = (i, m, w2) => { R[i][0] = f ? w2 : m; };
   set(8, 850, 700); set(10, 14, 12); set(11, 1.2, 1.0); set(12, 1.4, 1.1); set(13, 1.6, 1.4); set(16, 110, 95); set(19, 350, 300); set(20, 11, a >= 51 ? 14 : 16); set(21, 14, 8);
   R[22][0] = a >= 51 ? 180 : 200;
+  // Neue Werte (DGE-Referenzwerte bzw. Schätzwerte; Phosphor, Mangan nach EFSA): Vitamin K, Niacin, Kupfer nach Geschlecht/Alter
+  R[32][0] = f ? (a >= 51 ? 65 : 60) : (a >= 51 ? 80 : 70); R[33][0] = f ? (a < 25 ? 13 : 12) : (a < 25 ? 16 : 15); R[37][0] = f ? 1.25 : 1.5;
   if (pf.smoker === 'ja') R[16][0] = f ? 135 : 155;
   if (f && pf.special === 'schwanger') { R[14][0] = 550; R[22][0] = 230; R[20][0] = 27; R[15][0] = 4.5; R[21][0] = 10; }
   if (f && pf.special === 'stillend') { R[14][0] = 450; R[22][0] = 260; R[20][0] = 20; R[15][0] = 5.5; R[21][0] = 11; }
@@ -53,15 +55,15 @@ const MULTI = { 8: 400, 9: 5, 10: 12, 11: 1.1, 12: 1.4, 13: 1.4, 14: 200, 15: 2.
 const SUPP_PRESETS = [['Vitamin D', 9, 20], ['Vitamin B12', 15, 500], ['Omega-3-Kapsel', 23, 0.5], ['Magnesium', 19, 300], ['Eisen', 20, 14], ['Zink', 21, 10], ['Jod', 22, 100], ['Calcium', 18, 500], ['Folsäure', 14, 400], ['Vitamin C', 16, 200], ['Multivitamin', 'multi', 1]];
 const FREQ = [[1, 'Täglich'], [0.5, 'Jeden 2. Tag'], [1 / 7, '1× pro Woche']];
 function suppVec(s) {
-  const v = new Array(24).fill(0), k = (+s.freq || 1) * (+s.amt || 0);
+  const v = new Array(NV).fill(0), k = (+s.freq || 1) * (+s.amt || 0);
   if (s.i === 'multi') { for (const i in MULTI) v[i] = MULTI[i] * k; } else v[s.i] = k;
   return v;
 }
 
 /* ---- Was an einem Tag gegessen wurde ---- */
 function dayIntake(name, ds) {
-  const tot = new Array(24).fill(0), src = {};
-  const add = (label, v, fac) => { for (let i = 0; i < 24; i++) { const x = (v[i] || 0) * fac; if (x > 0) { tot[i] += x; (src[i] = src[i] || {}); src[i][label] = (src[i][label] || 0) + x; } } };
+  const tot = new Array(NV).fill(0), src = {};
+  const add = (label, v, fac) => { for (let i = 0; i < NV; i++) { const x = (v[i] || 0) * fac; if (x > 0) { tot[i] += x; (src[i] = src[i] || {}); src[i][label] = (src[i][label] || 0) + x; } } };
   const e = diary[name + '_' + ds];
   let planned = false;
   for (const p of planOn(ds)) {
@@ -69,7 +71,7 @@ function dayIntake(name, ds) {
     const fac = e && e.plans && e.plans[p.id] != null ? e.plans[p.id] : (p.portion || 1); planned = true; if (!fac) continue;
     for (const part of n.parts) add(part.name, part.v, part.gr / 100 / n.serv * fac);
   }
-  if (e) for (const f of e.foods || []) if (f.v && f.gr) add(f.name, f.v, f.gr / 100);
+  if (e) for (const f of e.foods || []) if (f.v && f.gr) add(f.name, fullV(f.v, f.src), f.gr / 100);
   const counted = !!e || planned;
   const pf = profiles[name];
   if (counted && pf) for (const s of pf.supps || []) add(s.label + ' (Supplement)', suppVec(s), 1);
@@ -78,10 +80,10 @@ function dayIntake(name, ds) {
   return { tot, src, logged, counted };
 }
 function rangeData(name, days) {
-  const total = new Array(24).fill(0), src = {}; let n = 0, logged = 0; const per = {};
+  const total = new Array(NV).fill(0), src = {}; let n = 0, logged = 0; const per = {};
   for (const ds of days) {
     const d = dayIntake(name, ds); per[ds] = d; if (!d.logged) continue; n++; logged++;
-    for (let i = 0; i < 24; i++) total[i] += d.tot[i];
+    for (let i = 0; i < NV; i++) total[i] += d.tot[i];
     for (const i in d.src) for (const k in d.src[i]) { (src[i] = src[i] || {}); src[i][k] = (src[i][k] || 0) + d.src[i][k]; }
   }
   return { total, src, n, logged, per, unknown: new Set() };
@@ -263,6 +265,7 @@ function factorOf(c) {
 }
 const FAC_TXT = f => f === 0 ? 'nichts' : f === 1 ? 'ganz' : f === 0.5 ? 'die Hälfte' : Math.round(f * 100) + ' %';
 function findExact(words) {
+  const mine = typeof findMine === 'function' && findMine(words); if (mine) return mine;
   for (let n = Math.min(3, words.length); n >= 1; n--) for (let s = 0; s + n <= words.length; s++) {
     const ph = words.slice(s, s + n).join(' '); const f = DF_IDX.get(ph);
     if (f) return { s, n, f: { name: displayName(ph, f.bls), src: f.bls, v: f.v, portion: f.portion, piece: f.piece } };
@@ -415,7 +418,7 @@ function openDiary(name, ds, back) {
     let r = null;
     if (typeof aiCall === 'function' && aiState !== false) {
       const ps = planOn(ds), rs = recipes.filter(x => recipeNutrition(x).ok);
-      const ctx = (ps.length ? 'Geplant für diesen Tag:\n' + ps.map(p => `- ${p.title} (id ${p.id})`).join('\n') + '\n' : '') + (rs.length ? 'Eigene Rezepte: ' + rs.map(x => x.title).slice(0, 80).join(', ') : '');
+      const ctx = (ps.length ? 'Geplant für diesen Tag:\n' + ps.map(p => `- ${p.title} (id ${p.id})`).join('\n') + '\n' : '') + (rs.length ? 'Eigene Rezepte: ' + rs.map(x => x.title).slice(0, 80).join(', ') : '') + (myFoods.length ? '\n' + myFoodsContext() : '');
       const d = await aiCall('diary', { text: said, context: ctx }).catch(() => null);
       if (d) {
         r = { foods: [], plans: {} };
@@ -474,13 +477,15 @@ function openDiary(name, ds, back) {
       setStatus('');
     } catch (err) { toast('Kein Zugriff aufs Mikrofon'); }
   });
+  const addMine = f => { e.foods.unshift(f); drawList(); changed(); setStatus(`Eingetragen: ${f.name}, ${f.amt}`); };
   drawPlans(); drawList(); drawSum();
   // Beim Schließen oder Tag wechseln: Aufnahme beenden, Getipptes auswerten, alles speichern
   const flush = () => { stopRec(); evalText(); clearTimeout(saveT); queue.then(() => persist(true)); };
   const go = n => { flush(); openDiary(name, ymd(addDays(dt, n)), back); };
   openSheet('Was hast du gegessen?', [h('div', { class: 'dy' },
     h('div', { class: 'pnav' }, h('button', { class: 'ib', 'aria-label': 'Tag davor', onclick: () => go(-1) }, ic('chevron-left')), h('div', { text: dlabel }), h('button', { class: 'ib', 'aria-label': 'Tag danach', onclick: () => go(1) }, ic('chevron-right'))),
-    h('div', { class: 'dygrp dyadd' }, h('div', { class: 'dybigwrap' }, mic, micLbl), h('div', { class: 'dyline' }, txt), status),
+    h('div', { class: 'dygrp dyadd' }, h('div', { class: 'dybigwrap' }, mic, micLbl), h('div', { class: 'dyline' }, txt), status,
+      h('div', { class: 'dyacts' }, h('button', { class: 'dyact', onclick: () => scanFlow(addMine) }, 'Strichcode scannen'), h('button', { class: 'dyact', onclick: () => photoFlow(addMine) }, 'Nährwerte fotografieren'))),
     listBox,
     planBox,
     sumBox,

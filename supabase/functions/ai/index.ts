@@ -33,6 +33,17 @@ const TOOLS: Record<string, { system: string; tool: Record<string, unknown> }> =
       }, required: ['foods'] },
     },
   },
+  label: {
+    system: 'Du liest die Nährwerttabelle einer Lebensmittelverpackung von einem Foto. Gib alle Werte je 100 g (bei Getränken je 100 ml) zurück. Steht nur ein Wert pro Portion da, rechne mit der angegebenen Portionsgröße auf 100 g um. Energie in kcal (nicht kJ). name: Produktname wie auf der Packung, kurz und ohne Marke; brand: Marke, falls erkennbar. portion_g: empfohlene Portion in g, falls angegeben. micros: alle weiteren Angaben wie Vitamine, Mineralstoffe, Fettsäuren (einfach/mehrfach ungesättigt, Omega-3, EPA, DHA), Stärke, Laktose, jeweils mit Menge je 100 g und Einheit genau wie gedruckt (g, mg oder µg). Erfinde nichts; was nicht lesbar ist, lass weg. Dezimalkommas in Zahlen umwandeln.',
+    tool: {
+      name: 'naehrwerte', description: 'Nährwerte je 100 g',
+      input_schema: { type: 'object', properties: {
+        name: { type: 'string' }, brand: { type: 'string' }, portion_g: { type: 'number' },
+        kcal: { type: 'number' }, protein: { type: 'number' }, carbs: { type: 'number' }, sugar: { type: 'number' }, fat: { type: 'number' }, sat_fat: { type: 'number' }, fiber: { type: 'number' }, salt: { type: 'number' },
+        micros: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, amount: { type: 'number' }, unit: { type: 'string' } }, required: ['name', 'amount', 'unit'] } },
+      }, required: ['name', 'kcal', 'protein', 'carbs', 'fat'] },
+    },
+  },
   meal: {
     system: 'Du schlägst einem Studenten in Deutschland 3 einfache Gerichte für die nächsten Tage vor. Nutze vor allem, was im Vorrat ist, und frische Sachen, die schon länger da sind, zuerst. Die Gerichte sollen die Nährstoffe liefern, die zuletzt gefehlt haben. Pro Gericht höchstens 3 Sachen dazukaufen, am besten aus den genannten Kauf-Ideen, mit einfachen deutschen Supermarkt-Namen in Grundform. Alltagstauglich, 10 bis 30 Minuten, normale Küche, keine exotischen Zutaten. Passt ein eigenes Rezept, nimm es mit genau diesem Titel. Nichts vorschlagen, was unter „Mögen wir nicht“ steht. Antworte auf Deutsch, kurz und ohne Fachjargon: why ist ein Satz, welche fehlenden Nährstoffe das Gericht bringt; steps sind 2 bis 4 kurze Sätze.',
     tool: {
@@ -66,7 +77,7 @@ Deno.serve(async (req) => {
     const cfg = TOOLS[task]; if (!cfg) return json({ ok: false, error: 'Unbekannte Aufgabe' }, 400);
     const text = String(body.text || '').slice(0, 20000);
     const frames: string[] = Array.isArray(body.frames) ? body.frames.slice(0, 48) : [];
-    if (frames.some((f) => typeof f !== 'string' || f.length > 700000)) return json({ ok: false, error: 'Bild zu groß' }, 400);
+    if (frames.some((f) => typeof f !== 'string' || f.length > (task === 'label' ? 2000000 : 700000))) return json({ ok: false, error: 'Bild zu groß' }, 400);
     const context = String(body.context || '').slice(0, 4000);
     const content = [
       ...frames.flatMap((data, k) => [{ type: 'text', text: `Bild ${k + 1} von ${frames.length}` }, { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } }]),

@@ -1670,8 +1670,38 @@ html,body{overscroll-behavior:none}
 /* Seitenwechsel schiebt #stage eine Bildschirmbreite weg; der Rahmen hält das auf dem iPhone aus der Seitenbreite heraus */
 #clipw{position:relative;width:100%;overflow:hidden;overflow:clip}
 .calwrap{padding:0 8px}
+.sheetnote.dnote{margin:-18px 4px 36px}
+.nlegend{display:flex;gap:20px;margin:0 4px 18px;font-size:14px;color:#8E8E93}
+.nlegend span{display:flex;align-items:center;gap:7px}
+.nlegend i{width:9px;height:9px;border-radius:50%}
+.nlegend .g i{background:var(--lv-g)}.nlegend .y i{background:var(--lv-y)}.nlegend .r i{background:var(--lv-r)}
 .ln.calate{margin:0 -4px 14px}
 .calwrap .ln.calate .lr{padding-left:0;padding-right:0}
+/* Meine Lebensmittel: Scanner und Produktfenster */
+.scanbox{position:relative;margin:4px 4px 18px;border-radius:22px;overflow:hidden;background:#111;aspect-ratio:4/3}
+.scanv{width:100%;height:100%;object-fit:cover;display:block}
+.scanline{position:absolute;left:10%;right:10%;top:27.5%;bottom:27.5%;border:2px solid rgba(255,255,255,.85);border-radius:14px;pointer-events:none}
+.scanmsg{font-size:15px;color:#8E8E93;margin:0 4px 26px;line-height:1.45}
+.scannum{width:100%;background:none!important;border:0!important;box-shadow:none!important;outline:0;font:inherit;font-size:16px;color:#F2F2F4;padding:4px 0!important}
+.scannum::placeholder{color:#8E8E93}
+.pd .pdname{width:100%;background:none!important;border:0!important;box-shadow:none!important;outline:0;font:inherit;font-size:22px;font-weight:700;color:#F2F2F4;padding:0!important;margin:0 4px}
+.pd .pdsrc{font-size:14px;color:#8E8E93;margin:6px 4px 26px}
+.pd .pdline{display:flex;align-items:center;gap:10px;margin:0 4px 34px;font-size:16px;color:#F2F2F4}
+.pd .pdsp{flex:1}
+.pd .pdin{width:5.5em;background:none!important;border:0!important;box-shadow:none!important;outline:0;font:inherit;font-size:16px;color:#F2F2F4;padding:4px 0!important;text-align:right;margin-left:auto}
+.pd .lr.col .pdin{width:100%;text-align:left;margin:0}
+.pd .pdin::placeholder{color:#636366}
+.pd .pdline .pdin{margin-left:0;text-align:right;width:2.6em}
+.pd .dim{color:#8E8E93}
+.pd .tx.dim{padding-left:14px}
+.pdbtn{border:0;background:none;color:#F2F2F4;font:inherit;font-size:16px;font-weight:650;padding:8px 0;cursor:pointer}
+.pdbtn.dim{color:#8E8E93;font-weight:500}
+.pdbtn:active{transform:scale(.95);opacity:.8}
+.pdacts{display:flex;gap:26px;margin:26px 4px 6px}
+.pdstat{font-size:13.5px;color:#8E8E93;margin:6px 4px 30px;min-height:1.3em}
+.dy .dyacts{display:flex;gap:24px;margin:16px 0 0}
+.dy .dyact{border:0;background:none;padding:6px 0;font:inherit;font-size:15px;color:#8E8E93;cursor:pointer}
+.dy .dyact:active{transform:scale(.95);opacity:.8}
 </style>
 </head>
 <body data-tab="start">
@@ -1706,6 +1736,7 @@ html,body{overscroll-behavior:none}
 <script src="app.js"></script>
 <script src="diaryfoods.js"></script>
 <script src="tagebuch.js"></script>
+<script src="produkte.js"></script>
 <script src="start.js"></script>
 <script src="news.js"></script>
 <script src="vorrat.js"></script>

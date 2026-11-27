@@ -26,7 +26,7 @@ function askRow(key) {
 // Jod aus Jodsalz beim Kochen zählt als Teil der Zufuhr (in dayIntake)
 function saltVec(pf) {
   if (!pf || pf.jodsalz !== 'ja') return null;
-  const g = SALT_G[pf.salz || 'normal'], v = new Array(24).fill(0); v[22] = g * JOD_PER_G; v[7] = g; return v;
+  const g = SALT_G[pf.salz || 'normal'], v = new Array(NV).fill(0); v[22] = g * JOD_PER_G; v[7] = g; return v;
 }
 
 function suppCheck(name) {
@@ -34,7 +34,7 @@ function suppCheck(name) {
   const refs = allRefs(needsOf(pf)), supps = pf.supps || [];
   const days = [...Array(14)].map((_, i) => ymd(addDays(new Date(), i - 13)));
   const d = rangeData(name, days), enough = d.logged >= 5;
-  const dose = new Array(24).fill(0); for (const s of supps) suppVec(s).forEach((x, i) => dose[i] += x);
+  const dose = new Array(NV).fill(0); for (const s of supps) suppVec(s).forEach((x, i) => dose[i] += x);
   const food = i => d.n ? Math.max(0, d.total[i] / d.n - dose[i]) : 0; // im Schnitt ohne Supplemente
   const pct = i => refs[i] ? Math.round(food(i) / refs[i][0] * 100) : 0;
   const unit = i => (refs[i] || REF[i] || [0, '', ''])[2];
