@@ -1681,6 +1681,9 @@ html,body{overscroll-behavior:none}
 .mb.n i{background:#636366!important}
 .dy .dyin.livetxt{color:#F2F2F4}
 .sheet.fixh{height:92vh}
+.srchmore{margin-top:30px}
+.pd .pdu{width:2.2em;margin-left:6px}
+.pd .lr .pdin{margin-left:auto}
 .nlegend{display:flex;gap:20px;margin:0 4px 18px;font-size:14px;color:#8E8E93}
 .nlegend span{display:flex;align-items:center;gap:7px}
 .nlegend i{width:9px;height:9px;border-radius:50%}
@@ -1712,6 +1715,13 @@ html,body{overscroll-behavior:none}
 .dy .dyacts{display:flex;gap:24px;margin:16px 0 0}
 .dy .dyact{border:0;background:none;padding:6px 0;font:inherit;font-size:15px;color:#8E8E93;cursor:pointer}
 .dy .dyact:active{transform:scale(.95);opacity:.8}
+/* ===== Fester Kopf (Nov. 2026): Datum, Überschrift und Umschalter bleiben stehen, nur der Inhalt darunter scrollt ===== */
+html header,html.dark header{position:sticky!important;top:0!important;z-index:6!important;background:#000!important}
+html header::after{content:'';position:absolute;left:0;right:0;top:100%;height:22px;background:linear-gradient(#000,rgba(0,0,0,0));pointer-events:none}
+.dnav{margin:4px 2px 30px!important}
+.dnbody{padding:0 2px}
+.dnswipe{min-height:calc(92vh - 150px)}
+.lr.col .top .chev{margin-left:10px}
 </style>
 </head>
 <body data-tab="start">

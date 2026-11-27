@@ -465,7 +465,7 @@ function openDiary(name, ds, back) {
     const decay = () => { lv *= 0.9; mic.style.setProperty('--lv', lv.toFixed(3)); raf = lv > 0.02 ? requestAnimationFrame(decay) : 0; };
     const bump = () => { lv = Math.min(1, lv + 0.6); if (!raf) raf = requestAnimationFrame(decay); };
     const show = interim => { txt.value = [base, (fin + interim).trim()].filter(Boolean).join(', '); grow(); };
-    const end = () => { cancelAnimationFrame(raf); mic.style.setProperty('--lv', '0'); live = null; mic.classList.remove('rec'); micLbl.textContent = 'Tippen und sprechen'; txt.classList.remove('livetxt'); };
+    const end = () => { cancelAnimationFrame(raf); mic.style.setProperty('--lv', '0'); live = null; mic.classList.remove('rec'); micLbl.textContent = 'Tippen und sprechen'; txt.classList.remove('livetxt'); txt.placeholder = 'Oder hier eintippen'; };
     r.onresult = ev => { let interim = ''; for (let k = ev.resultIndex; k < ev.results.length; k++) { const x = ev.results[k]; if (x.isFinal) fin += x[0].transcript.trim() + ' '; else interim += x[0].transcript; } heard = true; show(interim); bump(); };
     r.onspeechstart = bump;
     r.onerror = ev => {
@@ -473,10 +473,10 @@ function openDiary(name, ds, back) {
       stopped = true; if (heard) return; end(); if (ev.error !== 'network') LS.set('ep_livesr', 'off'); startRecording();
     };
     // iOS beendet nach einer Pause von selbst; dann weiter zuhören, bis Fertig getippt wird
-    r.onend = () => { if (!live && stopped) return; if (!stopped) { try { r.start(); return; } catch (x) { } } end(); show(''); if (txt.value.trim()) evalText(); else setStatus('Nichts verstanden. Tippe nochmal aufs Mikrofon.'); };
+    r.onend = () => { if (!live && stopped) return; if (!stopped) { try { r.start(); return; } catch (x) { } } end(); show(''); if (txt.value.trim()) evalText(); else { if (!heard) LS.set('ep_livesr', 'off'); setStatus('Nichts verstanden. Tippe nochmal aufs Mikrofon.'); } };
     live = { stop: () => { stopped = true; try { r.stop(); } catch (x) { r.onend(); } } };
     try { r.start(); } catch (x) { live = null; return startRecording(); }
-    mic.classList.add('rec'); txt.classList.add('livetxt'); micLbl.textContent = 'Ich höre zu. Fertig? Nochmal tippen.'; setStatus('');
+    mic.classList.add('rec'); txt.classList.add('livetxt'); txt.placeholder = 'Was du sagst, erscheint hier'; micLbl.textContent = 'Ich höre zu. Fertig? Nochmal tippen.'; setStatus('');
   };
   const stopRec = () => { if (live) return live.stop(); if (rec && rec.state !== 'inactive') rec.stop(); };
   mic.addEventListener('click', () => {
@@ -490,7 +490,16 @@ function openDiary(name, ds, back) {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       chunks = []; rec = new MediaRecorder(stream);
       rec.ondataavailable = ev => ev.data.size && chunks.push(ev.data);
+      // Zwischenstand alle paar Sekunden über die Cloud-Spracherkennung, damit man sieht, dass mitgeschrieben wird
+      const base = txt.value.trim(); let busy = false, done = false;
+      const preview = setInterval(async () => {
+        if (busy || done || !chunks.length || typeof cloudTranscribe !== 'function' || cloudStt === false) return;
+        busy = true;
+        try { const t = await cloudTranscribe(new Blob(chunks, { type: chunks[0].type || 'audio/mp4' }), null, 'de'); if (!done && t) { txt.value = [base, t.trim()].filter(Boolean).join(', '); grow(); } } catch (x) { }
+        busy = false;
+      }, 2500);
       rec.onstop = async () => {
+        done = true; clearInterval(preview); txt.value = base; grow(); txt.classList.remove('livetxt'); txt.placeholder = 'Oder hier eintippen';
         stream.getTracks().forEach(t => t.stop()); if (meter) meter(); rec = null; mic.classList.remove('rec'); micLbl.textContent = 'Tippen und sprechen';
         const blob = new Blob(chunks, { type: chunks[0] ? chunks[0].type : 'audio/mp4' });
         setStatus('Schreibe auf, was du gesagt hast …');
@@ -500,7 +509,7 @@ function openDiary(name, ds, back) {
           else setStatus('Nichts verstanden. Tippe nochmal aufs Mikrofon.');
         } catch (err) { console.error(err); setStatus('Konnte die Aufnahme nicht auswerten. Tippe es sonst ein.'); }
       };
-      rec.start(); startMeter(stream); mic.classList.add('rec'); micLbl.textContent = 'Ich höre zu. Fertig? Nochmal tippen.';
+      rec.start(1000); startMeter(stream); mic.classList.add('rec'); txt.classList.add('livetxt'); txt.placeholder = 'Was du sagst, erscheint hier'; micLbl.textContent = 'Ich höre zu. Fertig? Nochmal tippen.';
       setStatus('');
     } catch (err) { toast('Kein Zugriff aufs Mikrofon'); }
   };
@@ -512,11 +521,11 @@ function openDiary(name, ds, back) {
   openSheet('Was hast du gegessen?', [h('div', { class: 'dy' },
     h('div', { class: 'pnav' }, h('button', { class: 'ib', 'aria-label': 'Tag davor', onclick: () => go(-1) }, ic('chevron-left')), h('div', { text: dlabel }), h('button', { class: 'ib', 'aria-label': 'Tag danach', onclick: () => go(1) }, ic('chevron-right'))),
     h('div', { class: 'dygrp dyadd' }, h('div', { class: 'dybigwrap' }, mic, micLbl), h('div', { class: 'dyline' }, txt), status,
-      h('div', { class: 'dyacts' }, h('button', { class: 'dyact', onclick: () => scanFlow(addMine) }, 'Strichcode scannen'), h('button', { class: 'dyact', onclick: () => photoFlow(addMine) }, 'Nährwerte fotografieren'))),
+      h('div', { class: 'dyacts' }, h('button', { class: 'dyact', onclick: () => searchFlow(addMine) }, 'Suchen'), h('button', { class: 'dyact', onclick: () => scanFlow(addMine) }, 'Strichcode'), h('button', { class: 'dyact', onclick: () => photoFlow(addMine) }, 'Nährwert-Foto'))),
     listBox,
     planBox,
     sumBox,
-    h('div', { class: 'ln dylink' }, h('div', { class: 'lr tap', onclick: () => { flush(); closeSheet(); statRange = 'day'; statDay = Math.round((parseYmd(today) - parseYmd(ds)) / 864e5); if (tab === 'stat') { renderHead(); render(); } else switchNow('stat'); } }, h('span', { class: 'tx', text: 'Nährstoffe an diesem Tag' }), h('span', { class: 'chev', text: '›' }))))]);
+    h('div', { class: 'ln dylink' }, h('div', { class: 'lr tap', onclick: () => { flush(); openDayNut(Math.max(0, Math.round((parseYmd(today) - parseYmd(ds)) / 864e5)), () => openDiary(name, ds, back)); } }, h('span', { class: 'tx', text: 'Nährstoffe an diesem Tag' }), h('span', { class: 'chev', text: '›' }))))]);
   // Immer gleich hoch, egal wie viel eingetragen ist: beim Blättern zwischen Tagen springt nichts
   $('#sheet').classList.add('fixh');
   $('#sheet .xclose').onclick = () => { flush(); closeSheet(); back(); };
