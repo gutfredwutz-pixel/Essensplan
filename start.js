@@ -86,30 +86,63 @@ function todoRow(x, mode) {
     h('span', { class: 'tx tap', text: x.text, onclick: () => openTodo(x) }),
     meta ? h('span', { class: 'n', text: meta }) : null);
 }
-function addRow(ph, onAdd) {
-  const inp = h('input', { placeholder: ph, enterkeyhint: 'done' });
-  const go = () => { if (inp.value.trim()) { onAdd(cap(inp.value.trim())); inp.value = ''; } };
-  inp.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
-  inp.addEventListener('blur', go);
-  return lrow({ class: 'lr addr' }, h('span', { class: 'plus', text: '+' }), inp);
+// „+ Neu“: ganze Zeile antippbar, öffnet das Fenster zum Anlegen
+function addRow(ph, onAdd, kind) {
+  return lrow({ class: 'lr tap addr', onclick: () => openNew(kind) }, h('span', { class: 'plus', text: '+' }), h('span', { class: 'tx', text: ph }));
+}
+// Neues To-do oder Ziel: großes Textfeld ohne Kasten, Auswahl als Text; speichert sich sofort beim Tippen
+function openNew(kind0) {
+  let kind = kind0 || 'todo', when = 'heute', date = today(), time = '', repeat = '', saved = false;
+  const docId = 'n' + Date.now().toString(36);
+  const ti = h('input', { class: 'nwin', placeholder: 'Was steht an?', enterkeyhint: 'done', autocomplete: 'off' });
+  const col = () => db.collection(kind === 'goal' ? 'goals' : 'todos').doc(docId);
+  const save = () => {
+    const v = cap(ti.value.trim());
+    if (!v) { if (saved) { db.collection('todos').doc(docId).delete(); db.collection('goals').doc(docId).delete(); saved = false; } return; }
+    if (kind === 'goal') { db.collection('todos').doc(docId).delete(); col().set({ who: me(), title: v, days: {}, created: Date.now() }); }
+    else { db.collection('goals').doc(docId).delete(); col().set({ who: me(), text: v, date, time, repeat, done: false, doneOn: '', doneDays: {}, created: Date.now() }); }
+    saved = true;
+  };
+  let tmr = 0; ti.addEventListener('input', () => { clearTimeout(tmr); tmr = setTimeout(save, 400); });
+  ti.addEventListener('keydown', e => { if (e.key === 'Enter') { save(); closeSheet(); } });
+  const opts = (list, cur, fn) => h('div', { class: 'nwopts' }, ...list.map(([k, l]) => h('button', { class: k === cur ? 'on' : '', onclick: () => fn(k) }, l)));
+  const body = h('div', { class: 'nwbody' });
+  const di = h('input', { type: 'date', class: 'nwhide', value: ymd(addDays(new Date(), 2)), onchange: e => { if (e.target.value) { date = e.target.value; when = 'datum'; draw(); save(); } } });
+  const hi = h('input', { type: 'time', class: 'nwtime', value: time, onchange: e => { time = e.target.value; save(); } });
+  const draw = () => {
+    const dl = when === 'datum' ? shortDate(date) : 'Datum';
+    body.replaceChildren(...[
+      opts([['todo', 'To-do'], ['goal', 'Ziel jeden Tag']], kind, k => { kind = k; draw(); save(); }),
+      kind === 'goal' ? h('div', { class: 'nwnote', text: 'Ziele hakst du jeden Tag ab, die Punkte zeigen deine Woche.' }) : null,
+      kind === 'todo' ? h('div', { class: 'nwsec' }, h('div', { class: 'nwlbl', text: 'Wann' }),
+        h('div', { class: 'nwopts' }, ...[['heute', 'Heute'], ['morgen', 'Morgen']].map(([k, l]) => h('button', { class: when === k ? 'on' : '', onclick: () => { when = k; date = k === 'heute' ? today() : ymd(addDays(new Date(), 1)); draw(); save(); } }, l)),
+          h('label', { class: 'nwdate' + (when === 'datum' ? ' on' : '') }, dl, di))) : null,
+      kind === 'todo' ? h('label', { class: 'nwsec nwrow' }, h('div', { class: 'nwlbl', text: 'Uhrzeit' }), hi) : null,
+      kind === 'todo' ? h('div', { class: 'nwsec' }, h('div', { class: 'nwlbl', text: 'Wiederholen' }), opts(REPEAT, repeat, k => { repeat = k; draw(); save(); })) : null].filter(Boolean));
+  };
+  draw();
+  openSheet(kind === 'goal' ? 'Neues Ziel' : 'Neu', [h('div', { class: 'nw' }, ti, body)]);
+  setTimeout(() => ti.focus(), 250);
 }
 function addTodo(text, date) { db.collection('todos').doc().set({ who: me(), text, date: date || today(), time: '', repeat: '', done: false, doneOn: '', doneDays: {}, created: Date.now() }); }
 function openTodo(x) {
   const up = o => { Object.assign(x, o); db.collection('todos').doc(x.id).update(o); };
-  const ti = h('input', { class: 'inp', value: x.text, onchange: e => e.target.value.trim() && up({ text: e.target.value.trim() }) });
-  const di = h('input', { class: 'inp', type: 'date', value: x.date || today(), onchange: e => up({ date: e.target.value || today() }) });
-  const rem = h('div', { class: 'chips' }), remL = h('div', { class: 'fl' }, h('span', { text: 'Erinnern' }));
-  const drawRem = () => { const cur = x.remind === undefined || x.remind === '' ? '15' : String(x.remind); remL.style.display = rem.style.display = x.time ? '' : 'none'; rem.replaceChildren(...REMIND.map(([k, l]) => h('button', { class: 'cp' + (cur === k ? ' on' : ''), onclick: () => { up({ remind: k === 'off' ? 'off' : +k }); drawRem(); } }, l))); };
-  const hi = h('input', { class: 'inp', type: 'time', value: x.time || '', onchange: e => { up({ time: e.target.value }); drawRem(); } });
-  drawRem();
-  const rep = h('div', { class: 'chips' });
-  const drawRep = () => rep.replaceChildren(...REPEAT.map(([k, l]) => h('button', { class: 'cp' + ((x.repeat || '') === k ? ' on' : ''), onclick: () => { up({ repeat: k }); drawRep(); } }, l)));
-  drawRep();
-  openSheet('To-do', [h('div', { class: 'form' }, ti,
-    h('label', { class: 'fl' }, h('span', { text: 'Ab' }), di),
-    h('label', { class: 'fl' }, h('span', { text: 'Uhrzeit' }), hi), remL, rem,
-    h('div', { class: 'fl' }, h('span', { text: 'Wiederholen' })), rep,
-    h('button', { class: 'btn danger', style: 'width:100%;margin-top:8px', onclick: () => { db.collection('todos').doc(x.id).delete(); closeSheet(); } }, 'Löschen'))]);
+  const ti = h('input', { class: 'nwin', value: x.text, onchange: e => e.target.value.trim() && up({ text: cap(e.target.value.trim()) }) });
+  const di = h('input', { class: 'nwtime', type: 'date', value: x.date || today(), onchange: e => up({ date: e.target.value || today() }) });
+  const hi = h('input', { class: 'nwtime', type: 'time', value: x.time || '', onchange: e => { up({ time: e.target.value }); draw(); } });
+  const body = h('div', { class: 'nwbody' });
+  const opts = (list, cur, fn) => h('div', { class: 'nwopts' }, ...list.map(([k, l]) => h('button', { class: k === cur ? 'on' : '', onclick: () => fn(k) }, l)));
+  const draw = () => {
+    const cur = x.remind === undefined || x.remind === '' ? '15' : String(x.remind);
+    body.replaceChildren(...[
+      h('label', { class: 'nwsec nwrow' }, h('div', { class: 'nwlbl', text: x.repeat ? 'Ab' : 'Tag' }), di),
+      h('label', { class: 'nwsec nwrow' }, h('div', { class: 'nwlbl', text: 'Uhrzeit' }), hi),
+      x.time ? h('div', { class: 'nwsec' }, h('div', { class: 'nwlbl', text: 'Erinnern' }), opts(REMIND, cur, k => { up({ remind: k === 'off' ? 'off' : +k }); draw(); })) : null,
+      h('div', { class: 'nwsec' }, h('div', { class: 'nwlbl', text: 'Wiederholen' }), opts(REPEAT, x.repeat || '', k => { up({ repeat: k }); draw(); })),
+      h('button', { class: 'nwdel', onclick: () => { db.collection('todos').doc(x.id).delete(); closeSheet(); } }, 'Löschen')].filter(Boolean));
+  };
+  draw();
+  openSheet('To-do', [h('div', { class: 'nw' }, ti, body)]);
 }
 
 /* ---------- Ziele ---------- */
@@ -123,9 +156,9 @@ function goalRow(g) {
     h('span', { class: 'wk' }, ...weekDays().map(d => h('i', { class: (g.days || {})[d] ? 'y' : '' }))));
 }
 function openGoal(g) {
-  const ti = h('input', { class: 'inp', value: g.title, onchange: e => e.target.value.trim() && db.collection('goals').doc(g.id).update({ title: e.target.value.trim() }) });
-  openSheet('Ziel', [h('div', { class: 'form' }, ti,
-    h('button', { class: 'btn danger', style: 'width:100%', onclick: () => { db.collection('goals').doc(g.id).delete(); closeSheet(); } }, 'Löschen'))]);
+  const ti = h('input', { class: 'nwin', value: g.title, onchange: e => e.target.value.trim() && db.collection('goals').doc(g.id).update({ title: cap(e.target.value.trim()) }) });
+  openSheet('Ziel', [h('div', { class: 'nw' }, ti, h('div', { class: 'nwbody' }, h('div', { class: 'nwnote', text: 'Ziele hakst du jeden Tag ab, die Punkte zeigen deine Woche.' }),
+    h('button', { class: 'nwdel', onclick: () => { db.collection('goals').doc(g.id).delete(); closeSheet(); } }, 'Löschen')))]);
 }
 
 
@@ -212,7 +245,7 @@ PAGES.start = function () {
     ...kcalBlock(),
     ...inputBlock(),
     secHead('Heute', all ? `${all - open} von ${all}` : null),
-    h('div', { class: 'ln todo' }, ...openT.map(x => todoRow(x)), ...openG.map(goalRow), addRow('Neues To-do', s => addTodo(s))),
+    h('div', { class: 'ln todo' }, ...openT.map(x => todoRow(x)), ...openG.map(goalRow), addRow('Neu', null)),
     ...foodTips(),
     ...suppTip(),
     secHead('Essen'),
@@ -233,14 +266,14 @@ PAGES.todo = function () {
   const td = todayTodos(), gl = mine(goals), later = laterTodos(), rep = repeatTodos(), t = today();
   return h('div', { class: 'pg' },
     secHead('Heute', td.length ? `${td.filter(x => isDone(x, t)).length} von ${td.length}` : null),
-    h('div', { class: 'ln todo' }, ...td.map(x => todoRow(x)), addRow('Neues To-do', s => addTodo(s))),
+    h('div', { class: 'ln todo' }, ...td.map(x => todoRow(x)), addRow('Neu', null)),
     gl.length ? secHead('Ziele jeden Tag', 'diese Woche') : null,
     gl.length ? h('div', { class: 'ln goals' }, ...gl.map(goalRow)) : null,
     later.length ? secHead('Später', String(later.length)) : null,
     later.length ? h('div', { class: 'ln todo' }, ...later.map(x => todoRow(x, 'later'))) : null,
     rep.length ? secHead('Wiederkehrend', String(rep.length)) : null,
     rep.length ? h('div', { class: 'ln todo' }, ...rep.map(x => todoRow(x, 'rep'))) : null,
-    h('div', { class: 'links' }, h('button', { onclick: () => openAdd('goal') }, 'Neues Ziel'), h('button', { onclick: () => openAdd('later') }, 'Für später')));
+    null);
 };
 
 /* ---------- Statistik ---------- */

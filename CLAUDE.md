@@ -12,7 +12,7 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 
 ## Geschmacksregeln (gelten für jedes Design)
 
-- **Keine Kästen und keine Trennlinien.** Inhalte stehen als reine Textzeilen auf Schwarz, mit Abstand statt Rahmen (Look wie iOS-Notizen, aber ohne gruppierte Kästen). Abgerundete Karten mit Inhalt drauf wirken für Jakob nach KI-Look; sie wurden zweimal abgelehnt. Hervorgehobenes und Auswahl in Weiß, nicht in Farbe (kein Gelb, kein Orange); Auswahl-Knöpfe als Text. Haken: weißer Kreis, schwarzer Haken, kein Orange.
+- **Keine Kästen, keine runden Pillen-Knöpfe.** Zwischen Themen (Abschnitten) eine feine, dezente Linie (Jakob, Ende Nov. 2026: sonst unübersichtlich), aber keine Linien zwischen einzelnen Zeilen. Inhalte stehen als reine Textzeilen auf Schwarz, mit Abstand statt Rahmen (Look wie iOS-Notizen, aber ohne gruppierte Kästen). Abgerundete Karten mit Inhalt drauf wirken für Jakob nach KI-Look; sie wurden zweimal abgelehnt. Hervorgehobenes und Auswahl in Weiß, nicht in Farbe (kein Gelb, kein Orange); Auswahl-Knöpfe als Text. Haken: weißer Kreis, schwarzer Haken, kein Orange.
 
 - Kein typischer KI-Look: keine Mittelpunkte (·) als Trenner, lieber Slash oder Bindestrich; keine Rauten (#); keine überflüssigen Icons, Untertitel oder Texte, die nur wiederholen; keine ALL-CAPS-Labels.
 - **Nichts bewegt sich von selbst.** Keine Dauer-Animationen, keine animierten Icons, kein Hochzählen. Bewegung nur als Antwort auf eine Aktion (Antippen, Wischen, Seitenwechsel, kurz Ring/Balken füllen beim Tageswechsel).
@@ -96,6 +96,14 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 
 - Jakob: Menüs zum Reintippen und nur Prozente sind „Quatsch“. Statistik und Nährwerte-Fenster zeigen jetzt alle Nährstoffe direkt (Makros, Lieber nicht zu viel, Vitamine, Mineralstoffe) mit echter Menge „gegessen / Bedarf Einheit“ (`amtTxt`, `nf`) und kurzem Balken; Antippen öffnet Details. Darunter „Mehr“: Einzelne Tage, Supplemente.
 - Start hat einen Kalorien-Block (`kcalBlock`) mit Eiweiß/Fett/KH in Gramm, Antippen → `openDayNut(0)`. Balken des laufenden Tages weiß (`.mb.w`), nicht rot.
+
+## Lebensmittel-Erkennung und Anlegen (Ende Nov. 2026)
+
+- Jakob: „Hühnchen“ wurde paniertes Schnitzel, „Huhn“ Hühnerfett. `diaryfoods.js` ordnet Alltagswörter jetzt Grundlebensmitteln zu (Hähnchen/Huhn/Chicken = Brust ohne Haut gebraten, Pute, Rind, Steak, Schwein, Schnitzel = paniert, Fisch, Gemüse, Naturreis/Vollkornnudeln/Couscous/Bulgur/Quinoa gekocht, griechischer Joghurt). BLS-Treffer werden mit `blsRank` sortiert (Brühe, Fett, Pulver, Paniertes, Innereien nach hinten, `BLS_ODD`). Ohne Menge höchstens 200 g Portion (vorher Brokkoli 450 g).
+- KI (`diary`) liefert zu jedem Lebensmittel `bls` = genaue Beschreibung mit Teilstück und Zubereitung; die App sucht dazu den BLS-Eintrag (`blsByHint`, nur bei guter Übereinstimmung, sonst wie bisher). Eigene Produkte haben Vorrang. Funktion `ai` Version 6 in Supabase.
+- `pickProduct` (altes Fenster mit Kästen) nutzt jetzt `searchFlow(onUse, suchwort)`. Suche zeigt bei Alltagswörtern den genauen BLS-Namen.
+- To-dos: „+ Neu“ öffnet `openNew` (großes Textfeld ohne Kasten, To-do oder Ziel, Wann, Uhrzeit, Wiederholen als Text-Auswahl, speichert beim Tippen). `openTodo`/`openGoal` im selben Stil. „Neues Ziel“/„Für später“ unten entfallen.
+- Eintragen-Fenster: Suchen / Strichcode / Packung als weiße Knöpfe mit Symbol.
 
 ## Supplemente (`supplemente.js`)
 

@@ -1536,46 +1536,13 @@ async function imgToData(file, max, q) {
 /* ============ Nährwerte zuordnen: BLS oder Markenprodukt ============ */
 let blsAll = null;
 async function loadBls() { if (blsAll) return blsAll; const r = await fetch('bls.json'); blsAll = await r.json(); BLSNAME = new Map(blsAll.map(([n, v]) => [n, v])); const m = fullIdx(); for (const [, v] of blsAll) { const k = VKEY(v); if (!m.has(k)) m.set(k, v); } return blsAll; }
+// Nährwerte für ein Lebensmittel oder eine Zutat wählen: dieselbe Suche wie beim Eintragen, mit dem Namen vorausgefüllt
 function pickProduct(g, done) {
-  const q = h('input', { class: 'inp', value: g.name || '', placeholder: 'Lebensmittel oder Produkt', autocomplete: 'off' });
-  const res = h('div', { class: 'pick' });
-  const offBtn = h('button', { class: 'btn r' }, 'Markenprodukte suchen');
-  const choose = (product) => { g.product = product; closeSheet(); reopen(); };
-  let reopen = () => { };
-  const searchBls = async () => {
-    res.replaceChildren(grey('Suche …'));
-    const all = await loadBls(); const words = norm(q.value).split(' ').filter(Boolean);
-    const mine = myFoods.filter(p => p.v && words.length && words.every(w => norm(`${p.name} ${p.brand || ''} ${p.alias || ''}`).includes(w))).map(p => [p.brand ? `${p.name} (${p.brand})` : p.name, p.v, true]);
-    // Eigene Ergänzungen (z. B. Whey-Protein), die nicht im BLS stehen, zuerst
-    const extra = (window.DIARY_FOODS || []).filter(([, n]) => !all.some(([bn]) => bn === n)).filter(([al, n]) => { const k = norm(al.replace(/\|/g, ' ') + ' ' + n); return words.length && words.every(w => k.includes(w)); }).map(([, n, , , v]) => [n, v]);
-    const hits = mine.concat(extra).concat(all.filter(([n]) => { const k = norm(n); return words.every(w => k.includes(w)); }).sort((a, b) => (/\broh\b/.test(b[0]) - /\broh\b/.test(a[0])) || a[0].length - b[0].length)).slice(0, 25);
-    res.replaceChildren(...hits.map(([n, v, my]) => h('button', { onclick: () => choose({ src: my ? 'Eigenes Produkt' : 'BLS', name: n, v }) }, h('span', { text: n }), h('span', { class: 'muted', text: `  ${fmtInt(v[0])} kcal` }))));
-    if (!hits.length) res.replaceChildren(grey('Nichts im BLS gefunden, probier die Markensuche'));
-  };
-  offBtn.addEventListener('click', async () => {
-    res.replaceChildren(grey('Suche bei Open Food Facts …'));
-    try {
-      const u = 'https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&json=1&page_size=25&lc=de&cc=de&fields=product_name,product_name_de,brands,nutriments,code&search_terms=' + encodeURIComponent(q.value);
-      const j = await (await fetch(u)).json();
-      const hits = (j.products || []).filter(p => p.nutriments && p.nutriments['energy-kcal_100g'] != null);
-      res.replaceChildren(...hits.map(p => {
-        const n = p.nutriments; const name = p.product_name_de || p.product_name || 'Produkt';
-        const v = new Array(NV).fill(0); v[0] = +n['energy-kcal_100g'] || 0; v[1] = +n.proteins_100g || 0; v[2] = +n.fat_100g || 0; v[3] = +n.carbohydrates_100g || 0; v[4] = +n.fiber_100g || 0; v[5] = +n.sugars_100g || 0; v[6] = +n['saturated-fat_100g'] || 0; v[7] = +n.salt_100g || 0;
-        return h('button', { onclick: () => choose({ src: 'OFF', name, brand: (p.brands || '').split(',')[0], code: p.code, v, partial: true }) }, h('span', { text: ((p.brands || '').split(',')[0] ? (p.brands || '').split(',')[0] + ' ' : '') + name }), h('span', { class: 'muted', text: `  ${fmtInt(v[0])} kcal` }));
-      }));
-      if (!hits.length) res.replaceChildren(grey('Kein Produkt gefunden'));
-    } catch (e) { res.replaceChildren(grey('Open Food Facts gerade nicht erreichbar')); }
-  });
-  // Das Rezept-Sheet merken, um danach dorthin zurückzukehren
-  const saved = [...$('#sheet').childNodes]; const savedScroll = $('#sheet').scrollTop, savedCls = $('#sheet').className;
-  reopen = () => { $('#sheet').className = savedCls; $('#sheet').replaceChildren(...saved); $('#ov').classList.add('on'); lockBody(true); barColor(); $('#sheet').scrollTop = savedScroll; done(); };
-  q.addEventListener('keydown', e => { if (e.key === 'Enter') searchBls(); });
-  openSheet('Nährwerte für ' + (g.name || 'Zutat'), [q, h('div', { class: 'row', style: 'margin-top:8px;gap:8px' }, h('button', { class: 'btn s', onclick: searchBls }, 'Im BLS suchen'), offBtn),
-    h('div', { class: 'row', style: 'margin-top:8px;gap:8px' }, h('button', { class: 'btn s', onclick: () => scanFlow(f => choose({ src: f.src, name: f.name, v: f.v })) }, 'Strichcode scannen'), h('button', { class: 'btn s', onclick: () => photoFlow(f => choose({ src: f.src, name: f.name, v: f.v })) }, 'Nährwerte fotografieren')),
-    h('div', { class: 'muted', style: 'margin:8px 6px 0', text: 'BLS: geprüfte Durchschnittswerte. Markenprodukte: Herstellerangaben von Open Food Facts.' }), res,
-    h('div', { class: 'actions' }, h('button', { class: 'btn g', onclick: () => { closeSheet(); reopen(); } }, 'Zurück'))]);
-  $('#sheet .shead .ib').onclick = () => { closeSheet(); reopen(); };
-  searchBls();
+  searchFlow(f => {
+    const db = f.src && !/eigenes produkt|open food facts/i.test(f.src);
+    g.product = { src: db ? 'BLS' : f.src, name: db ? f.src : f.name, v: f.v };
+    done();
+  }, g.name || '');
 }
 
 /* ============ Kochmodus mit Timer ============ */

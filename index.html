@@ -1729,6 +1729,28 @@ html header::after{content:'';position:absolute;left:0;right:0;top:100%;height:2
 .kcalstart .kcal{padding:2px 0 10px}
 .pg>.nlegend{margin:-4px 4px 22px}
 .mb.w i{background:var(--ink)!important}
+/* Neu anlegen / To-do bearbeiten (Nov. 2026): großes Textfeld ohne Kasten, Auswahl als Text, gewählt = weiß */
+.nw{padding:2px 0 24px}
+.nwin{width:100%;border:0;background:transparent;color:var(--ink);font:inherit;font-size:22px;font-weight:600;padding:6px 0 4px;outline:0}
+.nwin::placeholder{color:var(--ink3)}
+.nwbody{display:flex;flex-direction:column;gap:26px;margin-top:26px}
+.nwsec{display:flex;flex-direction:column;gap:8px}
+.nwrow{flex-direction:row;align-items:center;justify-content:space-between}
+.nwlbl{font-size:14px;color:var(--ink3)}
+.nwopts{display:flex;flex-wrap:wrap;gap:6px 22px}
+.nwopts button,.nwdate{border:0;background:none;padding:4px 0;font:inherit;font-size:16.5px;color:var(--ink3);cursor:pointer;position:relative}
+.nwopts button.on,.nwdate.on{color:var(--ink);font-weight:650}
+.nwhide{position:absolute;inset:0;opacity:0;width:100%;height:100%}
+.nwtime{border:0;background:transparent;color:var(--ink);font:inherit;font-size:16.5px;text-align:right;color-scheme:dark;min-width:90px}
+.nwnote{font-size:14.5px;color:var(--ink3);line-height:1.45}
+.nwdel{align-self:flex-start;border:0;background:none;padding:4px 0;font:inherit;font-size:16.5px;color:#ff6b6b;margin-top:6px}
+.lr.addr .plus{color:var(--ink);font-size:22px}.lr.addr .tx{color:var(--ink2)}
+/* Eintragen: Suchen, Strichcode, Foto deutlich als Knöpfe (weiß, mit Symbol, ohne Kasten) */
+.dy .dyacts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:22px 0 4px}
+.dy .dyact{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--ink);font-size:14.5px;font-weight:550;padding:8px 0}
+.dy .dyact svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+/* Themen dezent abgrenzen: feine Linie über jeder Überschrift außer der ersten (Jakob, Nov. 2026) */
+.pg>.sh~.sh,.dnbody>.sh~.sh{border-top:1px solid var(--line);padding-top:30px;margin-top:-12px!important}
 </style>
 </head>
 <body data-tab="start">

@@ -273,14 +273,43 @@ function findExact(words) {
   }
   for (let n = Math.min(3, words.length); n >= 1; n--) for (let s = 0; s + n <= words.length; s++) {
     const ph = words.slice(s, s + n).join(' '); const k = canon(ph); const v = window.NUTRI && window.NUTRI[k];
-    if (v && ph.length >= 3) { const b = baseByKey.get(k); return { s, n, f: { name: b ? b.name : cap(ph), src: 'BLS', v, portion: PIECE[k] || 100, piece: PIECE[k] || 100 } }; }
+    if (v && ph.length >= 3) { const b = baseByKey.get(k); const pc = PIECE[k]; return { s, n, f: { name: b ? b.name : cap(ph), src: 'BLS', v, portion: !pc ? 100 : pc < 60 ? 100 : Math.min(pc, 200), piece: pc || 100 } }; }
   }
   return null;
+}
+// Rangfolge für BLS-Treffer: Grundlebensmittel vor Brühe, Fett, Pulver, Paniertem, Innereien und Fertiggerichten
+const BLS_ODD = /brühe|bouillon|fett$|fettgewebe|schmalz|pulver|getrocknet|paniert|backteig|ragout|sülze|curry|geist|likör|innereien|leber|herz|magen|niere|zunge|lunge|milz|blut|hirn|knochen|ei roh|ei gekocht|eigelb|eiklar|konserve|sauce|soße|suppe|mit .* und |gefüllt|aufschnitt|grundbrät/i;
+function blsRank(name, ws) {
+  const k = norm(name), q = ws.join(' ');
+  let r = name.length / 40;
+  if (!k.startsWith(ws[0].replace(/(n|en|e)$/, ''))) r += 3;
+  if (BLS_ODD.test(name) && !BLS_ODD.test(q)) r += 10;
+  if (/roh\b|gekocht|gebraten|gegart|gedünstet/.test(name)) r -= 0.5;
+  return r;
+}
+// Bester BLS-Eintrag zu einer Beschreibung wie „Hähnchen Brust, ohne Haut, gebraten“ (Wörter-Übereinstimmung)
+function blsByHint(hint) {
+  if (!blsAll) return null;
+  const stem = w => w.replace(/(n|en|e|s|er)$/, '');
+  const ws = norm(hint.replace(/[,()/]/g, ' ')).split(' ').filter(w => w.length >= 3 && !/^(mit|und|ohne|aus|der|die|das)$/.test(w)).map(stem);
+  const neg = /ohne (fett|haut)/i.test(hint); if (!ws.length || norm(hint).split(' ')[0].length < 3) return null;
+  let best = null, bs = 0;
+  for (const x of blsAll) {
+    const k = norm(x[0].replace(/[,()/]/g, ' ')); if (!k.includes(ws[0])) continue;
+    const toks = k.split(' ').filter(w => w.length >= 3);
+    const hits = ws.reduce((a, w) => a + Math.max(0, ...toks.map(t => stem(t) === w || t === w ? 1 : t.startsWith(w) ? (t.length - w.length <= 3 ? 0.9 : 0.3) : 0)), 0);
+    let sc = hits / ws.length - Math.max(0, toks.length - ws.length) * 0.03;
+    if (!k.startsWith(ws[0])) sc -= 0.15;
+    if (BLS_ODD.test(x[0]) && !BLS_ODD.test(hint)) sc -= 0.5;
+    if (!neg && /ohne fett/i.test(x[0])) sc -= 0.02;
+    if (sc > bs) { bs = sc; best = x; }
+  }
+  return bs >= 0.8 ? best : null;
 }
 function findFuzzy(words) {
   if (!blsAll) return null;
   const ws = words.filter(w => w.length >= 4); if (!ws.length) return null;
-  const hits = blsAll.filter(([n]) => { const k = norm(n); return ws.every(w => k.includes(w.replace(/(n|en|e)$/, ''))); }).sort((a, b) => (norm(b[0]).startsWith(ws[0]) - norm(a[0]).startsWith(ws[0])) || a[0].length - b[0].length);
+  const hits = blsAll.filter(([n]) => { const k = norm(n); return ws.every(w => k.includes(w.replace(/(n|en|e)$/, ''))); }).map(x => [x, blsRank(x[0], ws)]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
   return hits[0] ? { name: cap(ws.join(' ')), src: hits[0][0], v: hits[0][1], portion: 100, piece: 100 } : null;
 }
 function findFood(words) { const x = findExact(words); return x ? x.f : findFuzzy(words); }
@@ -427,7 +456,10 @@ function openDiary(name, ds, back) {
         for (const x of d.recipes || []) { const rr = rs.find(y => norm(y.title) === norm(x.title || '')); if (!rr) continue; const fac = +x.factor || 1; const n = recipeNutrition(rr); r.foods.push({ name: rr.title, amt: (fac === 1 ? '1' : String(fac).replace('.', ',')) + ' Portion', gr: Math.round(100 * fac), v: n.per, src: 'Euer Rezept', portion: 100, recipe: true }); }
         for (const x of d.foods || []) {
           const g = Math.max(1, Math.round(+x.grams || 100));
-          const fs = parseFoods(`${g} g ${x.name}`, false);
+          let fs = parseFoods(`${g} g ${x.name}`, false);
+          // Genauere Beschreibung der KI (Teilstück, Zubereitung) im BLS suchen, eigene Produkte haben Vorrang
+          const mine = fs.length === 1 && /eigenes produkt/i.test(fs[0].src || ''), hit = !mine && x.bls && blsByHint(x.bls);
+          if (hit) fs = [{ name: cap(x.name), amt: '', gr: g, v: hit[1], src: hit[0], portion: g, piece: g }];
           if (fs.length === 1) { fs[0].amt = x.label || `${g} g`; fs[0].gr = g; }
           r.foods.push(...fs);
         }
@@ -521,7 +553,10 @@ function openDiary(name, ds, back) {
   openSheet('Was hast du gegessen?', [h('div', { class: 'dy' },
     h('div', { class: 'pnav' }, h('button', { class: 'ib', 'aria-label': 'Tag davor', onclick: () => go(-1) }, ic('chevron-left')), h('div', { text: dlabel }), h('button', { class: 'ib', 'aria-label': 'Tag danach', onclick: () => go(1) }, ic('chevron-right'))),
     h('div', { class: 'dygrp dyadd' }, h('div', { class: 'dybigwrap' }, mic, micLbl), h('div', { class: 'dyline' }, txt), status,
-      h('div', { class: 'dyacts' }, h('button', { class: 'dyact', onclick: () => searchFlow(addMine) }, 'Suchen'), h('button', { class: 'dyact', onclick: () => scanFlow(addMine) }, 'Strichcode'), h('button', { class: 'dyact', onclick: () => photoFlow(addMine) }, 'Nährwert-Foto'))),
+      h('div', { class: 'dyacts' },
+        h('button', { class: 'dyact', onclick: () => searchFlow(addMine) }, svgEl('<svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>'), 'Suchen'),
+        h('button', { class: 'dyact', onclick: () => scanFlow(addMine) }, svgEl('<svg viewBox="0 0 24 24"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3M7 8v8M10 8v8M13 8v8M16.5 8v8"/></svg>'), 'Strichcode'),
+        h('button', { class: 'dyact', onclick: () => photoFlow(addMine) }, svgEl('<svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>'), 'Packung'))),
     listBox,
     planBox,
     sumBox,

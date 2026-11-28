@@ -165,7 +165,7 @@ function foodTips() {
   const st = gapState(); if (!st) return [];
   const out = [];
   const soon = eatSoon(st).slice(0, 3), rec = pantryRecipes()[0], buy = st.none ? [] : [jodTip(st), ...buyCandidates(st)].filter(Boolean).slice(0, 3);
-  const meta = st.kcalOpen != null && st.kcalOpen >= 150 ? `heute noch ${de(st.kcalOpen)} kcal` : null;
+  const meta = null; // offene Kalorien stehen schon im Kalorien-Block darüber
   const soonRows = soon.map(x => lrow({ class: 'lr tap', onclick: () => openPantryItem(x.p) },
     h('span', { class: 'tx', text: x.p.name }), h('span', { class: 'n', text: x.f && x.f.parts.length ? fitTxt(x.f) : agoTxt(x.d) }), h('span', { class: 'chev', text: '›' })));
   if (rec) soonRows.push(lrow({ class: 'lr tap', onclick: () => openRecipeView(rec.r) }, h('span', { class: 'tx', text: rec.r.title }), h('span', { class: 'n', text: `${rec.have} von ${rec.n} Zutaten da` }), h('span', { class: 'chev', text: '›' })));

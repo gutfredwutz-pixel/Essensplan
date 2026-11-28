@@ -170,9 +170,9 @@ function foodSearch(q) {
   const out = [], seen = new Set();
   const push = (x) => { const k = norm(x.name); if (seen.has(k)) return; seen.add(k); out.push(x); };
   for (const p of myFoods) if (p.v && has(`${p.name} ${p.brand || ''} ${p.alias || ''}`)) push({ ...p, mine: true });
-  for (const [al, bls, portion, piece, v] of window.DIARY_FOODS || []) if (has(al.replace(/\|/g, ' ') + ' ' + bls)) push({ name: cap(al.split('|')[0]), bls, v, portion, src: 'BLS' });
+  for (const [al, bls, portion, piece, v] of window.DIARY_FOODS || []) if (has(al.replace(/\|/g, ' ') + ' ' + bls)) push({ name: bls, bls, v, portion, src: 'BLS' });
   for (const [k, v] of Object.entries(window.NUTRI || {})) if (has(k)) { const b = baseByKey.get(k); push({ name: b ? b.name : cap(k), bls: '', v, portion: PIECE[k] || 100, src: 'BLS' }); if (out.length > 40) break; }
-  if (blsAll) blsAll.filter(([n]) => has(n)).sort((a, b) => (/\broh\b/.test(b[0]) - /\broh\b/.test(a[0])) || a[0].length - b[0].length).slice(0, 30).forEach(([n, v]) => push({ name: n, bls: n, v, portion: 100, src: 'BLS' }));
+  if (blsAll) blsAll.filter(([n]) => has(n)).map(x => [x, blsRank(x[0], words)]).sort((a, b) => a[1] - b[1]).map(x => x[0]).slice(0, 30).forEach(([n, v]) => push({ name: n, bls: n, v, portion: 100, src: 'BLS' }));
   return out.slice(0, 50);
 }
 async function offSearch(q) {
@@ -180,7 +180,7 @@ async function offSearch(q) {
   const j = await (await fetch(u)).json();
   return (j.products || []).filter(p => p.nutriments && p.nutriments['energy-kcal_100g'] != null).map(p => ({ name: p.product_name_de || p.product_name || 'Produkt', brand: (p.brands || '').split(',')[0].trim(), code: p.code, v: offVec(p.nutriments), portion: Math.round(+p.serving_quantity) || null, src: 'OFF' }));
 }
-function searchFlow(onUse0) {
+function searchFlow(onUse0, q0) {
   loadBls().catch(() => { });
   let backS = null; const onUse = onUse0 ? f => { if (backS) backS(); onUse0(f); } : null;
   const q = h('input', { class: 'scannum', placeholder: 'Lebensmittel oder Produkt', enterkeyhint: 'search', autocomplete: 'off' });
@@ -202,7 +202,7 @@ function searchFlow(onUse0) {
       lrow({ class: 'lr tap', onclick: () => scanFlow(onUse) }, h('span', { class: 'tx', text: 'Strichcode scannen' }), h('span', { class: 'chev', text: '›' })),
       lrow({ class: 'lr tap', onclick: () => photoFlow(onUse) }, h('span', { class: 'tx', text: 'Nährwerte fotografieren' }), h('span', { class: 'chev', text: '›' })),
       lrow({ class: 'lr tap', onclick: () => openProductSheet({ name: cap(q.value.trim()), src: 'Eigen' }, onUse, { edit: true }) }, h('span', { class: 'tx', text: 'Selbst anlegen' }), h('span', { class: 'chev', text: '›' })))]);
-  setTimeout(() => q.focus(), 60);
+  if (q0) { q.value = q0; run(); loadBls().then(run, () => { }); } else setTimeout(() => q.focus(), 60);
 }
 // Ganzer Ablauf: scannen → nachschlagen → Produktfenster
 function scanFlow(onUse) {
