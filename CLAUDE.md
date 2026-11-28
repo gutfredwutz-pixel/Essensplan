@@ -92,6 +92,11 @@ Gemeinsame App von Jakob und seiner Freundin Frieda. Sprache überall Deutsch (U
 - App: Seite `PAGES.news`, Artikel als Sheet, Stand im Browser unter `ep_news`. Testdaten in `dev/news.json`.
 - App startet erst nach `DOMContentLoaded` (vorher blitzte beim Öffnen kurz die Rezeptseite auf, weil `start.js` noch nicht geladen war).
 
+## Nährwerte übersichtlich (Ende Nov. 2026)
+
+- Jakob: Menüs zum Reintippen und nur Prozente sind „Quatsch“. Statistik und Nährwerte-Fenster zeigen jetzt alle Nährstoffe direkt (Makros, Lieber nicht zu viel, Vitamine, Mineralstoffe) mit echter Menge „gegessen / Bedarf Einheit“ (`amtTxt`, `nf`) und kurzem Balken; Antippen öffnet Details. Darunter „Mehr“: Einzelne Tage, Supplemente.
+- Start hat einen Kalorien-Block (`kcalBlock`) mit Eiweiß/Fett/KH in Gramm, Antippen → `openDayNut(0)`. Balken des laufenden Tages weiß (`.mb.w`), nicht rot.
+
 ## Supplemente (`supplemente.js`)
 
 - Feste Regeln, keine KI. Prüft eingetragene Supplemente (Summe aller) gegen BfR-Höchstmengen für Supplemente (2024, belegt nur: D 20 µg, Jod 100 µg, Eisen 6 mg, Magnesium 250 mg, Zink 6,5 mg, Folsäure 200 µg; andere ohne Warnung) und meldet „eher unnötig“, wenn das Essen schon 100 % deckt.
